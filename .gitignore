@@ -1,0 +1,4 @@
+.env
+*.key
+*.pem
+n8n_data/

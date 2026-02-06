@@ -1,0 +1,24 @@
+services:
+  n8n:
+    image: n8nio/n8n:latest
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      N8N_HOST: 0.0.0.0
+      N8N_PORT: 5678
+      N8N_PROTOCOL: https
+      WEBHOOK_URL: https://yushin-n8n.duckdns.org/
+      N8N_EDITOR_BASE_URL: https://yushin-n8n.duckdns.org
+      GENERIC_TIMEZONE: Asia/Tokyo
+      N8N_SECURE_COOKIE: true
+      N8N_RUNNERS_ENABLED: false
+    volumes:
+      - n8n_data:/home/node/.n8n
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+volumes:
+  n8n_data:
