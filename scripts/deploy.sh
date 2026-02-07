@@ -39,8 +39,10 @@ deploy_workflow() {
   echo "  Active: $wf_active"
 
   # PUT用のbodyをフィルタリング（許可フィールドのみ）
-  local body
-  body=$(jq "$BODY_FILTER" "$file")
+  # NOTE: jqの出力をファイル経由でcurlに渡す（-d "$var" だと $ がbashに解釈される）
+  local bodyfile
+  bodyfile=$(mktemp)
+  jq "$BODY_FILTER" "$file" > "$bodyfile"
 
   # 既存ワークフローの存在確認
   local http_code
@@ -56,7 +58,7 @@ deploy_workflow() {
       "${N8N_API_URL}/workflows/${wf_id}" \
       -H "Content-Type: application/json" \
       -H "X-N8N-API-KEY: ${N8N_API_KEY}" \
-      -d "$body")
+      --data-binary "@${bodyfile}")
 
     local resp_code
     resp_code=$(echo "$result" | tail -1)
@@ -69,6 +71,7 @@ deploy_workflow() {
       echo "  FAIL: HTTP $resp_code"
       echo "  Response: $resp_body"
       FAIL=$((FAIL + 1))
+      rm -f "$bodyfile"
       return
     fi
   elif [ "$http_code" = "404" ]; then
@@ -79,7 +82,7 @@ deploy_workflow() {
       "${N8N_API_URL}/workflows" \
       -H "Content-Type: application/json" \
       -H "X-N8N-API-KEY: ${N8N_API_KEY}" \
-      -d "$body")
+      --data-binary "@${bodyfile}")
 
     local resp_code
     resp_code=$(echo "$result" | tail -1)
@@ -95,13 +98,17 @@ deploy_workflow() {
     else
       echo "  FAIL: HTTP $resp_code"
       FAIL=$((FAIL + 1))
+      rm -f "$bodyfile"
       return
     fi
   else
     echo "  FAIL: Could not check workflow (HTTP $http_code)"
     FAIL=$((FAIL + 1))
+    rm -f "$bodyfile"
     return
   fi
+
+  rm -f "$bodyfile"
 
   # active フラグに応じて activate/deactivate
   if [ "$wf_active" = "true" ]; then
