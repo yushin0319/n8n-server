@@ -192,7 +192,7 @@
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "const input = $input.first().json.body || $input.first().json;\nconst name = input.name || '新しいタスク';\nconst parentId = input.parent_id || null;\nconst coverUrl = input.cover_url || null;\nconst content = input.content || null;\n\nconst body = {\n  parent: { database_id: '2a02570f-e49f-802b-a67c-fe4c230a5699' },\n  properties: {\n    '': { title: [{ text: { content: name } }] }\n  }\n};\n\nif (parentId) {\n  body.properties['親タスク'] = { relation: [{ id: parentId }] };\n}\n\nif (coverUrl) {\n  body.cover = { type: 'external', external: { url: coverUrl } };\n}\n\nif (content) {\n  const lines = content.split('\n');\n  body.children = lines.map(line => ({\n    object: 'block',\n    type: 'paragraph',\n    paragraph: {\n      rich_text: [{ type: 'text', text: { content: line } }]\n    }\n  }));\n}\n\nreturn [{ json: { requestBody: JSON.stringify(body) } }];"
+        "jsCode": "const input = $input.first().json.body || $input.first().json;\nconst name = input.name || '新しいタスク';\nconst parentId = input.parent_id || null;\nconst coverUrl = input.cover_url || null;\nconst taskContent = input.content || null;\n\nconst body = {\n  parent: { database_id: '2a02570f-e49f-802b-a67c-fe4c230a5699' },\n  properties: {\n    '': { title: [{ text: { content: name } }] }\n  }\n};\n\nif (parentId) {\n  body.properties['親タスク'] = { relation: [{ id: parentId }] };\n}\n\nif (coverUrl) {\n  body.cover = { type: 'external', external: { url: coverUrl } };\n}\n\nif (taskContent) {\n  const lines = taskContent.split('\\n');\n  body.children = lines.map(line => ({\n    object: 'block',\n    type: 'paragraph',\n    paragraph: {\n      rich_text: [{ type: 'text', text: { content: line } }]\n    }\n  }));\n}\n\nreturn [{ json: { requestBody: JSON.stringify(body) } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -241,13 +241,13 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({action:'create',success:true,id:$json.id,url:$json.url}) }}",
+        "responseBody": "={{ JSON.stringify($json) }}",
         "options": {}
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        1000,
+        1100,
         300
       ],
       "name": "RespondCreate",
@@ -256,7 +256,7 @@
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "const input = $input.first().json.body || $input.first().json;\nconst pageId = input.page_id;\nif (!pageId) {\n  throw new Error('page_id is required for update action');\n}\n\nconst body = { properties: {} };\n\nif (input.name !== undefined) {\n  body.properties[''] = { title: [{ text: { content: input.name } }] };\n}\n\nif (input.status !== undefined) {\n  body.properties['ステータス'] = { status: { name: input.status } };\n}\n\nif (input.parent_id !== undefined) {\n  if (input.parent_id) {\n    body.properties['親タスク'] = { relation: [{ id: input.parent_id }] };\n  } else {\n    body.properties['親タスク'] = { relation: [] };\n  }\n}\n\nconst content = input.content || null;\nconst result = { pageId, requestBody: JSON.stringify(body), content };\n\nif (input.cover_url) {\n  const bodyWithCover = JSON.parse(result.requestBody);\n  bodyWithCover.cover = { type: 'external', external: { url: input.cover_url } };\n  result.requestBody = JSON.stringify(bodyWithCover);\n}\n\nreturn [{ json: result }];"
+        "jsCode": "const input = $input.first().json.body || $input.first().json;\nconst pageId = input.page_id;\nif (!pageId) {\n  throw new Error('page_id is required for update action');\n}\n\nconst body = { properties: {} };\n\nif (input.name !== undefined) {\n  body.properties[''] = { title: [{ text: { content: input.name } }] };\n}\n\nif (input.status !== undefined) {\n  body.properties['ステータス'] = { status: { name: input.status } };\n}\n\nif (input.parent_id !== undefined) {\n  if (input.parent_id) {\n    body.properties['親タスク'] = { relation: [{ id: input.parent_id }] };\n  } else {\n    body.properties['親タスク'] = { relation: [] };\n  }\n}\n\nconst taskContent = input.content || null;\nconst result = { pageId, requestBody: JSON.stringify(body), content: taskContent };\n\nif (input.cover_url) {\n  const bodyWithCover = JSON.parse(result.requestBody);\n  bodyWithCover.cover = { type: 'external', external: { url: input.cover_url } };\n  result.requestBody = JSON.stringify(bodyWithCover);\n}\n\nreturn [{ json: result }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -305,14 +305,14 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({action:'update',success:true,id:$json.id,url:$json.url}) }}",
+        "responseBody": "={{ JSON.stringify($json) }}",
         "options": {}
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        1000,
-        500
+        1700,
+        600
       ],
       "name": "RespondUpdate",
       "id": "fa595d9a-cef5-4026-bf6c-155dbc22d6ea"
@@ -385,7 +385,7 @@
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "const content = $('PrepUpdate').first().json.content;\nconst pageId = $json.id;\nconst hasContent = !!(content && pageId);\n\nlet contentBody = null;\nif (hasContent) {\n  const lines = content.split('\\n');\n  const children = lines.map(line => ({\n    object: 'block',\n    type: 'paragraph',\n    paragraph: {\n      rich_text: [{ type: 'text', text: { content: line } }]\n    }\n  }));\n  contentBody = JSON.stringify({ children });\n}\n\nreturn [{ json: { ...($json), pageId, hasContent, contentBody } }];"
+        "jsCode": "const taskContent = $('PrepUpdate').first().json.content;\nconst pageId = $json.id;\nconst hasContent = !!(taskContent && pageId);\n\nlet contentBody = null;\nif (hasContent) {\n  const lines = taskContent.split('\\n');\n  const children = lines.map(line => ({\n    object: 'block',\n    type: 'paragraph',\n    paragraph: {\n      rich_text: [{ type: 'text', text: { content: line } }]\n    }\n  }));\n  contentBody = JSON.stringify({ children });\n}\n\nreturn [{ json: { ...($json), pageId, hasContent, contentBody } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -463,6 +463,34 @@
           "name": "Notion account"
         }
       }
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\nreturn [{ json: {\n  action: 'create',\n  success: !!data.id,\n  id: data.id || null,\n  url: data.url || null\n}}];",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        300
+      ],
+      "name": "FormatCreate",
+      "id": "fc000001-0000-0000-0000-000000000001"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\nreturn [{ json: {\n  action: 'update',\n  success: true,\n  id: data.id || data.task_id || null,\n  url: data.url || null,\n  hasContent: data.hasContent || false,\n  contentAppended: data.contentAppended || false\n}}];",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1500,
+        600
+      ],
+      "name": "FormatUpdate",
+      "id": "fu000001-0000-0000-0000-000000000001"
     }
   ],
   "connections": {
@@ -546,7 +574,7 @@
       "main": [
         [
           {
-            "node": "RespondCreate",
+            "node": "FormatCreate",
             "type": "main",
             "index": 0
           }
@@ -612,7 +640,7 @@
       "main": [
         [
           {
-            "node": "RespondUpdate",
+            "node": "FormatUpdate",
             "type": "main",
             "index": 0
           }
@@ -639,6 +667,28 @@
             "index": 0
           }
         ],
+        [
+          {
+            "node": "FormatUpdate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FormatCreate": {
+      "main": [
+        [
+          {
+            "node": "RespondCreate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FormatUpdate": {
+      "main": [
         [
           {
             "node": "RespondUpdate",
