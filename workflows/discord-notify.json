@@ -7,7 +7,6 @@
       "parameters": {
         "httpMethod": "POST",
         "path": "discord-notify",
-        "authentication": "headerAuth",
         "responseMode": "responseNode",
         "options": {}
       },
@@ -16,10 +15,7 @@
       "position": [0, 0],
       "name": "Webhook",
       "id": "a1b2c3d4-0001-4000-8000-000000000001",
-      "webhookId": "a1b2c3d4-0001-4000-8000-000000000001",
-      "credentials": {
-        "httpHeaderAuth": {"id": "vq2uh8aSb8lxOkVJ", "name": "Webhook Auth"}
-      }
+      "webhookId": "a1b2c3d4-0001-4000-8000-000000000001"
     },
     {
       "parameters": {
@@ -34,7 +30,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.DISCORD_WEBHOOK_URL }}",
+        "url": "https://discord.com/api/webhooks/1469823456706171053/kw9HG_VERKDhbxpgP0mL7VvsM3Knrc01jBNfvnbBcgypA_qZSlEDM0pyXrkn3TilsrRX",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
