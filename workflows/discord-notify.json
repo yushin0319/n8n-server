@@ -1,0 +1,98 @@
+{
+  "id": "8CCP4flWRe4eaKoF",
+  "name": "Discord Notify",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "discord-notify",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "name": "Webhook",
+      "id": "a1b2c3d4-0001-4000-8000-000000000001",
+      "webhookId": "a1b2c3d4-0001-4000-8000-000000000001",
+      "credentials": {
+        "httpHeaderAuth": {"id": "vq2uh8aSb8lxOkVJ", "name": "Webhook Auth"}
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const msg = $input.first().json;\nconst discordBody = {\n  username: 'n8n',\n  content: msg.body.message || 'No message provided'\n};\nreturn [{ json: { discordBody: JSON.stringify(discordBody), originalMessage: msg.body.message || '' } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [220, 0],
+      "name": "FormatDiscord",
+      "id": "a1b2c3d4-0002-4000-8000-000000000002"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.DISCORD_WEBHOOK_URL }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.discordBody }}"
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 0],
+      "name": "SendToDiscord",
+      "id": "a1b2c3d4-0003-4000-8000-000000000003"
+    },
+    {
+      "parameters": {
+        "jsCode": "const original = $('FormatDiscord').first().json;\nreturn [{ json: { success: true, message: original.originalMessage } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [660, 0],
+      "name": "FormatResponse",
+      "id": "a1b2c3d4-0004-4000-8000-000000000004"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [880, 0],
+      "name": "Respond",
+      "id": "a1b2c3d4-0005-4000-8000-000000000005"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [[{"node": "FormatDiscord", "type": "main", "index": 0}]]
+    },
+    "FormatDiscord": {
+      "main": [[{"node": "SendToDiscord", "type": "main", "index": 0}]]
+    },
+    "SendToDiscord": {
+      "main": [[{"node": "FormatResponse", "type": "main", "index": 0}]]
+    },
+    "FormatResponse": {
+      "main": [[{"node": "Respond", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner"
+  }
+}
