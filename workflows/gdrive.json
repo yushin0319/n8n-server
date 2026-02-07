@@ -470,7 +470,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ action: 'mkdir', success: true, id: $json.id, name: $json.name, url: $json.webViewLink }) }}",
+        "responseBody": "={{ JSON.stringify($json) }}",
         "options": {}
       },
       "type": "n8n-nodes-base.respondToWebhook",
@@ -524,7 +524,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ action: 'delete', success: true, file_id: $('PrepDelete').first().json.fileId }) }}",
+        "responseBody": "={{ JSON.stringify($json) }}",
         "options": {}
       },
       "type": "n8n-nodes-base.respondToWebhook",
@@ -584,7 +584,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify(Object.assign({action: \"info\"}, $json)) }}",
+        "responseBody": "={{ JSON.stringify($json) }}",
         "options": {}
       },
       "type": "n8n-nodes-base.respondToWebhook",
@@ -598,7 +598,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const body = $json.body;\nconst name = body.name || 'untitled.txt';\nconst content = body.content || '';\nconst folderId = body.folder_id || 'root';\nconst mimeType = body.mime_type || 'text/plain';\nreturn [{ json: { name, content, folderId, mimeType } }];"
+        "jsCode": "const body = $json.body;\nconst name = body.name || 'untitled.txt';\nconst fileContent = body.content || '';\nconst folderId = body.folder_id || 'root';\nconst mimeType = body.mime_type || 'text/plain';\nreturn [{ json: { name, fileContent, folderId, mimeType } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -637,7 +637,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const content = $('PrepUpload').first().json.content;\nconst fileId = $json.id;\nconst name = $json.name;\nconst webViewLink = $json.webViewLink;\nconst mimeType = $('PrepUpload').first().json.mimeType;\n\n// Create binary data from content\nconst binaryData = Buffer.from(content, 'utf-8');\n\nreturn [{\n  json: { fileId, name, webViewLink, mimeType },\n  binary: {\n    file: {\n      data: binaryData.toString('base64'),\n      mimeType: mimeType,\n      fileName: name\n    }\n  }\n}];"
+        "jsCode": "const fileContent = $('PrepUpload').first().json.fileContent;\nconst fileId = $json.id;\nconst name = $json.name;\nconst webViewLink = $json.webViewLink;\nconst mimeType = $('PrepUpload').first().json.mimeType;\n\n// Create binary data from content\nconst binaryData = Buffer.from(fileContent, 'utf-8');\n\nreturn [{\n  json: { fileId, name, webViewLink, mimeType },\n  binary: {\n    file: {\n      data: binaryData.toString('base64'),\n      mimeType: mimeType,\n      fileName: name\n    }\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -677,7 +677,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ action: 'upload', success: true, id: $json.id, name: $json.name, url: $('PrepContent').first().json.webViewLink }) }}",
+        "responseBody": "={{ JSON.stringify($json) }}",
         "options": {}
       },
       "type": "n8n-nodes-base.respondToWebhook",
@@ -688,6 +688,62 @@
       ],
       "id": "7e9b9df4-605b-41e9-aa44-dac13eb411e8",
       "name": "RespondUpload"
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $input.first().json;\nreturn [{ json: { action: 'mkdir', success: true, id: d.id, name: d.name, url: d.webViewLink } }];",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1020,
+        700
+      ],
+      "name": "FormatMkdir",
+      "id": "14ac271a-60c7-4bfb-8779-97b832a73669"
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $input.first().json;\nconst fileId = $('PrepDelete').first().json.fileId;\nreturn [{ json: { action: 'delete', success: true, file_id: fileId } }];",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1020,
+        950
+      ],
+      "name": "FormatDelete",
+      "id": "b2fd7d5f-5bf1-4942-873c-cd437b676daa"
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $input.first().json;\nreturn [{ json: Object.assign({ action: 'info' }, d) }];",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1020,
+        1200
+      ],
+      "name": "FormatInfo",
+      "id": "9d18f42f-2f32-444f-956b-e9b6099a7e4c"
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $input.first().json;\nconst prep = $('PrepContent').first().json;\nreturn [{ json: { action: 'upload', success: true, id: d.id || prep.fileId, name: d.name || prep.name, url: prep.webViewLink } }];",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1500,
+        200
+      ],
+      "name": "FormatUpload",
+      "id": "42af4ff4-edee-49da-b14a-dd1298d705b6"
     }
   ],
   "connections": {
@@ -880,7 +936,7 @@
       "main": [
         [
           {
-            "node": "RespondMkdir",
+            "node": "FormatMkdir",
             "type": "main",
             "index": 0
           }
@@ -902,7 +958,7 @@
       "main": [
         [
           {
-            "node": "RespondDelete",
+            "node": "FormatDelete",
             "type": "main",
             "index": 0
           }
@@ -924,7 +980,7 @@
       "main": [
         [
           {
-            "node": "RespondInfo",
+            "node": "FormatInfo",
             "type": "main",
             "index": 0
           }
@@ -965,6 +1021,50 @@
       ]
     },
     "UpdateContent": {
+      "main": [
+        [
+          {
+            "node": "FormatUpload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FormatMkdir": {
+      "main": [
+        [
+          {
+            "node": "RespondMkdir",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FormatDelete": {
+      "main": [
+        [
+          {
+            "node": "RespondDelete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FormatInfo": {
+      "main": [
+        [
+          {
+            "node": "RespondInfo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FormatUpload": {
       "main": [
         [
           {
