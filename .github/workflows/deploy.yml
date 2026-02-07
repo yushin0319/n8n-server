@@ -1,0 +1,29 @@
+name: Deploy n8n Workflows
+
+on:
+  push:
+    branches: [main]
+    paths: ['workflows/**']
+  workflow_dispatch:
+    inputs:
+      deploy_all:
+        description: 'Deploy all workflows (not just changed ones)'
+        type: boolean
+        default: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Deploy workflows
+        env:
+          N8N_API_KEY: ${{ secrets.N8N_API_KEY }}
+          DEPLOY_ALL: ${{ github.event.inputs.deploy_all || 'false' }}
+        run: |
+          chmod +x scripts/deploy.sh
+          bash scripts/deploy.sh

@@ -1,1 +1,1133 @@
-{"updatedAt":"2026-02-06T09:46:29.619Z","createdAt":"2026-02-06T08:46:52.182Z","id":"c8ZI0oriZgjePMud","name":"Notion Tasks","description":null,"active":true,"isArchived":false,"nodes":[{"parameters":{"httpMethod":"POST","path":"notion-tasks","responseMode":"responseNode","options":{}},"type":"n8n-nodes-base.webhook","typeVersion":2.1,"position":[0,300],"name":"Webhook","id":"dc788145-0a45-44a8-a5d5-7e04fb053204","webhookId":"notion-tasks-001"},{"parameters":{"rules":{"values":[{"conditions":{"options":{"caseSensitive":true,"leftValue":""},"conditions":[{"leftValue":"={{ $json.body.action }}","rightValue":"list","operator":{"type":"string","operation":"equals"}}],"combinator":"and"},"renameOutput":true,"outputKey":"list"},{"conditions":{"options":{"caseSensitive":true,"leftValue":""},"conditions":[{"leftValue":"={{ $json.body.action }}","rightValue":"create","operator":{"type":"string","operation":"equals"}}],"combinator":"and"},"renameOutput":true,"outputKey":"create"},{"conditions":{"options":{"caseSensitive":true,"leftValue":""},"conditions":[{"leftValue":"={{ $json.body.action }}","rightValue":"update","operator":{"type":"string","operation":"equals"}}],"combinator":"and"},"renameOutput":true,"outputKey":"update"},{"conditions":{"options":{"caseSensitive":true,"leftValue":""},"conditions":[{"leftValue":"={{ $json.body.action }}","rightValue":"search","operator":{"type":"string","operation":"equals"}}],"combinator":"and"},"renameOutput":true,"outputKey":"search"}]},"options":{}},"type":"n8n-nodes-base.switch","typeVersion":3,"position":[250,300],"name":"Switch","id":"4ab8403c-7dbd-4759-8c3b-c21757b509af"},{"parameters":{"method":"POST","url":"https://api.notion.com/v1/databases/2a02570f-e49f-802b-a67c-fe4c230a5699/query","authentication":"predefinedCredentialType","nodeCredentialType":"notionApi","sendHeaders":true,"headerParameters":{"parameters":[{"name":"Notion-Version","value":"2022-06-28"}]},"sendBody":true,"specifyBody":"json","jsonBody":"{\"filter\": {\"or\": [{\"property\": \"ステータス\", \"status\": {\"equals\": \"未着手\"}}, {\"property\": \"ステータス\", \"status\": {\"equals\": \"進行中\"}}]}, \"sorts\": [{\"property\": \"ステータス\", \"direction\": \"ascending\"}]}","options":{}},"type":"n8n-nodes-base.httpRequest","typeVersion":4.2,"position":[500,100],"name":"ListQuery","id":"7a3ea2de-3237-4992-a066-62f8743e0644","credentials":{"notionApi":{"id":"StdChbKZz3co4jDO","name":"Notion account"}}},{"parameters":{"mode":"runOnceForAllItems","jsCode":"const results = $input.first().json.results || [];\nconst tasks = results.map(page => {\n  const titleArr = page.properties['']?.title || [];\n  const title = titleArr.map(t => t.plain_text).join('') || '(無題)';\n  const status = page.properties['ステータス']?.status?.name || '不明';\n  const id = page.id;\n  const uniqueId = page.properties['ID']?.unique_id?.number;\n  const parentRels = (page.properties['親タスク']?.relation || []).map(r => r.id);\n  const childRels = (page.properties['子タスク']?.relation || []).map(r => r.id);\n  const lastEdited = page.properties['最終更新日時']?.last_edited_time || '';\n  const url = page.url;\n  return { id, task_id: uniqueId, title, status, parent_tasks: parentRels, child_tasks: childRels, last_edited: lastEdited, url };\n});\nreturn [{ json: { action: 'list', count: tasks.length, tasks } }];"},"type":"n8n-nodes-base.code","typeVersion":2,"position":[750,100],"name":"FormatList","id":"e2f1e307-6e8e-4970-b331-8444ab5905e9"},{"parameters":{"respondWith":"json","responseBody":"={{ JSON.stringify($json) }}","options":{}},"type":"n8n-nodes-base.respondToWebhook","typeVersion":1.5,"position":[1000,100],"name":"RespondList","id":"dd7d7d89-6ee4-4a56-845c-684ee882c09c"},{"parameters":{"mode":"runOnceForAllItems","jsCode":"const input = $input.first().json.body || $input.first().json;\nconst name = input.name || '新しいタスク';\nconst parentId = input.parent_id || null;\nconst coverUrl = input.cover_url || null;\n\nconst body = {\n  parent: { database_id: '2a02570f-e49f-802b-a67c-fe4c230a5699' },\n  properties: {\n    '': { title: [{ text: { content: name } }] }\n  }\n};\n\nif (parentId) {\n  body.properties['親タスク'] = { relation: [{ id: parentId }] };\n}\n\nif (coverUrl) {\n  body.cover = { type: 'external', external: { url: coverUrl } };\n}\n\nreturn [{ json: { requestBody: JSON.stringify(body) } }];"},"type":"n8n-nodes-base.code","typeVersion":2,"position":[500,300],"name":"PrepCreate","id":"65aeb575-49d9-4616-a0ae-c643b32fc5bb"},{"parameters":{"method":"POST","url":"https://api.notion.com/v1/pages","authentication":"predefinedCredentialType","nodeCredentialType":"notionApi","sendHeaders":true,"headerParameters":{"parameters":[{"name":"Notion-Version","value":"2022-06-28"}]},"sendBody":true,"specifyBody":"json","jsonBody":"={{ $json.requestBody }}","options":{}},"type":"n8n-nodes-base.httpRequest","typeVersion":4.2,"position":[750,300],"name":"CreatePage","id":"ce76c260-e1ff-4d85-86ff-0f6aff2fcb90","credentials":{"notionApi":{"id":"StdChbKZz3co4jDO","name":"Notion account"}}},{"parameters":{"respondWith":"json","responseBody":"={{ JSON.stringify({action:'create',success:true,id:$json.id,url:$json.url}) }}","options":{}},"type":"n8n-nodes-base.respondToWebhook","typeVersion":1.5,"position":[1000,300],"name":"RespondCreate","id":"d167c4cc-3371-402d-a4c5-6bdcb2382e1f"},{"parameters":{"mode":"runOnceForAllItems","jsCode":"const input = $input.first().json.body || $input.first().json;\nconst pageId = input.page_id;\nif (!pageId) {\n  throw new Error('page_id is required for update action');\n}\n\nconst body = { properties: {} };\n\nif (input.name !== undefined) {\n  body.properties[''] = { title: [{ text: { content: input.name } }] };\n}\n\nif (input.status !== undefined) {\n  body.properties['ステータス'] = { status: { name: input.status } };\n}\n\nif (input.parent_id !== undefined) {\n  if (input.parent_id) {\n    body.properties['親タスク'] = { relation: [{ id: input.parent_id }] };\n  } else {\n    body.properties['親タスク'] = { relation: [] };\n  }\n}\n\nconst result = { pageId, requestBody: JSON.stringify(body) };\n\nif (input.cover_url) {\n  const bodyWithCover = JSON.parse(result.requestBody);\n  bodyWithCover.cover = { type: 'external', external: { url: input.cover_url } };\n  result.requestBody = JSON.stringify(bodyWithCover);\n}\n\nreturn [{ json: result }];"},"type":"n8n-nodes-base.code","typeVersion":2,"position":[500,500],"name":"PrepUpdate","id":"9401fcbe-91bf-438e-81ff-361c26b75273"},{"parameters":{"method":"PATCH","url":"=https://api.notion.com/v1/pages/{{ $json.pageId }}","authentication":"predefinedCredentialType","nodeCredentialType":"notionApi","sendHeaders":true,"headerParameters":{"parameters":[{"name":"Notion-Version","value":"2022-06-28"}]},"sendBody":true,"specifyBody":"json","jsonBody":"={{ $json.requestBody }}","options":{}},"type":"n8n-nodes-base.httpRequest","typeVersion":4.2,"position":[750,500],"name":"UpdatePage","id":"15b3ee7a-7676-491e-9ae8-e318f4e62269","credentials":{"notionApi":{"id":"StdChbKZz3co4jDO","name":"Notion account"}}},{"parameters":{"respondWith":"json","responseBody":"={{ JSON.stringify({action:'update',success:true,id:$json.id,url:$json.url}) }}","options":{}},"type":"n8n-nodes-base.respondToWebhook","typeVersion":1.5,"position":[1000,500],"name":"RespondUpdate","id":"fa595d9a-cef5-4026-bf6c-155dbc22d6ea"},{"parameters":{"jsCode":"const input = $input.first().json.body || $input.first().json;\nconst filters = [];\nif (input.status) {\n  filters.push({property: 'ステータス', status: {equals: input.status}});\n}\nif (input.query) {\n  filters.push({property: '', title: {contains: input.query}});\n}\nif (input.date_from) {\n  filters.push({property: '最終更新日時', last_edited_time: {on_or_after: input.date_from}});\n}\nif (input.date_to) {\n  filters.push({property: '最終更新日時', last_edited_time: {on_or_before: input.date_to}});\n}\nconst body = {};\nif (filters.length > 0) {\n  body.filter = filters.length === 1 ? filters[0] : {and: filters};\n}\nbody.sorts = [{property: '最終更新日時', direction: 'descending'}];\nreturn [{json: {requestBody: JSON.stringify(body)}}];"},"id":"s1","name":"PrepSearch","type":"n8n-nodes-base.code","typeVersion":2,"position":[500,700]},{"parameters":{"method":"POST","url":"https://api.notion.com/v1/databases/2a02570f-e49f-802b-a67c-fe4c230a5699/query","authentication":"predefinedCredentialType","nodeCredentialType":"notionApi","sendBody":true,"specifyBody":"json","jsonBody":"={{ $json.requestBody }}"},"id":"s2","name":"SearchQuery","type":"n8n-nodes-base.httpRequest","typeVersion":4.2,"position":[750,700],"credentials":{"notionApi":{"id":"StdChbKZz3co4jDO","name":"Notion account"}}},{"parameters":{"jsCode":"const results = $input.first().json.results || [];\nconst tasks = results.map(page => {\n  const titleArr = page.properties['']?.title || [];\n  const title = titleArr.map(t => t.plain_text).join('') || '(無題)';\n  const status = page.properties['ステータス']?.status?.name || '不明';\n  const id = page.id;\n  const uniqueId = page.properties['ID']?.unique_id?.number;\n  const lastEdited = page.properties['最終更新日時']?.last_edited_time || '';\n  const url = page.url;\n  return { id, task_id: uniqueId, title, status, last_edited: lastEdited, url };\n});\nreturn [{ json: { action: 'search', count: tasks.length, tasks } }];"},"id":"s3","name":"FormatSearch","type":"n8n-nodes-base.code","typeVersion":2,"position":[1000,700]},{"parameters":{"respondWith":"json","responseBody":"={{ $json }}"},"id":"s4","name":"RespondSearch","type":"n8n-nodes-base.respondToWebhook","typeVersion":1.1,"position":[1250,700]}],"connections":{"Webhook":{"main":[[{"node":"Switch","type":"main","index":0}]]},"Switch":{"main":[[{"node":"ListQuery","type":"main","index":0}],[{"node":"PrepCreate","type":"main","index":0}],[{"node":"PrepUpdate","type":"main","index":0}],[{"node":"PrepSearch","type":"main","index":0}]]},"ListQuery":{"main":[[{"node":"FormatList","type":"main","index":0}]]},"FormatList":{"main":[[{"node":"RespondList","type":"main","index":0}]]},"PrepCreate":{"main":[[{"node":"CreatePage","type":"main","index":0}]]},"CreatePage":{"main":[[{"node":"RespondCreate","type":"main","index":0}]]},"PrepUpdate":{"main":[[{"node":"UpdatePage","type":"main","index":0}]]},"UpdatePage":{"main":[[{"node":"RespondUpdate","type":"main","index":0}]]},"PrepSearch":{"main":[[{"node":"SearchQuery","type":"main","index":0}]]},"SearchQuery":{"main":[[{"node":"FormatSearch","type":"main","index":0}]]},"FormatSearch":{"main":[[{"node":"RespondSearch","type":"main","index":0}]]}},"settings":{"executionOrder":"v1","callerPolicy":"workflowsFromSameOwner","availableInMCP":false},"staticData":null,"meta":null,"pinData":null,"versionId":"2db29f29-ae94-49c2-9fd6-fd8064318be4","activeVersionId":"2db29f29-ae94-49c2-9fd6-fd8064318be4","versionCounter":9,"triggerCount":1,"shared":[{"updatedAt":"2026-02-06T08:46:52.195Z","createdAt":"2026-02-06T08:46:52.195Z","role":"workflow:owner","workflowId":"c8ZI0oriZgjePMud","projectId":"k3NcATkkRynsrhxy","project":{"updatedAt":"2026-02-06T06:05:33.918Z","createdAt":"2026-02-06T06:00:08.916Z","id":"k3NcATkkRynsrhxy","name":"yushin fudo <yushin.fudo1986@gmail.com>","type":"personal","icon":null,"description":null,"creatorId":"764f26a8-9cd2-4591-b0b1-a7d6a9369581","projectRelations":[{"updatedAt":"2026-02-06T06:00:08.917Z","createdAt":"2026-02-06T06:00:08.917Z","userId":"764f26a8-9cd2-4591-b0b1-a7d6a9369581","projectId":"k3NcATkkRynsrhxy","user":{"updatedAt":"2026-02-06T07:34:05.000Z","createdAt":"2026-02-06T06:00:07.509Z","id":"764f26a8-9cd2-4591-b0b1-a7d6a9369581","email":"yushin.fudo1986@gmail.com","firstName":"yushin","lastName":"fudo","personalizationAnswers":{"version":"v4","personalization_survey_submitted_at":"2026-02-06T06:05:40.446Z","personalization_survey_n8n_version":"2.6.3"},"settings":{"userActivated":true,"firstSuccessfulWorkflowId":"ywVQSyQv29B-uyUiLxvCB","userActivatedAt":1770358124897},"disabled":false,"mfaEnabled":false,"lastActiveAt":"2026-02-06","isPending":false}}]}}],"tags":[],"activeVersion":{"updatedAt":"2026-02-06T09:46:29.621Z","createdAt":"2026-02-06T09:46:29.621Z","versionId":"2db29f29-ae94-49c2-9fd6-fd8064318be4","workflowId":"c8ZI0oriZgjePMud","nodes":[{"parameters":{"httpMethod":"POST","path":"notion-tasks","responseMode":"responseNode","options":{}},"type":"n8n-nodes-base.webhook","typeVersion":2.1,"position":[0,300],"name":"Webhook","id":"dc788145-0a45-44a8-a5d5-7e04fb053204","webhookId":"notion-tasks-001"},{"parameters":{"rules":{"values":[{"conditions":{"options":{"caseSensitive":true,"leftValue":""},"conditions":[{"leftValue":"={{ $json.body.action }}","rightValue":"list","operator":{"type":"string","operation":"equals"}}],"combinator":"and"},"renameOutput":true,"outputKey":"list"},{"conditions":{"options":{"caseSensitive":true,"leftValue":""},"conditions":[{"leftValue":"={{ $json.body.action }}","rightValue":"create","operator":{"type":"string","operation":"equals"}}],"combinator":"and"},"renameOutput":true,"outputKey":"create"},{"conditions":{"options":{"caseSensitive":true,"leftValue":""},"conditions":[{"leftValue":"={{ $json.body.action }}","rightValue":"update","operator":{"type":"string","operation":"equals"}}],"combinator":"and"},"renameOutput":true,"outputKey":"update"},{"conditions":{"options":{"caseSensitive":true,"leftValue":""},"conditions":[{"leftValue":"={{ $json.body.action }}","rightValue":"search","operator":{"type":"string","operation":"equals"}}],"combinator":"and"},"renameOutput":true,"outputKey":"search"}]},"options":{}},"type":"n8n-nodes-base.switch","typeVersion":3,"position":[250,300],"name":"Switch","id":"4ab8403c-7dbd-4759-8c3b-c21757b509af"},{"parameters":{"method":"POST","url":"https://api.notion.com/v1/databases/2a02570f-e49f-802b-a67c-fe4c230a5699/query","authentication":"predefinedCredentialType","nodeCredentialType":"notionApi","sendHeaders":true,"headerParameters":{"parameters":[{"name":"Notion-Version","value":"2022-06-28"}]},"sendBody":true,"specifyBody":"json","jsonBody":"{\"filter\": {\"or\": [{\"property\": \"ステータス\", \"status\": {\"equals\": \"未着手\"}}, {\"property\": \"ステータス\", \"status\": {\"equals\": \"進行中\"}}]}, \"sorts\": [{\"property\": \"ステータス\", \"direction\": \"ascending\"}]}","options":{}},"type":"n8n-nodes-base.httpRequest","typeVersion":4.2,"position":[500,100],"name":"ListQuery","id":"7a3ea2de-3237-4992-a066-62f8743e0644","credentials":{"notionApi":{"id":"StdChbKZz3co4jDO","name":"Notion account"}}},{"parameters":{"mode":"runOnceForAllItems","jsCode":"const results = $input.first().json.results || [];\nconst tasks = results.map(page => {\n  const titleArr = page.properties['']?.title || [];\n  const title = titleArr.map(t => t.plain_text).join('') || '(無題)';\n  const status = page.properties['ステータス']?.status?.name || '不明';\n  const id = page.id;\n  const uniqueId = page.properties['ID']?.unique_id?.number;\n  const parentRels = (page.properties['親タスク']?.relation || []).map(r => r.id);\n  const childRels = (page.properties['子タスク']?.relation || []).map(r => r.id);\n  const lastEdited = page.properties['最終更新日時']?.last_edited_time || '';\n  const url = page.url;\n  return { id, task_id: uniqueId, title, status, parent_tasks: parentRels, child_tasks: childRels, last_edited: lastEdited, url };\n});\nreturn [{ json: { action: 'list', count: tasks.length, tasks } }];"},"type":"n8n-nodes-base.code","typeVersion":2,"position":[750,100],"name":"FormatList","id":"e2f1e307-6e8e-4970-b331-8444ab5905e9"},{"parameters":{"respondWith":"json","responseBody":"={{ JSON.stringify($json) }}","options":{}},"type":"n8n-nodes-base.respondToWebhook","typeVersion":1.5,"position":[1000,100],"name":"RespondList","id":"dd7d7d89-6ee4-4a56-845c-684ee882c09c"},{"parameters":{"mode":"runOnceForAllItems","jsCode":"const input = $input.first().json.body || $input.first().json;\nconst name = input.name || '新しいタスク';\nconst parentId = input.parent_id || null;\nconst coverUrl = input.cover_url || null;\n\nconst body = {\n  parent: { database_id: '2a02570f-e49f-802b-a67c-fe4c230a5699' },\n  properties: {\n    '': { title: [{ text: { content: name } }] }\n  }\n};\n\nif (parentId) {\n  body.properties['親タスク'] = { relation: [{ id: parentId }] };\n}\n\nif (coverUrl) {\n  body.cover = { type: 'external', external: { url: coverUrl } };\n}\n\nreturn [{ json: { requestBody: JSON.stringify(body) } }];"},"type":"n8n-nodes-base.code","typeVersion":2,"position":[500,300],"name":"PrepCreate","id":"65aeb575-49d9-4616-a0ae-c643b32fc5bb"},{"parameters":{"method":"POST","url":"https://api.notion.com/v1/pages","authentication":"predefinedCredentialType","nodeCredentialType":"notionApi","sendHeaders":true,"headerParameters":{"parameters":[{"name":"Notion-Version","value":"2022-06-28"}]},"sendBody":true,"specifyBody":"json","jsonBody":"={{ $json.requestBody }}","options":{}},"type":"n8n-nodes-base.httpRequest","typeVersion":4.2,"position":[750,300],"name":"CreatePage","id":"ce76c260-e1ff-4d85-86ff-0f6aff2fcb90","credentials":{"notionApi":{"id":"StdChbKZz3co4jDO","name":"Notion account"}}},{"parameters":{"respondWith":"json","responseBody":"={{ JSON.stringify({action:'create',success:true,id:$json.id,url:$json.url}) }}","options":{}},"type":"n8n-nodes-base.respondToWebhook","typeVersion":1.5,"position":[1000,300],"name":"RespondCreate","id":"d167c4cc-3371-402d-a4c5-6bdcb2382e1f"},{"parameters":{"mode":"runOnceForAllItems","jsCode":"const input = $input.first().json.body || $input.first().json;\nconst pageId = input.page_id;\nif (!pageId) {\n  throw new Error('page_id is required for update action');\n}\n\nconst body = { properties: {} };\n\nif (input.name !== undefined) {\n  body.properties[''] = { title: [{ text: { content: input.name } }] };\n}\n\nif (input.status !== undefined) {\n  body.properties['ステータス'] = { status: { name: input.status } };\n}\n\nif (input.parent_id !== undefined) {\n  if (input.parent_id) {\n    body.properties['親タスク'] = { relation: [{ id: input.parent_id }] };\n  } else {\n    body.properties['親タスク'] = { relation: [] };\n  }\n}\n\nconst result = { pageId, requestBody: JSON.stringify(body) };\n\nif (input.cover_url) {\n  const bodyWithCover = JSON.parse(result.requestBody);\n  bodyWithCover.cover = { type: 'external', external: { url: input.cover_url } };\n  result.requestBody = JSON.stringify(bodyWithCover);\n}\n\nreturn [{ json: result }];"},"type":"n8n-nodes-base.code","typeVersion":2,"position":[500,500],"name":"PrepUpdate","id":"9401fcbe-91bf-438e-81ff-361c26b75273"},{"parameters":{"method":"PATCH","url":"=https://api.notion.com/v1/pages/{{ $json.pageId }}","authentication":"predefinedCredentialType","nodeCredentialType":"notionApi","sendHeaders":true,"headerParameters":{"parameters":[{"name":"Notion-Version","value":"2022-06-28"}]},"sendBody":true,"specifyBody":"json","jsonBody":"={{ $json.requestBody }}","options":{}},"type":"n8n-nodes-base.httpRequest","typeVersion":4.2,"position":[750,500],"name":"UpdatePage","id":"15b3ee7a-7676-491e-9ae8-e318f4e62269","credentials":{"notionApi":{"id":"StdChbKZz3co4jDO","name":"Notion account"}}},{"parameters":{"respondWith":"json","responseBody":"={{ JSON.stringify({action:'update',success:true,id:$json.id,url:$json.url}) }}","options":{}},"type":"n8n-nodes-base.respondToWebhook","typeVersion":1.5,"position":[1000,500],"name":"RespondUpdate","id":"fa595d9a-cef5-4026-bf6c-155dbc22d6ea"},{"parameters":{"jsCode":"const input = $input.first().json.body || $input.first().json;\nconst filters = [];\nif (input.status) {\n  filters.push({property: 'ステータス', status: {equals: input.status}});\n}\nif (input.query) {\n  filters.push({property: '', title: {contains: input.query}});\n}\nif (input.date_from) {\n  filters.push({property: '最終更新日時', last_edited_time: {on_or_after: input.date_from}});\n}\nif (input.date_to) {\n  filters.push({property: '最終更新日時', last_edited_time: {on_or_before: input.date_to}});\n}\nconst body = {};\nif (filters.length > 0) {\n  body.filter = filters.length === 1 ? filters[0] : {and: filters};\n}\nbody.sorts = [{property: '最終更新日時', direction: 'descending'}];\nreturn [{json: {requestBody: JSON.stringify(body)}}];"},"id":"s1","name":"PrepSearch","type":"n8n-nodes-base.code","typeVersion":2,"position":[500,700]},{"parameters":{"method":"POST","url":"https://api.notion.com/v1/databases/2a02570f-e49f-802b-a67c-fe4c230a5699/query","authentication":"predefinedCredentialType","nodeCredentialType":"notionApi","sendBody":true,"specifyBody":"json","jsonBody":"={{ $json.requestBody }}"},"id":"s2","name":"SearchQuery","type":"n8n-nodes-base.httpRequest","typeVersion":4.2,"position":[750,700],"credentials":{"notionApi":{"id":"StdChbKZz3co4jDO","name":"Notion account"}}},{"parameters":{"jsCode":"const results = $input.first().json.results || [];\nconst tasks = results.map(page => {\n  const titleArr = page.properties['']?.title || [];\n  const title = titleArr.map(t => t.plain_text).join('') || '(無題)';\n  const status = page.properties['ステータス']?.status?.name || '不明';\n  const id = page.id;\n  const uniqueId = page.properties['ID']?.unique_id?.number;\n  const lastEdited = page.properties['最終更新日時']?.last_edited_time || '';\n  const url = page.url;\n  return { id, task_id: uniqueId, title, status, last_edited: lastEdited, url };\n});\nreturn [{ json: { action: 'search', count: tasks.length, tasks } }];"},"id":"s3","name":"FormatSearch","type":"n8n-nodes-base.code","typeVersion":2,"position":[1000,700]},{"parameters":{"respondWith":"json","responseBody":"={{ $json }}"},"id":"s4","name":"RespondSearch","type":"n8n-nodes-base.respondToWebhook","typeVersion":1.1,"position":[1250,700]}],"connections":{"Webhook":{"main":[[{"node":"Switch","type":"main","index":0}]]},"Switch":{"main":[[{"node":"ListQuery","type":"main","index":0}],[{"node":"PrepCreate","type":"main","index":0}],[{"node":"PrepUpdate","type":"main","index":0}],[{"node":"PrepSearch","type":"main","index":0}]]},"ListQuery":{"main":[[{"node":"FormatList","type":"main","index":0}]]},"FormatList":{"main":[[{"node":"RespondList","type":"main","index":0}]]},"PrepCreate":{"main":[[{"node":"CreatePage","type":"main","index":0}]]},"CreatePage":{"main":[[{"node":"RespondCreate","type":"main","index":0}]]},"PrepUpdate":{"main":[[{"node":"UpdatePage","type":"main","index":0}]]},"UpdatePage":{"main":[[{"node":"RespondUpdate","type":"main","index":0}]]},"PrepSearch":{"main":[[{"node":"SearchQuery","type":"main","index":0}]]},"SearchQuery":{"main":[[{"node":"FormatSearch","type":"main","index":0}]]},"FormatSearch":{"main":[[{"node":"RespondSearch","type":"main","index":0}]]}},"authors":"yushin fudo","name":null,"description":null,"autosaved":false,"workflowPublishHistory":[{"createdAt":"2026-02-06T09:46:29.984Z","id":31,"workflowId":"c8ZI0oriZgjePMud","versionId":"2db29f29-ae94-49c2-9fd6-fd8064318be4","event":"activated","userId":"764f26a8-9cd2-4591-b0b1-a7d6a9369581"}]}}
+{
+  "updatedAt": "2026-02-06T09:46:29.619Z",
+  "createdAt": "2026-02-06T08:46:52.182Z",
+  "id": "c8ZI0oriZgjePMud",
+  "name": "Notion Tasks",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "notion-tasks",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        300
+      ],
+      "name": "Webhook",
+      "id": "dc788145-0a45-44a8-a5d5-7e04fb053204",
+      "webhookId": "notion-tasks-001"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": ""
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.action }}",
+                    "rightValue": "list",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "list"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": ""
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.action }}",
+                    "rightValue": "create",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "create"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": ""
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.action }}",
+                    "rightValue": "update",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "update"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": ""
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.action }}",
+                    "rightValue": "search",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "search"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        250,
+        300
+      ],
+      "name": "Switch",
+      "id": "4ab8403c-7dbd-4759-8c3b-c21757b509af"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.notion.com/v1/databases/2a02570f-e49f-802b-a67c-fe4c230a5699/query",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2022-06-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"filter\": {\"or\": [{\"property\": \"ステータス\", \"status\": {\"equals\": \"未着手\"}}, {\"property\": \"ステータス\", \"status\": {\"equals\": \"進行中\"}}]}, \"sorts\": [{\"property\": \"ステータス\", \"direction\": \"ascending\"}]}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        500,
+        100
+      ],
+      "name": "ListQuery",
+      "id": "7a3ea2de-3237-4992-a066-62f8743e0644",
+      "credentials": {
+        "notionApi": {
+          "id": "StdChbKZz3co4jDO",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const results = $input.first().json.results || [];\nconst tasks = results.map(page => {\n  const titleArr = page.properties['']?.title || [];\n  const title = titleArr.map(t => t.plain_text).join('') || '(無題)';\n  const status = page.properties['ステータス']?.status?.name || '不明';\n  const id = page.id;\n  const uniqueId = page.properties['ID']?.unique_id?.number;\n  const parentRels = (page.properties['親タスク']?.relation || []).map(r => r.id);\n  const childRels = (page.properties['子タスク']?.relation || []).map(r => r.id);\n  const lastEdited = page.properties['最終更新日時']?.last_edited_time || '';\n  const url = page.url;\n  return { id, task_id: uniqueId, title, status, parent_tasks: parentRels, child_tasks: childRels, last_edited: lastEdited, url };\n});\nreturn [{ json: { action: 'list', count: tasks.length, tasks } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        750,
+        100
+      ],
+      "name": "FormatList",
+      "id": "e2f1e307-6e8e-4970-b331-8444ab5905e9"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1000,
+        100
+      ],
+      "name": "RespondList",
+      "id": "dd7d7d89-6ee4-4a56-845c-684ee882c09c"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const input = $input.first().json.body || $input.first().json;\nconst name = input.name || '新しいタスク';\nconst parentId = input.parent_id || null;\nconst coverUrl = input.cover_url || null;\nconst content = input.content || null;\n\nconst body = {\n  parent: { database_id: '2a02570f-e49f-802b-a67c-fe4c230a5699' },\n  properties: {\n    '': { title: [{ text: { content: name } }] }\n  }\n};\n\nif (parentId) {\n  body.properties['親タスク'] = { relation: [{ id: parentId }] };\n}\n\nif (coverUrl) {\n  body.cover = { type: 'external', external: { url: coverUrl } };\n}\n\nif (content) {\n  const lines = content.split('\n');\n  body.children = lines.map(line => ({\n    object: 'block',\n    type: 'paragraph',\n    paragraph: {\n      rich_text: [{ type: 'text', text: { content: line } }]\n    }\n  }));\n}\n\nreturn [{ json: { requestBody: JSON.stringify(body) } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        500,
+        300
+      ],
+      "name": "PrepCreate",
+      "id": "65aeb575-49d9-4616-a0ae-c643b32fc5bb"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.notion.com/v1/pages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2022-06-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.requestBody }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        750,
+        300
+      ],
+      "name": "CreatePage",
+      "id": "ce76c260-e1ff-4d85-86ff-0f6aff2fcb90",
+      "credentials": {
+        "notionApi": {
+          "id": "StdChbKZz3co4jDO",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({action:'create',success:true,id:$json.id,url:$json.url}) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1000,
+        300
+      ],
+      "name": "RespondCreate",
+      "id": "d167c4cc-3371-402d-a4c5-6bdcb2382e1f"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const input = $input.first().json.body || $input.first().json;\nconst pageId = input.page_id;\nif (!pageId) {\n  throw new Error('page_id is required for update action');\n}\n\nconst body = { properties: {} };\n\nif (input.name !== undefined) {\n  body.properties[''] = { title: [{ text: { content: input.name } }] };\n}\n\nif (input.status !== undefined) {\n  body.properties['ステータス'] = { status: { name: input.status } };\n}\n\nif (input.parent_id !== undefined) {\n  if (input.parent_id) {\n    body.properties['親タスク'] = { relation: [{ id: input.parent_id }] };\n  } else {\n    body.properties['親タスク'] = { relation: [] };\n  }\n}\n\nconst result = { pageId, requestBody: JSON.stringify(body) };\n\nif (input.cover_url) {\n  const bodyWithCover = JSON.parse(result.requestBody);\n  bodyWithCover.cover = { type: 'external', external: { url: input.cover_url } };\n  result.requestBody = JSON.stringify(bodyWithCover);\n}\n\nreturn [{ json: result }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        500,
+        500
+      ],
+      "name": "PrepUpdate",
+      "id": "9401fcbe-91bf-438e-81ff-361c26b75273"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://api.notion.com/v1/pages/{{ $json.pageId }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2022-06-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.requestBody }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        750,
+        500
+      ],
+      "name": "UpdatePage",
+      "id": "15b3ee7a-7676-491e-9ae8-e318f4e62269",
+      "credentials": {
+        "notionApi": {
+          "id": "StdChbKZz3co4jDO",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({action:'update',success:true,id:$json.id,url:$json.url}) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1000,
+        500
+      ],
+      "name": "RespondUpdate",
+      "id": "fa595d9a-cef5-4026-bf6c-155dbc22d6ea"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json.body || $input.first().json;\nconst filters = [];\nif (input.status) {\n  filters.push({property: 'ステータス', status: {equals: input.status}});\n}\nif (input.query) {\n  filters.push({property: '', title: {contains: input.query}});\n}\nif (input.date_from) {\n  filters.push({property: '最終更新日時', last_edited_time: {on_or_after: input.date_from}});\n}\nif (input.date_to) {\n  filters.push({property: '最終更新日時', last_edited_time: {on_or_before: input.date_to}});\n}\nconst body = {};\nif (filters.length > 0) {\n  body.filter = filters.length === 1 ? filters[0] : {and: filters};\n}\nbody.sorts = [{property: '最終更新日時', direction: 'descending'}];\nreturn [{json: {requestBody: JSON.stringify(body)}}];"
+      },
+      "id": "s1",
+      "name": "PrepSearch",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        500,
+        700
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.notion.com/v1/databases/2a02570f-e49f-802b-a67c-fe4c230a5699/query",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.requestBody }}"
+      },
+      "id": "s2",
+      "name": "SearchQuery",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        750,
+        700
+      ],
+      "credentials": {
+        "notionApi": {
+          "id": "StdChbKZz3co4jDO",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const results = $input.first().json.results || [];\nconst tasks = results.map(page => {\n  const titleArr = page.properties['']?.title || [];\n  const title = titleArr.map(t => t.plain_text).join('') || '(無題)';\n  const status = page.properties['ステータス']?.status?.name || '不明';\n  const id = page.id;\n  const uniqueId = page.properties['ID']?.unique_id?.number;\n  const lastEdited = page.properties['最終更新日時']?.last_edited_time || '';\n  const url = page.url;\n  return { id, task_id: uniqueId, title, status, last_edited: lastEdited, url };\n});\nreturn [{ json: { action: 'search', count: tasks.length, tasks } }];"
+      },
+      "id": "s3",
+      "name": "FormatSearch",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1000,
+        700
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}"
+      },
+      "id": "s4",
+      "name": "RespondSearch",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1250,
+        700
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "ListQuery",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PrepCreate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PrepUpdate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PrepSearch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ListQuery": {
+      "main": [
+        [
+          {
+            "node": "FormatList",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FormatList": {
+      "main": [
+        [
+          {
+            "node": "RespondList",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepCreate": {
+      "main": [
+        [
+          {
+            "node": "CreatePage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CreatePage": {
+      "main": [
+        [
+          {
+            "node": "RespondCreate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepUpdate": {
+      "main": [
+        [
+          {
+            "node": "UpdatePage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "UpdatePage": {
+      "main": [
+        [
+          {
+            "node": "RespondUpdate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepSearch": {
+      "main": [
+        [
+          {
+            "node": "SearchQuery",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SearchQuery": {
+      "main": [
+        [
+          {
+            "node": "FormatSearch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FormatSearch": {
+      "main": [
+        [
+          {
+            "node": "RespondSearch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": null,
+  "versionId": "2db29f29-ae94-49c2-9fd6-fd8064318be4",
+  "activeVersionId": "2db29f29-ae94-49c2-9fd6-fd8064318be4",
+  "versionCounter": 9,
+  "triggerCount": 1,
+  "shared": [
+    {
+      "updatedAt": "2026-02-06T08:46:52.195Z",
+      "createdAt": "2026-02-06T08:46:52.195Z",
+      "role": "workflow:owner",
+      "workflowId": "c8ZI0oriZgjePMud",
+      "projectId": "k3NcATkkRynsrhxy",
+      "project": {
+        "updatedAt": "2026-02-06T06:05:33.918Z",
+        "createdAt": "2026-02-06T06:00:08.916Z",
+        "id": "k3NcATkkRynsrhxy",
+        "name": "yushin fudo <yushin.fudo1986@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "764f26a8-9cd2-4591-b0b1-a7d6a9369581",
+        "projectRelations": [
+          {
+            "updatedAt": "2026-02-06T06:00:08.917Z",
+            "createdAt": "2026-02-06T06:00:08.917Z",
+            "userId": "764f26a8-9cd2-4591-b0b1-a7d6a9369581",
+            "projectId": "k3NcATkkRynsrhxy",
+            "user": {
+              "updatedAt": "2026-02-06T07:34:05.000Z",
+              "createdAt": "2026-02-06T06:00:07.509Z",
+              "id": "764f26a8-9cd2-4591-b0b1-a7d6a9369581",
+              "email": "yushin.fudo1986@gmail.com",
+              "firstName": "yushin",
+              "lastName": "fudo",
+              "personalizationAnswers": {
+                "version": "v4",
+                "personalization_survey_submitted_at": "2026-02-06T06:05:40.446Z",
+                "personalization_survey_n8n_version": "2.6.3"
+              },
+              "settings": {
+                "userActivated": true,
+                "firstSuccessfulWorkflowId": "ywVQSyQv29B-uyUiLxvCB",
+                "userActivatedAt": 1770358124897
+              },
+              "disabled": false,
+              "mfaEnabled": false,
+              "lastActiveAt": "2026-02-06",
+              "isPending": false
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-02-06T09:46:29.621Z",
+    "createdAt": "2026-02-06T09:46:29.621Z",
+    "versionId": "2db29f29-ae94-49c2-9fd6-fd8064318be4",
+    "workflowId": "c8ZI0oriZgjePMud",
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "notion-tasks",
+          "responseMode": "responseNode",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1,
+        "position": [
+          0,
+          300
+        ],
+        "name": "Webhook",
+        "id": "dc788145-0a45-44a8-a5d5-7e04fb053204",
+        "webhookId": "notion-tasks-001"
+      },
+      {
+        "parameters": {
+          "rules": {
+            "values": [
+              {
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": ""
+                  },
+                  "conditions": [
+                    {
+                      "leftValue": "={{ $json.body.action }}",
+                      "rightValue": "list",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      }
+                    }
+                  ],
+                  "combinator": "and"
+                },
+                "renameOutput": true,
+                "outputKey": "list"
+              },
+              {
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": ""
+                  },
+                  "conditions": [
+                    {
+                      "leftValue": "={{ $json.body.action }}",
+                      "rightValue": "create",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      }
+                    }
+                  ],
+                  "combinator": "and"
+                },
+                "renameOutput": true,
+                "outputKey": "create"
+              },
+              {
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": ""
+                  },
+                  "conditions": [
+                    {
+                      "leftValue": "={{ $json.body.action }}",
+                      "rightValue": "update",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      }
+                    }
+                  ],
+                  "combinator": "and"
+                },
+                "renameOutput": true,
+                "outputKey": "update"
+              },
+              {
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": ""
+                  },
+                  "conditions": [
+                    {
+                      "leftValue": "={{ $json.body.action }}",
+                      "rightValue": "search",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      }
+                    }
+                  ],
+                  "combinator": "and"
+                },
+                "renameOutput": true,
+                "outputKey": "search"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.switch",
+        "typeVersion": 3,
+        "position": [
+          250,
+          300
+        ],
+        "name": "Switch",
+        "id": "4ab8403c-7dbd-4759-8c3b-c21757b509af"
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://api.notion.com/v1/databases/2a02570f-e49f-802b-a67c-fe4c230a5699/query",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "notionApi",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Notion-Version",
+                "value": "2022-06-28"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "{\"filter\": {\"or\": [{\"property\": \"ステータス\", \"status\": {\"equals\": \"未着手\"}}, {\"property\": \"ステータス\", \"status\": {\"equals\": \"進行中\"}}]}, \"sorts\": [{\"property\": \"ステータス\", \"direction\": \"ascending\"}]}",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          500,
+          100
+        ],
+        "name": "ListQuery",
+        "id": "7a3ea2de-3237-4992-a066-62f8743e0644",
+        "credentials": {
+          "notionApi": {
+            "id": "StdChbKZz3co4jDO",
+            "name": "Notion account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "mode": "runOnceForAllItems",
+          "jsCode": "const results = $input.first().json.results || [];\nconst tasks = results.map(page => {\n  const titleArr = page.properties['']?.title || [];\n  const title = titleArr.map(t => t.plain_text).join('') || '(無題)';\n  const status = page.properties['ステータス']?.status?.name || '不明';\n  const id = page.id;\n  const uniqueId = page.properties['ID']?.unique_id?.number;\n  const parentRels = (page.properties['親タスク']?.relation || []).map(r => r.id);\n  const childRels = (page.properties['子タスク']?.relation || []).map(r => r.id);\n  const lastEdited = page.properties['最終更新日時']?.last_edited_time || '';\n  const url = page.url;\n  return { id, task_id: uniqueId, title, status, parent_tasks: parentRels, child_tasks: childRels, last_edited: lastEdited, url };\n});\nreturn [{ json: { action: 'list', count: tasks.length, tasks } }];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          750,
+          100
+        ],
+        "name": "FormatList",
+        "id": "e2f1e307-6e8e-4970-b331-8444ab5905e9"
+      },
+      {
+        "parameters": {
+          "respondWith": "json",
+          "responseBody": "={{ JSON.stringify($json) }}",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.5,
+        "position": [
+          1000,
+          100
+        ],
+        "name": "RespondList",
+        "id": "dd7d7d89-6ee4-4a56-845c-684ee882c09c"
+      },
+      {
+        "parameters": {
+          "mode": "runOnceForAllItems",
+          "jsCode": "const input = $input.first().json.body || $input.first().json;\nconst name = input.name || '新しいタスク';\nconst parentId = input.parent_id || null;\nconst coverUrl = input.cover_url || null;\n\nconst body = {\n  parent: { database_id: '2a02570f-e49f-802b-a67c-fe4c230a5699' },\n  properties: {\n    '': { title: [{ text: { content: name } }] }\n  }\n};\n\nif (parentId) {\n  body.properties['親タスク'] = { relation: [{ id: parentId }] };\n}\n\nif (coverUrl) {\n  body.cover = { type: 'external', external: { url: coverUrl } };\n}\n\nreturn [{ json: { requestBody: JSON.stringify(body) } }];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          500,
+          300
+        ],
+        "name": "PrepCreate",
+        "id": "65aeb575-49d9-4616-a0ae-c643b32fc5bb"
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://api.notion.com/v1/pages",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "notionApi",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Notion-Version",
+                "value": "2022-06-28"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ $json.requestBody }}",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          750,
+          300
+        ],
+        "name": "CreatePage",
+        "id": "ce76c260-e1ff-4d85-86ff-0f6aff2fcb90",
+        "credentials": {
+          "notionApi": {
+            "id": "StdChbKZz3co4jDO",
+            "name": "Notion account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "respondWith": "json",
+          "responseBody": "={{ JSON.stringify({action:'create',success:true,id:$json.id,url:$json.url}) }}",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.5,
+        "position": [
+          1000,
+          300
+        ],
+        "name": "RespondCreate",
+        "id": "d167c4cc-3371-402d-a4c5-6bdcb2382e1f"
+      },
+      {
+        "parameters": {
+          "mode": "runOnceForAllItems",
+          "jsCode": "const input = $input.first().json.body || $input.first().json;\nconst pageId = input.page_id;\nif (!pageId) {\n  throw new Error('page_id is required for update action');\n}\n\nconst body = { properties: {} };\n\nif (input.name !== undefined) {\n  body.properties[''] = { title: [{ text: { content: input.name } }] };\n}\n\nif (input.status !== undefined) {\n  body.properties['ステータス'] = { status: { name: input.status } };\n}\n\nif (input.parent_id !== undefined) {\n  if (input.parent_id) {\n    body.properties['親タスク'] = { relation: [{ id: input.parent_id }] };\n  } else {\n    body.properties['親タスク'] = { relation: [] };\n  }\n}\n\nconst result = { pageId, requestBody: JSON.stringify(body) };\n\nif (input.cover_url) {\n  const bodyWithCover = JSON.parse(result.requestBody);\n  bodyWithCover.cover = { type: 'external', external: { url: input.cover_url } };\n  result.requestBody = JSON.stringify(bodyWithCover);\n}\n\nreturn [{ json: result }];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          500,
+          500
+        ],
+        "name": "PrepUpdate",
+        "id": "9401fcbe-91bf-438e-81ff-361c26b75273"
+      },
+      {
+        "parameters": {
+          "method": "PATCH",
+          "url": "=https://api.notion.com/v1/pages/{{ $json.pageId }}",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "notionApi",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Notion-Version",
+                "value": "2022-06-28"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ $json.requestBody }}",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          750,
+          500
+        ],
+        "name": "UpdatePage",
+        "id": "15b3ee7a-7676-491e-9ae8-e318f4e62269",
+        "credentials": {
+          "notionApi": {
+            "id": "StdChbKZz3co4jDO",
+            "name": "Notion account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "respondWith": "json",
+          "responseBody": "={{ JSON.stringify({action:'update',success:true,id:$json.id,url:$json.url}) }}",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.5,
+        "position": [
+          1000,
+          500
+        ],
+        "name": "RespondUpdate",
+        "id": "fa595d9a-cef5-4026-bf6c-155dbc22d6ea"
+      },
+      {
+        "parameters": {
+          "jsCode": "const input = $input.first().json.body || $input.first().json;\nconst filters = [];\nif (input.status) {\n  filters.push({property: 'ステータス', status: {equals: input.status}});\n}\nif (input.query) {\n  filters.push({property: '', title: {contains: input.query}});\n}\nif (input.date_from) {\n  filters.push({property: '最終更新日時', last_edited_time: {on_or_after: input.date_from}});\n}\nif (input.date_to) {\n  filters.push({property: '最終更新日時', last_edited_time: {on_or_before: input.date_to}});\n}\nconst body = {};\nif (filters.length > 0) {\n  body.filter = filters.length === 1 ? filters[0] : {and: filters};\n}\nbody.sorts = [{property: '最終更新日時', direction: 'descending'}];\nreturn [{json: {requestBody: JSON.stringify(body)}}];"
+        },
+        "id": "s1",
+        "name": "PrepSearch",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          500,
+          700
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://api.notion.com/v1/databases/2a02570f-e49f-802b-a67c-fe4c230a5699/query",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "notionApi",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ $json.requestBody }}"
+        },
+        "id": "s2",
+        "name": "SearchQuery",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          750,
+          700
+        ],
+        "credentials": {
+          "notionApi": {
+            "id": "StdChbKZz3co4jDO",
+            "name": "Notion account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "const results = $input.first().json.results || [];\nconst tasks = results.map(page => {\n  const titleArr = page.properties['']?.title || [];\n  const title = titleArr.map(t => t.plain_text).join('') || '(無題)';\n  const status = page.properties['ステータス']?.status?.name || '不明';\n  const id = page.id;\n  const uniqueId = page.properties['ID']?.unique_id?.number;\n  const lastEdited = page.properties['最終更新日時']?.last_edited_time || '';\n  const url = page.url;\n  return { id, task_id: uniqueId, title, status, last_edited: lastEdited, url };\n});\nreturn [{ json: { action: 'search', count: tasks.length, tasks } }];"
+        },
+        "id": "s3",
+        "name": "FormatSearch",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1000,
+          700
+        ]
+      },
+      {
+        "parameters": {
+          "respondWith": "json",
+          "responseBody": "={{ $json }}"
+        },
+        "id": "s4",
+        "name": "RespondSearch",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.1,
+        "position": [
+          1250,
+          700
+        ]
+      }
+    ],
+    "connections": {
+      "Webhook": {
+        "main": [
+          [
+            {
+              "node": "Switch",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Switch": {
+        "main": [
+          [
+            {
+              "node": "ListQuery",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "PrepCreate",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "PrepUpdate",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "PrepSearch",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "ListQuery": {
+        "main": [
+          [
+            {
+              "node": "FormatList",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "FormatList": {
+        "main": [
+          [
+            {
+              "node": "RespondList",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "PrepCreate": {
+        "main": [
+          [
+            {
+              "node": "CreatePage",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "CreatePage": {
+        "main": [
+          [
+            {
+              "node": "RespondCreate",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "PrepUpdate": {
+        "main": [
+          [
+            {
+              "node": "UpdatePage",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "UpdatePage": {
+        "main": [
+          [
+            {
+              "node": "RespondUpdate",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "PrepSearch": {
+        "main": [
+          [
+            {
+              "node": "SearchQuery",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "SearchQuery": {
+        "main": [
+          [
+            {
+              "node": "FormatSearch",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "FormatSearch": {
+        "main": [
+          [
+            {
+              "node": "RespondSearch",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "yushin fudo",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-02-06T09:46:29.984Z",
+        "id": 31,
+        "workflowId": "c8ZI0oriZgjePMud",
+        "versionId": "2db29f29-ae94-49c2-9fd6-fd8064318be4",
+        "event": "activated",
+        "userId": "764f26a8-9cd2-4591-b0b1-a7d6a9369581"
+      }
+    ]
+  }
+}
