@@ -12,7 +12,7 @@
           ]
         }
       },
-      "id": "6e543788-004b-4720-945b-9fdd0df41516",
+      "id": "48f2bb3b-1a2c-44ad-8969-afbc24b45af4",
       "name": "Schedule",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
@@ -23,7 +23,7 @@
     },
     {
       "parameters": {
-        "url": "https://api.github.com/users/yushin0319/events?per_page=100",
+        "url": "=https://api.github.com/search/commits?q=author:yushin0319+committer-date:{{ $now.setZone('Asia/Tokyo').toISODate() }}&per_page=100",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -34,13 +34,17 @@
             {
               "name": "User-Agent",
               "value": "n8n-github-summary"
+            },
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
             }
           ]
         },
         "options": {}
       },
-      "id": "6294d275-93a2-4512-a766-247c4996f29e",
-      "name": "FetchEvents",
+      "id": "066765e5-a3c3-4ba4-a522-6f86e802a831",
+      "name": "FetchCommits",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
@@ -50,10 +54,10 @@
     },
     {
       "parameters": {
-        "jsCode": "const events = $input.all().map(i => i.json);\n\n// JST (UTC+9) で今日の日付を算出\nconst jstOffset = 9 * 60 * 60 * 1000;\nconst jstNow = new Date(Date.now() + jstOffset);\nconst todayStr = jstNow.toISOString().substring(0, 10);\n\n// 今日のイベントのみフィルタ\nconst todayEvents = events.filter(e => {\n  const d = new Date(new Date(e.created_at).getTime() + jstOffset);\n  return d.toISOString().substring(0, 10) === todayStr;\n});\n\n// PushEvent のコミットをリポジトリ別にグループ化\nconst repos = {};\nlet totalCommits = 0;\n\nfor (const ev of todayEvents) {\n  if (ev.type === 'PushEvent' && ev.payload && ev.payload.commits) {\n    const repoName = ev.repo.name;\n    if (!repos[repoName]) repos[repoName] = [];\n    for (const c of ev.payload.commits) {\n      repos[repoName].push(c.message.split('\\n')[0]);\n      totalCommits++;\n    }\n  }\n}\n\nconst title = `GitHub活動 ${todayStr}`;\nconst children = [];\n\nfor (const [repo, commits] of Object.entries(repos)) {\n  children.push({\n    object: 'block',\n    type: 'heading_3',\n    heading_3: { rich_text: [{ type: 'text', text: { content: repo } }] }\n  });\n  for (const msg of commits) {\n    children.push({\n      object: 'block',\n      type: 'bulleted_list_item',\n      bulleted_list_item: { rich_text: [{ type: 'text', text: { content: msg.substring(0, 2000) } }] }\n    });\n  }\n}\n\nconst requestBody = {\n  parent: { database_id: '2a02570f-e49f-802b-a67c-fe4c230a5699' },\n  properties: {\n    '': { title: [{ text: { content: title } }] },\n    'ステータス': { status: { name: '完了' } }\n  },\n  children\n};\n\nreturn [{ json: { requestBody: JSON.stringify(requestBody), totalCommits, title } }];",
+        "jsCode": "const result = $input.first().json;\nconst commits = result.items || [];\n\n// リポジトリ別にグループ化\nconst repos = {};\nlet totalCommits = commits.length;\n\nfor (const item of commits) {\n  const repoName = item.repository.full_name;\n  if (!repos[repoName]) repos[repoName] = [];\n  const msg = item.commit.message.split('\\n')[0];\n  repos[repoName].push(msg);\n}\n\n// JST date for title\nconst jstOffset = 9 * 60 * 60 * 1000;\nconst jstNow = new Date(Date.now() + jstOffset);\nconst todayStr = jstNow.toISOString().substring(0, 10);\nconst title = `GitHub\\u6d3b\\u52d5 ${todayStr}`;\n\nconst children = [];\n\nfor (const [repo, messages] of Object.entries(repos)) {\n  children.push({\n    object: 'block',\n    type: 'heading_3',\n    heading_3: { rich_text: [{ type: 'text', text: { content: repo } }] }\n  });\n  for (const msg of messages) {\n    children.push({\n      object: 'block',\n      type: 'bulleted_list_item',\n      bulleted_list_item: { rich_text: [{ type: 'text', text: { content: msg.substring(0, 2000) } }] }\n    });\n  }\n}\n\nconst requestBody = {\n  parent: { database_id: '2a02570f-e49f-802b-a67c-fe4c230a5699' },\n  properties: {\n    '': { title: [{ text: { content: title } }] },\n    '\\u30b9\\u30c6\\u30fc\\u30bf\\u30b9': { status: { name: '\\u5b8c\\u4e86' } }\n  },\n  children\n};\n\nreturn [{ json: { requestBody: JSON.stringify(requestBody), totalCommits, title } }];",
         "options": {}
       },
-      "id": "d9da51cd-97c4-4013-bfef-ce07972fe499",
+      "id": "266da002-6b1b-4902-b420-fb7420057e89",
       "name": "FormatSummary",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -72,7 +76,7 @@
           },
           "conditions": [
             {
-              "id": "d0f03cc6-6f01-4ac6-a149-667e20a4530c",
+              "id": "83c37e60-269e-4766-b914-a95cc0a95d27",
               "leftValue": "={{ $json.totalCommits }}",
               "rightValue": 0,
               "operator": {
@@ -85,7 +89,7 @@
         },
         "options": {}
       },
-      "id": "98d52354-4933-40ad-9454-0626bdafa311",
+      "id": "a1eda3a5-749e-4325-923b-84d39a24b8ff",
       "name": "IfHasActivity",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -104,7 +108,7 @@
         "specifyBody": "json",
         "jsonBody": "={{ $json.requestBody }}"
       },
-      "id": "9b25193c-5051-43b4-81b7-41be986f7831",
+      "id": "c6336627-6fb3-44f6-bcc3-970fbdd6c9dc",
       "name": "CreatePage",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -125,14 +129,14 @@
       "main": [
         [
           {
-            "node": "FetchEvents",
+            "node": "FetchCommits",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "FetchEvents": {
+    "FetchCommits": {
       "main": [
         [
           {
