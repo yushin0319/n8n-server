@@ -1,27 +1,120 @@
-# n8n × Oracle Cloud 無料セットアップガイド
+# n8n-server
 
-n8n（ノードベースの自動化ツール）を Oracle Cloud Free Tier に無料でデプロイし、外部から HTTPS で Webhook を呼べる状態にするまでの手順です。
+Oracle Cloud Free Tier 上で動作する n8n (v2.6.3) のワークフロー管理リポジトリ。
 
-## 全体の流れ
+## 構成
 
 ```
-Phase 0: ローカルで試す → Phase 1: Docker化 → Phase 2: Oracle Cloud準備
-→ Phase 3: サーバーデプロイ → Phase 4: ドメイン+SSL → Phase 5: 外部連携
+n8n-server/
+  workflows/      ... ワークフロー定義 (JSON)
+  scripts/        ... デプロイスクリプト
+  server-config/  ... Nginx 設定
+  tests/          ... ワークフロー検証テスト
 ```
 
-## Phase 0: ローカルで n8n を試す
+## インフラ
 
-まずはローカルで動かして n8n の感触を掴みます。
+| 項目 | 内容 |
+|------|------|
+| サーバー | Oracle Cloud Always Free (AMD Micro, 1 OCPU, 1GB RAM + 2GB Swap) |
+| OS | Ubuntu 22.04 |
+| n8n | Docker Compose (n8nio/n8n) |
+| ドメイン | DuckDNS (無料) |
+| SSL | Let's Encrypt + Nginx リバースプロキシ (自動更新) |
+| 認証 | Webhook: `X-Webhook-Secret` ヘッダー (Nginx で検証) |
+| 費用 | 全て無料 |
+
+## ワークフロー一覧
+
+| ファイル | パス | 説明 |
+|----------|------|------|
+| `test-echo.json` | `/webhook/test` | テスト用エコー |
+| `server-status.json` | `/webhook/status` | サーバーステータス |
+| `gmail-reader.json` | `/webhook/gmail` | Gmail 未読メール取得 |
+| `notion-tasks.json` | `/webhook/notion-tasks` | Notion タスク管理 (list/create/update/search) |
+| `notion-emails.json` | `/webhook/notion-emails` | 重要メール DB 管理 (list/update) |
+| `gdrive.json` | `/webhook/gdrive` | Google Drive 操作 (list/search/upload/download/mkdir/delete/info) |
+| `gmail-to-notion.json` | (スケジュール) | Gmail → Notion 重要メール自動取込 (1時間毎) |
+
+## デプロイ
+
+### 手動デプロイ
 
 ```bash
-npx n8n
+# 1. ワークフロー JSON をサーバーに転送
+scp -i ~/.ssh/your-key.key workflows/TARGET.json ubuntu@<IP>:/tmp/
+
+# 2. Docker コンテナにコピー → インポート → publish → 再起動
+ssh -i ~/.ssh/your-key.key ubuntu@<IP> "
+  docker cp /tmp/TARGET.json n8n-docker-n8n-1:/tmp/ && \
+  docker exec n8n-docker-n8n-1 n8n import:workflow --input=/tmp/TARGET.json && \
+  docker exec n8n-docker-n8n-1 n8n publish:workflow --id=WORKFLOW_ID && \
+  docker restart n8n-docker-n8n-1
+"
 ```
 
-ブラウザで `http://localhost:5678` を開き、ユーザー登録後にワークフローを触ってみてください。Webhook ノード → Code ノード → Respond to Webhook の3ノード構成で「POST を受けて JSON を返す」基本形を作るのがおすすめです。
+> 再起動後の n8n 起動完了まで約80秒かかります。
 
-## Phase 1: ローカル Docker 化
+### REST API デプロイ (deploy.sh)
 
-本番と同じ構成で動かすため、Docker Compose に移行します。
+`scripts/deploy.sh` で n8n REST API 経由のデプロイも可能です。
+git diff で変更されたワークフローのみ PUT/POST し、active フラグに応じて activate/deactivate します。
+
+```bash
+N8N_API_KEY=your-key DEPLOY_ALL=true bash scripts/deploy.sh
+```
+
+## テスト
+
+`tests/validate_workflows.py` がワークフロー JSON の静的解析を行います。
+
+```bash
+python tests/validate_workflows.py
+```
+
+**検出する問題:**
+
+| ルール | 内容 |
+|--------|------|
+| 予約語変数名 | Code Node 内で `content` 等の予約語を変数宣言に使用 (n8n v2 Task Runner 衝突) |
+| 改行エンコーディング | jsCode 内の文字列リテラルに生の改行が混入 (JS 構文エラー) |
+| HTTP→Respond 直結 | HTTP Request ノードが Respond to Webhook に直結 (`$json` 式が空になるバグ) |
+
+**git pre-push hook** に組み込み済みのため、テスト失敗時は push が拒否されます。
+
+## n8n v2 注意点
+
+- `content` は Code Node 内で変数名として使用禁止 → `taskContent` 等を使う
+- JSON 内の jsCode で `split('\n')` は `split('\\n')` にする (`\n` → `\\n` で JS エスケープ正常化)
+- HTTP Request → Respond to Webhook で `$json` 式が空になる → 間に Code ノード (FormatXxx) を挟む
+- `this.helpers.httpRequestWithAuthentication`、`fetch`、`require('https')`、`$http` は Code Node で使用不可
+
+## セットアップ手順
+
+Oracle Cloud Free Tier に n8n 環境を一から構築する手順です。
+
+### 1. Oracle Cloud アカウント作成
+
+[Oracle Cloud Free Tier](https://www.oracle.com/cloud/free/) でアカウントを作成。Always Free 枠の AMD Micro インスタンス (1 OCPU, 1GB RAM) を使用します。
+
+> ARM A1 (4 OCPU, 24GB) はリージョンによって容量不足で確保できないことがあります。
+
+### 2. VM セットアップ
+
+```bash
+ssh -i ~/.ssh/your-key.key ubuntu@<パブリックIP>
+
+# Swap 追加（1GB RAM ではメモリ不足になるため）
+sudo fallocate -l 2G /swapfile
+sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile
+echo '/swapfile swap swap defaults 0 0' | sudo tee -a /etc/fstab
+
+# Docker インストール
+curl -fsSL https://get.docker.com | sudo sh
+sudo usermod -aG docker $USER
+```
+
+### 3. n8n 起動
 
 ```yaml
 # docker-compose.yml
@@ -33,7 +126,7 @@ services:
     volumes:
       - n8n_data:/home/node/.n8n
     environment:
-      - N8N_SECURE_COOKIE=false
+      - N8N_SECURE_COOKIE=true
 volumes:
   n8n_data:
 ```
@@ -42,128 +135,29 @@ volumes:
 docker compose up -d
 ```
 
-`http://localhost:5678` で動作確認。Phase 0 で作ったワークフローをエクスポート → インポートしておくと楽です。
+### 4. ドメイン + SSL
 
-## Phase 2: Oracle Cloud アカウント作成
-
-[Oracle Cloud Free Tier](https://www.oracle.com/cloud/free/) でアカウントを作成します。クレジットカード登録が必要ですが、Always Free 枠なら課金されません。
-
-- リージョン: 東京 or 大阪（近い方を選択）
-- Always Free で使えるインスタンス: AMD Micro（1 OCPU, 1GB RAM）
-
-> 注意: ARM A1（4 OCPU, 24GB）は人気が高く、リージョンによっては容量不足で確保できません。その場合は AMD Micro を使います。
-
-## Phase 3: Oracle VM に n8n をデプロイ
-
-### 3-1. インスタンス作成
-
-OCI コンソールで「コンピュート > インスタンスの作成」から Ubuntu 22.04 の VM を作成します。SSH 鍵を生成・ダウンロードしておきます。
-
-### 3-2. SSH 接続とセットアップ
-
-```bash
-ssh -i ~/.ssh/your-key.key ubuntu@<パブリックIP>
-
-# Swap 追加（1GB RAM では n8n がメモリ不足になるため）
-sudo fallocate -l 2G /swapfile
-sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile
-echo '/swapfile swap swap defaults 0 0' | sudo tee -a /etc/fstab
-
-# Docker インストール
-curl -fsSL https://get.docker.com | sudo sh
-sudo usermod -aG docker $USER
-```
-
-再ログイン後、Phase 1 と同じ `docker-compose.yml` を配置して `docker compose up -d` で起動。
-
-### 3-3. ファイアウォール設定
-
-2か所で開放が必要です:
-
-1. **Ubuntu 側**: `sudo iptables -I INPUT -p tcp --dport 5678 -j ACCEPT`（80, 443 も）
-2. **OCI 側**: VCN > セキュリティリスト > イングレスルールに TCP 5678, 80, 443 を追加
-
-`http://<パブリックIP>:5678` でアクセスできれば成功。
-
-## Phase 4: ドメイン + SSL 設定
-
-### 4-1. DuckDNS で無料ドメイン取得
-
-[DuckDNS](https://www.duckdns.org/) にログインし、サブドメインを作成。パブリック IP を登録します（例: `your-name.duckdns.org`）。
-
-### 4-2. Nginx リバースプロキシ + Let's Encrypt
+1. [DuckDNS](https://www.duckdns.org/) でサブドメイン作成、パブリック IP を登録
+2. Nginx + Let's Encrypt でリバースプロキシ + SSL 設定
 
 ```bash
 sudo apt install nginx certbot python3-certbot-nginx -y
-
-# Nginx 設定
-sudo tee /etc/nginx/sites-available/n8n << 'EOF'
-server {
-    server_name your-name.duckdns.org;
-    location / {
-        proxy_pass http://localhost:5678;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        chunked_transfer_encoding off;
-        proxy_buffering off;
-        proxy_cache off;
-    }
-}
-EOF
-
-sudo ln -s /etc/nginx/sites-available/n8n /etc/nginx/sites-enabled/
-sudo nginx -t && sudo systemctl reload nginx
-
-# SSL証明書取得（自動更新込み）
+# Nginx 設定は server-config/nginx-n8n.conf を参照
 sudo certbot --nginx -d your-name.duckdns.org
 ```
 
-`docker-compose.yml` の `N8N_SECURE_COOKIE` を `true` に変更して再起動。
-`https://your-name.duckdns.org` でアクセスできれば完了です。
+### 5. ファイアウォール
 
-## Phase 5: 外部連携（Webhook 活用）
+Ubuntu iptables と OCI セキュリティリストの両方で TCP 80, 443 を開放。
 
-ここまでで、外部から HTTPS で Webhook を叩ける n8n 環境が完成しています。
-
-### Webhook ワークフローの基本形
-
-1. **Webhook ノード**: Path を設定（例: `my-webhook`）、HTTP Method = POST
-2. **処理ノード**: Code ノード、HTTP Request ノードなど
-3. **Respond to Webhook ノード**: JSON で結果を返す
-
-```bash
-# 呼び出し例
-curl -s -X POST https://your-name.duckdns.org/webhook/my-webhook \
-  -H "Content-Type: application/json" \
-  -d '{"message": "hello"}'
-```
-
-### n8n REST API
-
-n8n の Settings > API で API Key を発行すると、ワークフローの CRUD 操作が外部から可能になります。
-
-```bash
-curl -s https://your-name.duckdns.org/api/v1/workflows \
-  -H "X-N8N-API-KEY: your-api-key"
-```
-
-## ハマりポイント
+## トラブルシューティング
 
 | 問題 | 対処法 |
 |------|--------|
-| ARM A1 が確保できない | AMD Micro で代替。性能は十分 |
-| n8n がメモリ不足で落ちる | 2GB Swap を追加する |
-| Webhook が 404 になる | ワークフローを **Publish** したか確認 |
-| Secure Cookie エラー | SSL 設定前は `N8N_SECURE_COOKIE=false` |
-| OCI からアクセスできない | Ubuntu iptables と OCI セキュリティリスト両方を確認 |
-
-## 費用
-
-全て無料です。
-
-- Oracle Cloud: Always Free 枠（AMD Micro VM、10GB ストレージ）
-- DuckDNS: 無料ドメイン
-- Let's Encrypt: 無料 SSL 証明書（自動更新）
-- n8n: Community Edition（セルフホスト無料）
+| ARM A1 が確保できない | AMD Micro で代替 |
+| n8n がメモリ不足で落ちる | 2GB Swap を追加 |
+| Webhook が 404 | ワークフローを Publish したか確認 |
+| Webhook が 403 | `X-Webhook-Secret` ヘッダーが正しいか確認 |
+| OCI にアクセスできない | Ubuntu iptables と OCI セキュリティリスト両方を確認 |
+| Code Node でエラー | `content` 変数名や `\n` エンコーディングを確認 (上記「n8n v2 注意点」参照) |
+| deploy.sh が 401 | n8n v2 アップグレード後は REST API Key の再生成が必要 |
