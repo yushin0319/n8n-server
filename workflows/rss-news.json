@@ -1,0 +1,134 @@
+{
+  "id": "zV7aOFYfN4AUWmOL",
+  "name": "RSS ニュース収集",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "triggerAtHour": 0
+            }
+          ]
+        }
+      },
+      "id": "a1000001-0001-0001-0001-000000000001",
+      "name": "Schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "url": "https://zenn.dev/feed"
+      },
+      "id": "a1000001-0001-0001-0001-000000000002",
+      "name": "FetchZenn",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.1,
+      "position": [220, -100]
+    },
+    {
+      "parameters": {
+        "url": "https://hnrss.org/best?count=20"
+      },
+      "id": "a1000001-0001-0001-0001-000000000003",
+      "name": "FetchHN",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.1,
+      "position": [220, 100]
+    },
+    {
+      "parameters": {
+        "jsCode": "const zennItems = $('FetchZenn').all().map(item => ({\n  title: (item.json.title || '').substring(0, 200),\n  url: item.json.link || '',\n  source: 'Zenn',\n  category: '\\u30c6\\u30c3\\u30af',\n  date: (item.json.isoDate || item.json.pubDate || new Date().toISOString()).substring(0, 10),\n  summary: (item.json.contentSnippet || item.json['content:encodedSnippet'] || '').replace(/<[^>]*>/g, '').substring(0, 300)\n}));\n\nconst hnItems = $('FetchHN').all().map(item => ({\n  title: (item.json.title || '').substring(0, 200),\n  url: item.json.link || '',\n  source: 'Hacker News',\n  category: '\\u30c6\\u30c3\\u30af',\n  date: (item.json.isoDate || item.json.pubDate || new Date().toISOString()).substring(0, 10),\n  summary: (item.json.contentSnippet || item.json['content:encodedSnippet'] || '').replace(/<[^>]*>/g, '').substring(0, 300)\n}));\n\nconst allItems = [...zennItems.slice(0, 10), ...hnItems.slice(0, 10)];\n\nreturn allItems.map(item => {\n  const requestBody = JSON.stringify({\n    parent: { database_id: '2ff2570f-e49f-817d-8288-e7c8667641a9' },\n    properties: {\n      '\\u30bf\\u30a4\\u30c8\\u30eb': { title: [{ text: { content: item.title } }] },\n      'URL': { url: item.url || null },\n      '\\u30ab\\u30c6\\u30b4\\u30ea': { select: { name: item.category } },\n      '\\u30bd\\u30fc\\u30b9': { rich_text: [{ text: { content: item.source } }] },\n      '\\u65e2\\u8aad': { checkbox: false },\n      '\\u65e5\\u4ed8': { date: { start: item.date } },\n      '\\u8981\\u7d04': { rich_text: [{ text: { content: item.summary } }] }\n    }\n  });\n  return { json: { requestBody, title: item.title, source: item.source } };\n});"
+      },
+      "id": "a1000001-0001-0001-0001-000000000004",
+      "name": "FormatPages",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.notion.com/v1/pages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.requestBody }}"
+      },
+      "id": "a1000001-0001-0001-0001-000000000005",
+      "name": "CreateNotionPage",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, 0],
+      "credentials": {
+        "notionApi": {
+          "id": "StdChbKZz3co4jDO",
+          "name": "Notion account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule": {
+      "main": [
+        [
+          {
+            "node": "FetchZenn",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "FetchHN",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FetchZenn": {
+      "main": [
+        [
+          {
+            "node": "FormatPages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FetchHN": {
+      "main": [
+        [
+          {
+            "node": "FormatPages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FormatPages": {
+      "main": [
+        [
+          {
+            "node": "CreateNotionPage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": null
+}
