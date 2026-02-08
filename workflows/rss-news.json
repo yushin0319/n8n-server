@@ -42,13 +42,23 @@
     },
     {
       "parameters": {
-        "jsCode": "const zennItems = $('FetchZenn').all().map(item => ({\n  title: (item.json.title || '').substring(0, 200),\n  url: item.json.link || '',\n  source: 'Zenn',\n  category: '\\u30c6\\u30c3\\u30af',\n  date: (item.json.isoDate || item.json.pubDate || new Date().toISOString()).substring(0, 10),\n  summary: (item.json.contentSnippet || item.json['content:encodedSnippet'] || '').replace(/<[^>]*>/g, '').substring(0, 300)\n}));\n\nconst hnItems = $('FetchHN').all().map(item => ({\n  title: (item.json.title || '').substring(0, 200),\n  url: item.json.link || '',\n  source: 'Hacker News',\n  category: '\\u30c6\\u30c3\\u30af',\n  date: (item.json.isoDate || item.json.pubDate || new Date().toISOString()).substring(0, 10),\n  summary: (item.json.contentSnippet || item.json['content:encodedSnippet'] || '').replace(/<[^>]*>/g, '').substring(0, 300)\n}));\n\nconst allItems = [...zennItems.slice(0, 10), ...hnItems.slice(0, 10)];\n\nreturn allItems.map(item => {\n  const requestBody = JSON.stringify({\n    parent: { database_id: '2ff2570f-e49f-817d-8288-e7c8667641a9' },\n    properties: {\n      '\\u30bf\\u30a4\\u30c8\\u30eb': { title: [{ text: { content: item.title } }] },\n      'URL': { url: item.url || null },\n      '\\u30ab\\u30c6\\u30b4\\u30ea': { select: { name: item.category } },\n      '\\u30bd\\u30fc\\u30b9': { rich_text: [{ text: { content: item.source } }] },\n      '\\u65e2\\u8aad': { checkbox: false },\n      '\\u65e5\\u4ed8': { date: { start: item.date } },\n      '\\u8981\\u7d04': { rich_text: [{ text: { content: item.summary } }] }\n    }\n  });\n  return { json: { requestBody, title: item.title, source: item.source } };\n});"
+        "mode": "append"
+      },
+      "id": "a1000001-0001-0001-0001-000000000006",
+      "name": "WaitBoth",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [440, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const allInput = $input.all();\nconst results = [];\n\nfor (const item of allInput) {\n  const d = item.json;\n  const title = (d.title || '').substring(0, 200);\n  const url = d.link || d.url || '';\n  const date = (d.isoDate || d.pubDate || new Date().toISOString()).substring(0, 10);\n  const snippet = (d.contentSnippet || d['content:encodedSnippet'] || '').replace(/<[^>]*>/g, '').substring(0, 300);\n\n  // Zenn or HN detection by URL\n  let source = 'Other';\n  if (url.includes('zenn.dev')) source = 'Zenn';\n  else if (url.includes('hnrss.org') || url.includes('news.ycombinator')) source = 'Hacker News';\n  else source = 'Hacker News';\n\n  if (!title) continue;\n\n  const requestBody = JSON.stringify({\n    parent: { database_id: '2ff2570f-e49f-817d-8288-e7c8667641a9' },\n    properties: {\n      '\\u30bf\\u30a4\\u30c8\\u30eb': { title: [{ text: { content: title } }] },\n      'URL': { url: url || null },\n      '\\u30ab\\u30c6\\u30b4\\u30ea': { select: { name: '\\u30c6\\u30c3\\u30af' } },\n      '\\u30bd\\u30fc\\u30b9': { rich_text: [{ text: { content: source } }] },\n      '\\u65e2\\u8aad': { checkbox: false },\n      '\\u65e5\\u4ed8': { date: { start: date } },\n      '\\u8981\\u7d04': { rich_text: [{ text: { content: snippet } }] }\n    }\n  });\n  results.push({ json: { requestBody, title, source } });\n}\n\n// Limit: Zenn 10 + HN 10\nconst zenn = results.filter(r => r.json.source === 'Zenn').slice(0, 10);\nconst hn = results.filter(r => r.json.source === 'Hacker News').slice(0, 10);\nreturn [...zenn, ...hn];"
       },
       "id": "a1000001-0001-0001-0001-000000000004",
       "name": "FormatPages",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [440, 0]
+      "position": [660, 0]
     },
     {
       "parameters": {
@@ -64,7 +74,7 @@
       "name": "CreateNotionPage",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [660, 0],
+      "position": [880, 0],
       "credentials": {
         "notionApi": {
           "id": "StdChbKZz3co4jDO",
@@ -94,7 +104,7 @@
       "main": [
         [
           {
-            "node": "FormatPages",
+            "node": "WaitBoth",
             "type": "main",
             "index": 0
           }
@@ -102,6 +112,17 @@
       ]
     },
     "FetchHN": {
+      "main": [
+        [
+          {
+            "node": "WaitBoth",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "WaitBoth": {
       "main": [
         [
           {
