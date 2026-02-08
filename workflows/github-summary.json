@@ -31,7 +31,7 @@
           "parameters": [
             {
               "name": "Authorization",
-              "value": "Bearer YOUR_GITHUB_PAT"
+              "value": "=Bearer {{ $env.GITHUB_PAT }}"
             },
             {
               "name": "User-Agent",
