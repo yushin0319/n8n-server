@@ -1,7 +1,7 @@
 {
   "id": "zV7aOFYfN4AUWmOL",
   "name": "RSS ニュース収集",
-  "active": false,
+  "active": true,
   "nodes": [
     {
       "parameters": {
