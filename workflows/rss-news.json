@@ -32,7 +32,7 @@
     },
     {
       "parameters": {
-        "url": "https://hnrss.org/best?count=20"
+        "url": "https://hnrss.org/best?count=10"
       },
       "id": "a1000001-0001-0001-0001-000000000003",
       "name": "FetchHN",
@@ -42,62 +42,13 @@
     },
     {
       "parameters": {
-        "mode": "append"
-      },
-      "id": "a1000001-0001-0001-0001-000000000006",
-      "name": "WaitBoth",
-      "type": "n8n-nodes-base.merge",
-      "typeVersion": 3,
-      "position": [440, 0]
-    },
-    {
-      "parameters": {
-        "jsCode": "const allInput = $input.all();\nconst results = [];\n\nfor (const item of allInput) {\n  const d = item.json;\n  const title = (d.title || '').substring(0, 200);\n  const url = d.link || d.url || '';\n  const date = (d.isoDate || d.pubDate || new Date().toISOString()).substring(0, 10);\n  const snippet = (d.contentSnippet || d['content:encodedSnippet'] || '').replace(/<[^>]*>/g, '').substring(0, 300);\n\n  let source = 'Other';\n  if (url.includes('zenn.dev')) source = 'Zenn';\n  else if (url.includes('hnrss.org') || url.includes('news.ycombinator')) source = 'Hacker News';\n  else source = 'Hacker News';\n\n  if (!title) continue;\n\n  const requestBody = JSON.stringify({\n    parent: { database_id: '2ff2570f-e49f-817d-8288-e7c8667641a9' },\n    properties: {\n      '\\u30bf\\u30a4\\u30c8\\u30eb': { title: [{ text: { content: title } }] },\n      'URL': { url: url || null },\n      '\\u30ab\\u30c6\\u30b4\\u30ea': { select: { name: '\\u30c6\\u30c3\\u30af' } },\n      '\\u30bd\\u30fc\\u30b9': { rich_text: [{ text: { content: source } }] },\n      '\\u65e2\\u8aad': { checkbox: false },\n      '\\u65e5\\u4ed8': { date: { start: date } },\n      '\\u8981\\u7d04': { rich_text: [{ text: { content: snippet } }] }\n    }\n  });\n  results.push({ json: { requestBody, title, source } });\n}\n\nconst zenn = results.filter(r => r.json.source === 'Zenn').slice(0, 10);\nconst hn = results.filter(r => r.json.source === 'Hacker News').slice(0, 10);\nreturn [...zenn, ...hn];"
-      },
-      "id": "a1000001-0001-0001-0001-000000000004",
-      "name": "FormatPages",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [660, 0]
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict"
-          },
-          "conditions": [
-            {
-              "id": "b1000001-0001-0001-0001-000000000001",
-              "leftValue": "={{ $json.source }}",
-              "rightValue": "Hacker News",
-              "operator": {
-                "type": "string",
-                "operation": "equals"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "id": "a1000001-0001-0001-0001-000000000007",
-      "name": "SplitBySource",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [880, 0]
-    },
-    {
-      "parameters": {
-        "jsCode": "const items = $input.all();\nconst results = [];\nfor (const item of items) {\n  const { requestBody, title, source } = item.json;\n  const body = JSON.parse(requestBody);\n  const snippet = body.properties['\\u8981\\u7d04'].rich_text[0]?.text?.content || '';\n  const prompt = `Translate this English tech article title and summary into natural Japanese. Keep technical terms in English where appropriate.\\n\\nTitle: ${title}\\nSummary: ${snippet}\\n\\nRespond in JSON format only:\\n{\"title\": \"Japanese title here\", \"summary\": \"Japanese summary here\"}`;\n  const geminiBody = JSON.stringify({\n    contents: [{ parts: [{ text: prompt }] }],\n    generationConfig: { temperature: 0.2, maxOutputTokens: 500 }\n  });\n  results.push({\n    json: { geminiBody, requestBody, title, source, originalSnippet: snippet }\n  });\n}\nreturn results;"
+        "jsCode": "const items = $input.all();\nconst results = [];\nfor (const item of items) {\n  const d = item.json;\n  const title = d.title || '';\n  const snippet = (d.contentSnippet || '').replace(/<[^>]*>/g, '').substring(0, 300);\n  const prompt = `Translate this English tech article title and summary into natural Japanese. Keep technical terms in English where appropriate.\\n\\nTitle: ${title}\\nSummary: ${snippet}\\n\\nRespond in JSON format only:\\n{\"title\": \"Japanese title here\", \"summary\": \"Japanese summary here\"}`;\n  const geminiBody = JSON.stringify({\n    contents: [{ parts: [{ text: prompt }] }],\n    generationConfig: { temperature: 0.2, maxOutputTokens: 500 }\n  });\n  const output = Object.assign({}, d, { geminiBody });\n  results.push({ json: output });\n}\nreturn results;"
       },
       "id": "a1000001-0001-0001-0001-000000000008",
-      "name": "PreparePrompt",
+      "name": "PrepareHN",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1100, -100]
+      "position": [440, 100]
     },
     {
       "parameters": {
@@ -114,7 +65,7 @@
       "name": "GeminiTranslate",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1320, -100],
+      "position": [660, 100],
       "credentials": {
         "googlePalmApi": {
           "id": "rlflsmwVLnPi2SAN",
@@ -125,23 +76,33 @@
     },
     {
       "parameters": {
-        "jsCode": "const items = $input.all();\nconst results = [];\nfor (let i = 0; i < items.length; i++) {\n  const geminiResponse = items[i].json;\n  const original = $('PreparePrompt').all()[i].json;\n  let translatedTitle = original.title;\n  let translatedSummary = original.originalSnippet;\n  try {\n    const responseText = geminiResponse.candidates?.[0]?.content?.parts?.[0]?.text || '';\n    const jsonMatch = responseText.match(/\\{[\\s\\S]*\\}/);\n    if (jsonMatch) {\n      const parsed = JSON.parse(jsonMatch[0]);\n      translatedTitle = parsed.title || translatedTitle;\n      translatedSummary = parsed.summary || translatedSummary;\n    }\n  } catch (e) {\n    // fallback to original English\n  }\n  const body = JSON.parse(original.requestBody);\n  body.properties['\\u30bf\\u30a4\\u30c8\\u30eb'].title[0].text.content = translatedTitle;\n  body.properties['\\u8981\\u7d04'].rich_text[0].text.content = translatedSummary;\n  results.push({\n    json: {\n      requestBody: JSON.stringify(body),\n      title: translatedTitle,\n      source: original.source\n    }\n  });\n}\nreturn results;"
+        "jsCode": "const items = $input.all();\nconst results = [];\nfor (let i = 0; i < items.length; i++) {\n  const geminiResponse = items[i].json;\n  const original = $('PrepareHN').all()[i].json;\n  let translatedTitle = original.title;\n  let translatedSnippet = original.contentSnippet || '';\n  try {\n    const responseText = geminiResponse.candidates?.[0]?.content?.parts?.[0]?.text || '';\n    const jsonMatch = responseText.match(/\\{[\\s\\S]*\\}/);\n    if (jsonMatch) {\n      const parsed = JSON.parse(jsonMatch[0]);\n      translatedTitle = parsed.title || translatedTitle;\n      translatedSnippet = parsed.summary || translatedSnippet;\n    }\n  } catch (e) {}\n  const rebuilt = Object.assign({}, original);\n  delete rebuilt.geminiBody;\n  rebuilt.title = translatedTitle;\n  rebuilt.contentSnippet = translatedSnippet;\n  results.push({ json: rebuilt });\n}\nreturn results;"
       },
       "id": "a1000001-0001-0001-0001-000000000010",
-      "name": "RebuildPage",
+      "name": "ApplyHN",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1540, -100]
+      "position": [880, 100]
     },
     {
       "parameters": {
         "mode": "append"
       },
-      "id": "a1000001-0001-0001-0001-000000000011",
-      "name": "MergeTranslated",
+      "id": "a1000001-0001-0001-0001-000000000006",
+      "name": "WaitBoth",
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3,
-      "position": [1760, 0]
+      "position": [1100, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const allInput = $input.all();\nconst results = [];\n\nfor (const item of allInput) {\n  const d = item.json;\n  const title = (d.title || '').substring(0, 200);\n  const url = d.link || d.url || '';\n  const date = (d.isoDate || d.pubDate || new Date().toISOString()).substring(0, 10);\n  const snippet = (d.contentSnippet || d['content:encodedSnippet'] || '').replace(/<[^>]*>/g, '').substring(0, 300);\n\n  let source = 'Other';\n  if (url.includes('zenn.dev')) source = 'Zenn';\n  else if (url.includes('hnrss.org') || url.includes('news.ycombinator')) source = 'Hacker News';\n  else source = 'Hacker News';\n\n  if (!title) continue;\n\n  const requestBody = JSON.stringify({\n    parent: { database_id: '2ff2570f-e49f-817d-8288-e7c8667641a9' },\n    properties: {\n      '\\u30bf\\u30a4\\u30c8\\u30eb': { title: [{ text: { content: title } }] },\n      'URL': { url: url || null },\n      '\\u30ab\\u30c6\\u30b4\\u30ea': { select: { name: '\\u30c6\\u30c3\\u30af' } },\n      '\\u30bd\\u30fc\\u30b9': { rich_text: [{ text: { content: source } }] },\n      '\\u65e2\\u8aad': { checkbox: false },\n      '\\u65e5\\u4ed8': { date: { start: date } },\n      '\\u8981\\u7d04': { rich_text: [{ text: { content: snippet } }] }\n    }\n  });\n  results.push({ json: { requestBody, title, source } });\n}\n\nconst zenn = results.filter(r => r.json.source === 'Zenn').slice(0, 10);\nconst hn = results.filter(r => r.json.source === 'Hacker News').slice(0, 10);\nreturn [...zenn, ...hn];"
+      },
+      "id": "a1000001-0001-0001-0001-000000000004",
+      "name": "FormatPages",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1320, 0]
     },
     {
       "parameters": {
@@ -157,7 +118,7 @@
       "name": "CreateNotionPage",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1980, 0],
+      "position": [1540, 0],
       "credentials": {
         "notionApi": {
           "id": "StdChbKZz3co4jDO",
@@ -198,6 +159,39 @@
       "main": [
         [
           {
+            "node": "PrepareHN",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepareHN": {
+      "main": [
+        [
+          {
+            "node": "GeminiTranslate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GeminiTranslate": {
+      "main": [
+        [
+          {
+            "node": "ApplyHN",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ApplyHN": {
+      "main": [
+        [
+          {
             "node": "WaitBoth",
             "type": "main",
             "index": 1
@@ -217,68 +211,6 @@
       ]
     },
     "FormatPages": {
-      "main": [
-        [
-          {
-            "node": "SplitBySource",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "SplitBySource": {
-      "main": [
-        [
-          {
-            "node": "PreparePrompt",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "MergeTranslated",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "PreparePrompt": {
-      "main": [
-        [
-          {
-            "node": "GeminiTranslate",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "GeminiTranslate": {
-      "main": [
-        [
-          {
-            "node": "RebuildPage",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "RebuildPage": {
-      "main": [
-        [
-          {
-            "node": "MergeTranslated",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "MergeTranslated": {
       "main": [
         [
           {
