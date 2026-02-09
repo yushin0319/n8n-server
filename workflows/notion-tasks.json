@@ -111,6 +111,27 @@
               },
               "renameOutput": true,
               "outputKey": "search"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": ""
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.action }}",
+                    "rightValue": "get",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "get"
             }
           ]
         },
@@ -491,6 +512,63 @@
       ],
       "name": "FormatUpdate",
       "id": "fu000001-0000-0000-0000-000000000001"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const input = $input.first().json.body || $input.first().json;\nconst pageId = input.page_id;\nif (!pageId) {\n  throw new Error('page_id is required for get action');\n}\nreturn [{ json: { pageId } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [500, 900],
+      "id": "get-prep-001",
+      "name": "PrepGet"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.notion.com/v1/blocks/{{ $json.pageId }}/children",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Notion-Version", "value": "2022-06-28" }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [750, 900],
+      "id": "get-blocks-001",
+      "name": "GetBlocks",
+      "credentials": {
+        "notionApi": { "id": "StdChbKZz3co4jDO", "name": "Notion account" }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const pageId = $('PrepGet').first().json.pageId;\nconst blocksResult = $input.first().json;\nconst blocks = (blocksResult.results || []).map(block => {\n  const bType = block.type;\n  let text = '';\n  if (block[bType]?.rich_text) {\n    text = block[bType].rich_text.map(t => t.plain_text).join('');\n  } else if (bType === 'child_database') {\n    text = '[child_database: ' + (block.child_database?.title || '') + ']';\n  } else if (bType === 'image') {\n    text = '[image]';\n  } else if (bType === 'divider') {\n    text = '---';\n  }\n  return { type: bType, text };\n}).filter(b => b.text);\nconst textLines = blocks.map(b => b.text).join('\\n');\nreturn [{ json: {\n  action: 'get',\n  page_id: pageId,\n  blocks: blocks,\n  text_content: textLines\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1000, 900],
+      "id": "get-fmt-001",
+      "name": "FormatGet"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [1250, 900],
+      "id": "get-respond-001",
+      "name": "RespondGet"
     }
   ],
   "connections": {
@@ -531,6 +609,13 @@
         [
           {
             "node": "PrepSearch",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PrepGet",
             "type": "main",
             "index": 0
           }
@@ -692,6 +777,39 @@
         [
           {
             "node": "RespondUpdate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepGet": {
+      "main": [
+        [
+          {
+            "node": "GetBlocks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GetBlocks": {
+      "main": [
+        [
+          {
+            "node": "FormatGet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FormatGet": {
+      "main": [
+        [
+          {
+            "node": "RespondGet",
             "type": "main",
             "index": 0
           }
