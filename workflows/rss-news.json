@@ -42,7 +42,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const items = $input.all();\nconst results = [];\nfor (const item of items) {\n  const d = item.json;\n  const title = d.title || '';\n  const snippet = (d.contentSnippet || '').replace(/<[^>]*>/g, '').substring(0, 300);\n  const prompt = `Translate this English tech article title and summary into natural Japanese. Keep technical terms in English where appropriate.\\n\\nTitle: ${title}\\nSummary: ${snippet}\\n\\nRespond in JSON format only:\\n{\"title\": \"Japanese title here\", \"summary\": \"Japanese summary here\"}`;\n  const geminiBody = JSON.stringify({\n    contents: [{ parts: [{ text: prompt }] }],\n    generationConfig: { temperature: 0.2, maxOutputTokens: 500 }\n  });\n  const output = Object.assign({}, d, { geminiBody });\n  results.push({ json: output });\n}\nreturn results;"
+        "jsCode": "const items = $input.all().slice(0, 10);\nconst results = [];\nfor (const item of items) {\n  const d = item.json;\n  const title = d.title || '';\n  const snippet = (d.contentSnippet || '').replace(/<[^>]*>/g, '').substring(0, 300);\n  const prompt = `Translate this English tech article title and summary into natural Japanese. Keep technical terms in English where appropriate.\\n\\nTitle: ${title}\\nSummary: ${snippet}\\n\\nRespond in JSON format only:\\n{\"title\": \"Japanese title here\", \"summary\": \"Japanese summary here\"}`;\n  const geminiBody = JSON.stringify({\n    contents: [{ parts: [{ text: prompt }] }],\n    generationConfig: { temperature: 0.2, maxOutputTokens: 500 }\n  });\n  const output = Object.assign({}, d, { geminiBody });\n  results.push({ json: output });\n}\nreturn results;"
       },
       "id": "a1000001-0001-0001-0001-000000000008",
       "name": "PrepareHN",
@@ -53,7 +53,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "googlePalmApi",
         "sendBody": true,
