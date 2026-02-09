@@ -9,7 +9,8 @@
           "interval": [
             {
               "field": "days",
-              "triggerAtHour": 14
+              "triggerAtHour": 23,
+              "triggerAtMinute": 50
             }
           ]
         }
