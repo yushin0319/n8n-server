@@ -1,0 +1,60 @@
+{
+  "id": "aHM9O6mSwMNPTwdI",
+  "name": "Error Handler",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [0, 0],
+      "name": "Error Trigger",
+      "id": "err-0001-4000-8000-000000000001"
+    },
+    {
+      "parameters": {
+        "jsCode": "const errorData = $input.first().json;\nconst execution = errorData.execution || {};\nconst workflow = execution.workflowData || {};\nconst error = execution.error || {};\nconst lastNode = execution.lastNodeExecuted || 'unknown';\nconst execId = execution.id || 'unknown';\nconst execUrl = execution.url || '';\nconst now = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });\nconst discordBody = {\n  username: 'n8n',\n  embeds: [{\n    title: '\\u26a0\\ufe0f n8n \\u30a8\\u30e9\\u30fc',\n    color: 15158332,\n    fields: [\n      { name: '\\u30ef\\u30fc\\u30af\\u30d5\\u30ed\\u30fc', value: workflow.name || 'unknown', inline: true },\n      { name: '\\u30ce\\u30fc\\u30c9', value: lastNode, inline: true },\n      { name: '\\u30a8\\u30e9\\u30fc', value: (error.message || 'unknown').substring(0, 200) },\n      { name: '\\u5b9f\\u884cID', value: execId, inline: true },\n      { name: '\\u6642\\u523b', value: now, inline: true }\n    ]\n  }]\n};\nreturn [{ json: { discordBody: JSON.stringify(discordBody) } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [220, 0],
+      "name": "FormatError",
+      "id": "err-0002-4000-8000-000000000002"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "REDACTED_DISCORD_WEBHOOK",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.discordBody }}"
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 0],
+      "name": "SendToDiscord",
+      "id": "err-0003-4000-8000-000000000003"
+    }
+  ],
+  "connections": {
+    "Error Trigger": {
+      "main": [[{"node": "FormatError", "type": "main", "index": 0}]]
+    },
+    "FormatError": {
+      "main": [[{"node": "SendToDiscord", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner"
+  }
+}
