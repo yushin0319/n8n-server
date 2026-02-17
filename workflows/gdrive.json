@@ -661,7 +661,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const body = $json.body;\nconst name = body.name || 'untitled.txt';\nconst fileContent = body.content || '';\nconst folderId = body.folder_id || 'root';\nconst mimeType = body.mime_type || 'text/plain';\nreturn [{ json: { name, fileContent, folderId, mimeType } }];"
+        "jsCode": "const body = $json.body;\nconst name = body.name || 'untitled.txt';\nconst fileContent = body.content || '';\nconst folderId = body.folder_id || 'root';\nconst mimeType = body.mime_type || 'text/plain';\nconst encoding = body.encoding || 'utf-8';\nreturn [{ json: { name, fileContent, folderId, mimeType, encoding } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -700,7 +700,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const fileContent = $('PrepUpload').first().json.fileContent;\nconst fileId = $json.id;\nconst name = $json.name;\nconst webViewLink = $json.webViewLink;\nconst mimeType = $('PrepUpload').first().json.mimeType;\n\n// Create binary data from content\nconst binaryData = Buffer.from(fileContent, 'utf-8');\n\nreturn [{\n  json: { fileId, name, webViewLink, mimeType },\n  binary: {\n    file: {\n      data: binaryData.toString('base64'),\n      mimeType: mimeType,\n      fileName: name\n    }\n  }\n}];"
+        "jsCode": "const fileContent = $('PrepUpload').first().json.fileContent;\nconst fileId = $json.id;\nconst name = $json.name;\nconst webViewLink = $json.webViewLink;\nconst mimeType = $('PrepUpload').first().json.mimeType;\nconst encoding = $('PrepUpload').first().json.encoding || 'utf-8';\n\n// Create binary data from content (supports utf-8 for text, base64 for binary)\nconst binaryData = Buffer.from(fileContent, encoding);\n\nreturn [{\n  json: { fileId, name, webViewLink, mimeType },\n  binary: {\n    file: {\n      data: binaryData.toString('base64'),\n      mimeType: mimeType,\n      fileName: name\n    }\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
