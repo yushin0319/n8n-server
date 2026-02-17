@@ -700,7 +700,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const fileContent = $('PrepUpload').first().json.fileContent;\nconst fileId = $json.id;\nconst name = $json.name;\nconst webViewLink = $json.webViewLink;\nconst mimeType = $('PrepUpload').first().json.mimeType;\nconst encoding = $('PrepUpload').first().json.encoding || 'utf-8';\n\n// Create binary data from content (supports utf-8 for text, base64 for binary)\nconst binaryData = Buffer.from(fileContent, encoding);\n\nreturn [{\n  json: { fileId, name, webViewLink, mimeType },\n  binary: {\n    file: {\n      data: binaryData.toString('base64'),\n      mimeType: mimeType,\n      fileName: name\n    }\n  }\n}];"
+        "jsCode": "const fileContent = $('PrepUpload').first().json.fileContent;\nconst fileId = $json.id;\nconst name = $json.name;\nconst webViewLink = $json.webViewLink;\nconst mimeType = $('PrepUpload').first().json.mimeType;\nconst encoding = $('PrepUpload').first().json.encoding || 'utf-8';\n\n// Size limit check (5MB) to prevent memory exhaustion\nconst MAX_SIZE = 5 * 1024 * 1024;\nconst contentSize = encoding === 'base64' ? Math.ceil(fileContent.length * 3 / 4) : fileContent.length;\nif (contentSize > MAX_SIZE) {\n  throw new Error('Content too large: ' + Math.round(contentSize / 1024 / 1024) + 'MB exceeds 5MB limit');\n}\n\n// Create binary data from content (supports utf-8 for text, base64 for binary)\nconst binaryData = Buffer.from(fileContent, encoding);\n\nreturn [{\n  json: { fileId, name, webViewLink, mimeType },\n  binary: {\n    file: {\n      data: binaryData.toString('base64'),\n      mimeType: mimeType,\n      fileName: name\n    }\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -847,18 +847,10 @@
     {
       "parameters": {
         "method": "PATCH",
-        "url": "=https://www.googleapis.com/drive/v3/files/{{ $('PrepMove').first().json.fileId }}",
+        "url": "=https://www.googleapis.com/drive/v3/files/{{ $('PrepMove').first().json.fileId }}?addParents={{ $('PrepMove').first().json.folderId }}&fields=id,name,webViewLink{{ $json.parents && $json.parents.length ? '&removeParents=' + $json.parents.join(',') : '' }}",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "googleDriveOAuth2Api",
-        "options": {},
-        "sendQuery": true,
-        "queryParameters": {
-          "parameters": [
-            { "name": "addParents", "value": "={{ $('PrepMove').first().json.folderId }}" },
-            { "name": "removeParents", "value": "={{ $json.parents ? $json.parents.join(',') : '' }}" },
-            { "name": "fields", "value": "id,name,webViewLink" }
-          ]
-        }
+        "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
