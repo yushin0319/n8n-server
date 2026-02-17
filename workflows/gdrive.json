@@ -182,6 +182,69 @@
               },
               "renameOutput": true,
               "outputKey": "info"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": ""
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.action }}",
+                    "rightValue": "move",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "move"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": ""
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.action }}",
+                    "rightValue": "rename",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "rename"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": ""
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.action }}",
+                    "rightValue": "share",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "share"
             }
           ]
         },
@@ -744,6 +807,208 @@
       ],
       "name": "FormatUpload",
       "id": "42af4ff4-edee-49da-b14a-dd1298d705b6"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body;\nconst fileId = body.file_id;\nconst folderId = body.folder_id;\nif (!fileId) throw new Error('file_id is required');\nif (!folderId) throw new Error('folder_id is required');\nreturn [{ json: { fileId, folderId } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [660, 1450],
+      "id": "gdrive-move-001",
+      "name": "PrepMove"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://www.googleapis.com/drive/v3/files/{{ $json.fileId }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "options": {},
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "fields", "value": "id,name,parents" }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 1450],
+      "id": "gdrive-move-002",
+      "name": "GetParents",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "PLACEHOLDER",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://www.googleapis.com/drive/v3/files/{{ $('PrepMove').first().json.fileId }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "options": {},
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "addParents", "value": "={{ $('PrepMove').first().json.folderId }}" },
+            { "name": "removeParents", "value": "={{ $json.parents ? $json.parents.join(',') : '' }}" },
+            { "name": "fields", "value": "id,name,webViewLink" }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1140, 1450],
+      "id": "gdrive-move-003",
+      "name": "MoveRequest",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "PLACEHOLDER",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $json;\nconst prep = $('PrepMove').first().json;\nreturn [{ json: { action: 'move', success: true, id: d.id, name: d.name, url: d.webViewLink, folder_id: prep.folderId } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1380, 1450],
+      "id": "gdrive-move-004",
+      "name": "FormatMove"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [1620, 1450],
+      "id": "gdrive-move-005",
+      "name": "RespondMove"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body;\nconst fileId = body.file_id;\nconst name = body.name;\nif (!fileId) throw new Error('file_id is required');\nif (!name) throw new Error('name is required');\nreturn [{ json: { fileId, name } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [660, 1700],
+      "id": "gdrive-rename-001",
+      "name": "PrepRename"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://www.googleapis.com/drive/v3/files/{{ $json.fileId }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ name: $json.name }) }}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "fields", "value": "id,name,webViewLink" }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 1700],
+      "id": "gdrive-rename-002",
+      "name": "RenameRequest",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "PLACEHOLDER",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $json;\nreturn [{ json: { action: 'rename', success: true, id: d.id, name: d.name, url: d.webViewLink } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1140, 1700],
+      "id": "gdrive-rename-003",
+      "name": "FormatRename"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [1380, 1700],
+      "id": "gdrive-rename-004",
+      "name": "RespondRename"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body;\nconst fileId = body.file_id;\nif (!fileId) throw new Error('file_id is required');\nconst role = body.role || 'reader';\nconst shareType = body.type || 'anyone';\nreturn [{ json: { fileId, role, shareType } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [660, 1950],
+      "id": "gdrive-share-001",
+      "name": "PrepShare"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://www.googleapis.com/drive/v3/files/{{ $json.fileId }}/permissions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ role: $json.role, type: $json.shareType }) }}"
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 1950],
+      "id": "gdrive-share-002",
+      "name": "ShareRequest",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "PLACEHOLDER",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const perm = $json;\nconst prep = $('PrepShare').first().json;\nreturn [{ json: { action: 'share', success: true, file_id: prep.fileId, permission_id: perm.id, role: perm.role, type: perm.type } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1140, 1950],
+      "id": "gdrive-share-003",
+      "name": "FormatShare"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [1380, 1950],
+      "id": "gdrive-share-004",
+      "name": "RespondShare"
     }
   ],
   "connections": {
@@ -816,6 +1081,27 @@
         [
           {
             "node": "PrepInfo",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PrepMove",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PrepRename",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PrepShare",
             "type": "main",
             "index": 0
           }
@@ -1074,6 +1360,36 @@
           }
         ]
       ]
+    },
+    "PrepMove": {
+      "main": [[{ "node": "GetParents", "type": "main", "index": 0 }]]
+    },
+    "GetParents": {
+      "main": [[{ "node": "MoveRequest", "type": "main", "index": 0 }]]
+    },
+    "MoveRequest": {
+      "main": [[{ "node": "FormatMove", "type": "main", "index": 0 }]]
+    },
+    "FormatMove": {
+      "main": [[{ "node": "RespondMove", "type": "main", "index": 0 }]]
+    },
+    "PrepRename": {
+      "main": [[{ "node": "RenameRequest", "type": "main", "index": 0 }]]
+    },
+    "RenameRequest": {
+      "main": [[{ "node": "FormatRename", "type": "main", "index": 0 }]]
+    },
+    "FormatRename": {
+      "main": [[{ "node": "RespondRename", "type": "main", "index": 0 }]]
+    },
+    "PrepShare": {
+      "main": [[{ "node": "ShareRequest", "type": "main", "index": 0 }]]
+    },
+    "ShareRequest": {
+      "main": [[{ "node": "FormatShare", "type": "main", "index": 0 }]]
+    },
+    "FormatShare": {
+      "main": [[{ "node": "RespondShare", "type": "main", "index": 0 }]]
     }
   },
   "settings": {
