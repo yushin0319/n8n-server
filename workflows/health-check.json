@@ -6,7 +6,7 @@
     {
       "parameters": {
         "rule": {
-          "interval": [{"field": "minutes", "minutesInterval": 10}]
+          "interval": [{"field": "hours", "hoursInterval": 1}]
         }
       },
       "type": "n8n-nodes-base.scheduleTrigger",
@@ -18,7 +18,7 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "https://histlink-backend.onrender.com/",
+        "url": "https://histlink-backend.onrender.com/health",
         "options": {
           "timeout": 30000,
           "allowUnauthorizedCerts": false
