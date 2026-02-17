@@ -34,7 +34,7 @@ n8n-server/
 | `notion-tasks.json` | `c8ZI0oriZgjePMud` | `/webhook/notion-tasks` | Notion タスク管理 (list/create/update/search/get) | 39 |
 | `notion-emails.json` | `eR0S42ouMZUeNKG6` | `/webhook/notion-emails` | 重要メール DB 管理 (list/update) | 17 |
 | `notion-news.json` | `VamRqRKYszmI2Mdh` | `/webhook/notion-news` | ニュース DB 管理 (list/update/batch_update/search) | 17 |
-| `gdrive.json` | `44d03a69-c495-4e5f-b0ad-25dbbbe3a8ff` | `/webhook/gdrive` | Google Drive 操作 (list/search/upload/download/mkdir) | 33 |
+| `gdrive.json` | `44d03a69-c495-4e5f-b0ad-25dbbbe3a8ff` | `/webhook/gdrive` | Google Drive 操作 (list/search/upload/download/mkdir/delete/info/move/rename/share) | 47 |
 | `discord-notify.json` | `8CCP4flWRe4eaKoF` | `/webhook/discord-notify` | Discord 通知送信 | 5 |
 
 ### スケジュール型
