@@ -20,6 +20,14 @@ jobs:
         with:
           fetch-depth: 2
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Validate workflows
+        run: python tests/validate_workflows.py
+
       - name: Deploy workflows
         env:
           N8N_API_KEY: ${{ secrets.N8N_API_KEY }}
