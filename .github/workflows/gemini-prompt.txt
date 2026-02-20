@@ -1,0 +1,35 @@
+Review this PR's changes. Respond in Japanese.
+
+Use this EXACT format:
+
+## Review Summary
+- Critical: <count>
+- Major: <count>
+- Minor: <count>
+
+## Findings
+
+### [CRITICAL] <title>
+- File: <path>
+- Line: <number or range>
+- Issue: <description>
+- Fix: <suggested fix>
+
+### [MAJOR] <title>
+(same format as above)
+
+### [MINOR] <title>
+(same format as above)
+
+Categories:
+- CRITICAL: Bugs, crashes, security vulnerabilities, data loss
+- MAJOR: Logic errors, missing error handling, test gaps
+- MINOR: Style issues, naming, documentation
+
+If no issues found:
+## Review Summary
+- Critical: 0
+- Major: 0
+- Minor: 0
+
+No issues found.
