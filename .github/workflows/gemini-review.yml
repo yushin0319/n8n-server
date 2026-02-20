@@ -10,43 +10,67 @@ jobs:
       pull-requests: write
     steps:
       - uses: actions/checkout@v4
-      - uses: sshnaidm/gemini-code-review-action@v1
         with:
-          gemini-key: ${{ secrets.GEMINI_API_KEY }}
-          model: gemini-2.5-flash
-          prompt: |
-            Review this PR's changes. Respond in Japanese.
+          fetch-depth: 0
 
-            Use this EXACT format:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
 
-            ## Review Summary
-            - Critical: <count>
-            - Major: <count>
-            - Minor: <count>
+      - name: Install dependencies
+        run: pip install google-genai
 
-            ## Findings
+      - name: Run Gemini review
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PROMPT_FILE: ${{ github.workspace }}/.github/workflows/gemini-prompt.txt
+        run: |
+          git diff -U10 "$BASE_SHA" "$HEAD_SHA" > /tmp/diff.txt
 
-            ### [CRITICAL] <title>
-            - File: <path>
-            - Line: <number or range>
-            - Issue: <description>
-            - Fix: <suggested fix>
+          python - <<'PYEOF'
+          import os, sys
+          from google import genai
+          from google.genai import types
 
-            ### [MAJOR] <title>
-            (same format as above)
+          with open("/tmp/diff.txt") as f:
+              diff = f.read()
 
-            ### [MINOR] <title>
-            (same format as above)
+          if not diff.strip():
+              print("No diff found, skipping review.")
+              with open("/tmp/review.txt", "w") as f:
+                  f.write("No changes to review.")
+              sys.exit(0)
 
-            Categories:
-            - CRITICAL: Bugs, crashes, security vulnerabilities, data loss
-            - MAJOR: Logic errors, missing error handling, test gaps
-            - MINOR: Style issues, naming, documentation
+          prompt_path = os.environ.get("PROMPT_FILE", "")
+          if prompt_path and os.path.exists(prompt_path):
+              with open(prompt_path) as f:
+                  prompt = f.read()
+          else:
+              prompt = "Review this PR's changes. Respond in Japanese."
 
-            If no issues found:
-            ## Review Summary
-            - Critical: 0
-            - Major: 0
-            - Minor: 0
+          client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
+          response = client.models.generate_content(
+              model="gemini-2.5-flash",
+              contents=f"## PR Diff:\n```\n{diff}\n```\n\n{prompt}",
+              config=types.GenerateContentConfig(
+                  system_instruction="You are a code review assistant reviewing pull request changes.",
+                  temperature=0.0,
+              ),
+          )
 
-            No issues found.
+          with open("/tmp/review.txt", "w") as f:
+              f.write(response.text)
+          print(response.text)
+          PYEOF
+
+          BODY=$(cat <<EOF
+          # Code Review by Gemini
+
+          $(cat /tmp/review.txt)
+          EOF
+          )
+          gh pr comment "$PR_NUMBER" --body "$BODY"
