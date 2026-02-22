@@ -1,1 +1,186 @@
-{"updatedAt":"2026-02-06T06:49:25.400Z","createdAt":"2026-02-06T06:46:22.299Z","id":"IVGYXlxoKKGURa4y","name":"Server Status","description":null,"active":true,"isArchived":false,"nodes":[{"parameters":{"httpMethod":"POST","path":"status","responseMode":"responseNode","options":{}},"type":"n8n-nodes-base.webhook","typeVersion":2.1,"position":[0,0],"name":"Webhook","id":"fbbb7c1a-3727-4771-a506-60bfe2423870","webhookId":"fbbb7c1a-3727-4771-a506-60bfe2423870"},{"parameters":{"respondWith":"json","responseBody":"={{ JSON.stringify({ status: \"ok\", server: \"Oracle Cloud n8n\", timestamp_jst: new Date(Date.now() + 9*3600000).toISOString(), uptime_seconds: Math.floor($now.toMillis()/1000) }) }}","options":{}},"type":"n8n-nodes-base.respondToWebhook","typeVersion":1.5,"position":[220,0],"name":"Respond","id":"ec7c47b6-3dc4-495d-bc6a-0f0fc28ab685"}],"connections":{"Webhook":{"main":[[{"node":"Respond","type":"main","index":0}]]}},"settings":{"executionOrder":"v1","callerPolicy":"workflowsFromSameOwner","availableInMCP":false},"staticData":null,"meta":null,"pinData":null,"versionId":"61b84d4a-6d96-49dd-b77f-a455ebcf914a","activeVersionId":"61b84d4a-6d96-49dd-b77f-a455ebcf914a","versionCounter":19,"triggerCount":1,"shared":[{"updatedAt":"2026-02-06T06:46:22.390Z","createdAt":"2026-02-06T06:46:22.390Z","role":"workflow:owner","workflowId":"IVGYXlxoKKGURa4y","projectId":"k3NcATkkRynsrhxy","project":{"updatedAt":"2026-02-06T06:05:33.918Z","createdAt":"2026-02-06T06:00:08.916Z","id":"k3NcATkkRynsrhxy","name":"yushin fudo <yushin.fudo1986@gmail.com>","type":"personal","icon":null,"description":null,"creatorId":"764f26a8-9cd2-4591-b0b1-a7d6a9369581","projectRelations":[{"updatedAt":"2026-02-06T06:00:08.917Z","createdAt":"2026-02-06T06:00:08.917Z","userId":"764f26a8-9cd2-4591-b0b1-a7d6a9369581","projectId":"k3NcATkkRynsrhxy","user":{"updatedAt":"2026-02-06T07:34:05.000Z","createdAt":"2026-02-06T06:00:07.509Z","id":"764f26a8-9cd2-4591-b0b1-a7d6a9369581","email":"yushin.fudo1986@gmail.com","firstName":"yushin","lastName":"fudo","personalizationAnswers":{"version":"v4","personalization_survey_submitted_at":"2026-02-06T06:05:40.446Z","personalization_survey_n8n_version":"2.6.3"},"settings":{"userActivated":true,"firstSuccessfulWorkflowId":"ywVQSyQv29B-uyUiLxvCB","userActivatedAt":1770358124897},"disabled":false,"mfaEnabled":false,"lastActiveAt":"2026-02-06","isPending":false}}]}}],"tags":[],"activeVersion":{"updatedAt":"2026-02-06T06:49:25.404Z","createdAt":"2026-02-06T06:49:25.404Z","versionId":"61b84d4a-6d96-49dd-b77f-a455ebcf914a","workflowId":"IVGYXlxoKKGURa4y","nodes":[{"parameters":{"httpMethod":"POST","path":"status","responseMode":"responseNode","options":{}},"type":"n8n-nodes-base.webhook","typeVersion":2.1,"position":[0,0],"name":"Webhook","id":"fbbb7c1a-3727-4771-a506-60bfe2423870","webhookId":"fbbb7c1a-3727-4771-a506-60bfe2423870"},{"parameters":{"respondWith":"json","responseBody":"={{ JSON.stringify({ status: \"ok\", server: \"Oracle Cloud n8n\", timestamp_jst: new Date(Date.now() + 9*3600000).toISOString(), uptime_seconds: Math.floor($now.toMillis()/1000) }) }}","options":{}},"type":"n8n-nodes-base.respondToWebhook","typeVersion":1.5,"position":[220,0],"name":"Respond","id":"ec7c47b6-3dc4-495d-bc6a-0f0fc28ab685"}],"connections":{"Webhook":{"main":[[{"node":"Respond","type":"main","index":0}]]}},"authors":"yushin fudo","name":null,"description":null,"autosaved":false,"workflowPublishHistory":[{"createdAt":"2026-02-06T06:49:32.587Z","id":8,"workflowId":"IVGYXlxoKKGURa4y","versionId":"61b84d4a-6d96-49dd-b77f-a455ebcf914a","event":"activated","userId":"764f26a8-9cd2-4591-b0b1-a7d6a9369581"}]}}
+{
+  "updatedAt": "2026-02-06T06:49:25.400Z",
+  "createdAt": "2026-02-06T06:46:22.299Z",
+  "id": "IVGYXlxoKKGURa4y",
+  "name": "Server Status",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "status",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "name": "Webhook",
+      "id": "fbbb7c1a-3727-4771-a506-60bfe2423870",
+      "webhookId": "fbbb7c1a-3727-4771-a506-60bfe2423870"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ status: \"ok\", server: \"Oracle Cloud n8n\", timestamp_jst: new Date(Date.now() + 9*3600000).toISOString(), uptime_seconds: Math.floor($now.toMillis()/1000) }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        220,
+        0
+      ],
+      "name": "Respond",
+      "id": "ec7c47b6-3dc4-495d-bc6a-0f0fc28ab685"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "errorWorkflow": "aHM9O6mSwMNPTwdI"
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": null,
+  "versionId": "61b84d4a-6d96-49dd-b77f-a455ebcf914a",
+  "activeVersionId": "61b84d4a-6d96-49dd-b77f-a455ebcf914a",
+  "versionCounter": 19,
+  "triggerCount": 1,
+  "shared": [
+    {
+      "updatedAt": "2026-02-06T06:46:22.390Z",
+      "createdAt": "2026-02-06T06:46:22.390Z",
+      "role": "workflow:owner",
+      "workflowId": "IVGYXlxoKKGURa4y",
+      "projectId": "k3NcATkkRynsrhxy",
+      "project": {
+        "updatedAt": "2026-02-06T06:05:33.918Z",
+        "createdAt": "2026-02-06T06:00:08.916Z",
+        "id": "k3NcATkkRynsrhxy",
+        "name": "yushin fudo <yushin.fudo1986@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "764f26a8-9cd2-4591-b0b1-a7d6a9369581",
+        "projectRelations": [
+          {
+            "updatedAt": "2026-02-06T06:00:08.917Z",
+            "createdAt": "2026-02-06T06:00:08.917Z",
+            "userId": "764f26a8-9cd2-4591-b0b1-a7d6a9369581",
+            "projectId": "k3NcATkkRynsrhxy",
+            "user": {
+              "updatedAt": "2026-02-06T07:34:05.000Z",
+              "createdAt": "2026-02-06T06:00:07.509Z",
+              "id": "764f26a8-9cd2-4591-b0b1-a7d6a9369581",
+              "email": "yushin.fudo1986@gmail.com",
+              "firstName": "yushin",
+              "lastName": "fudo",
+              "personalizationAnswers": {
+                "version": "v4",
+                "personalization_survey_submitted_at": "2026-02-06T06:05:40.446Z",
+                "personalization_survey_n8n_version": "2.6.3"
+              },
+              "settings": {
+                "userActivated": true,
+                "firstSuccessfulWorkflowId": "ywVQSyQv29B-uyUiLxvCB",
+                "userActivatedAt": 1770358124897
+              },
+              "disabled": false,
+              "mfaEnabled": false,
+              "lastActiveAt": "2026-02-06",
+              "isPending": false
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-02-06T06:49:25.404Z",
+    "createdAt": "2026-02-06T06:49:25.404Z",
+    "versionId": "61b84d4a-6d96-49dd-b77f-a455ebcf914a",
+    "workflowId": "IVGYXlxoKKGURa4y",
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "status",
+          "responseMode": "responseNode",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1,
+        "position": [
+          0,
+          0
+        ],
+        "name": "Webhook",
+        "id": "fbbb7c1a-3727-4771-a506-60bfe2423870",
+        "webhookId": "fbbb7c1a-3727-4771-a506-60bfe2423870"
+      },
+      {
+        "parameters": {
+          "respondWith": "json",
+          "responseBody": "={{ JSON.stringify({ status: \"ok\", server: \"Oracle Cloud n8n\", timestamp_jst: new Date(Date.now() + 9*3600000).toISOString(), uptime_seconds: Math.floor($now.toMillis()/1000) }) }}",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.5,
+        "position": [
+          220,
+          0
+        ],
+        "name": "Respond",
+        "id": "ec7c47b6-3dc4-495d-bc6a-0f0fc28ab685"
+      }
+    ],
+    "connections": {
+      "Webhook": {
+        "main": [
+          [
+            {
+              "node": "Respond",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "yushin fudo",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-02-06T06:49:32.587Z",
+        "id": 8,
+        "workflowId": "IVGYXlxoKKGURa4y",
+        "versionId": "61b84d4a-6d96-49dd-b77f-a455ebcf914a",
+        "event": "activated",
+        "userId": "764f26a8-9cd2-4591-b0b1-a7d6a9369581"
+      }
+    ]
+  }
+}

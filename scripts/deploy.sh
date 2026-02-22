@@ -12,7 +12,7 @@ SKIPPED=0
 
 # PUT API 許可フィールドのフィルター
 # settings 内の binaryMode, availableInMCP 等は 400 エラーになるため除外
-BODY_FILTER='{name, nodes, connections, staticData, settings: (.settings | {executionOrder, callerPolicy} | with_entries(select(.value != null)))}'
+BODY_FILTER='{name, nodes, connections, staticData, settings: (.settings | {executionOrder, callerPolicy, errorWorkflow} | with_entries(select(.value != null)))}'
 
 deploy_workflow() {
   local file="$1"
