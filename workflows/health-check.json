@@ -6,12 +6,20 @@
     {
       "parameters": {
         "rule": {
-          "interval": [{"field": "minutes", "minutesInterval": 10}]
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 10
+            }
+          ]
         }
       },
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
-      "position": [0, 0],
+      "position": [
+        0,
+        0
+      ],
       "name": "Schedule",
       "id": "hc-0001-4000-8000-000000000001"
     },
@@ -27,7 +35,10 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [220, 0],
+      "position": [
+        220,
+        0
+      ],
       "name": "CheckHistLink",
       "id": "hc-0002-4000-8000-000000000002"
     },
@@ -37,7 +48,10 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [440, 100],
+      "position": [
+        440,
+        100
+      ],
       "name": "FormatDiscord",
       "id": "hc-0003-4000-8000-000000000003"
     },
@@ -60,7 +74,10 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [660, 100],
+      "position": [
+        660,
+        100
+      ],
       "name": "SendToDiscord",
       "id": "hc-0004-4000-8000-000000000004"
     },
@@ -68,27 +85,59 @@
       "parameters": {},
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
-      "position": [440, -100],
+      "position": [
+        440,
+        -100
+      ],
       "name": "OK",
       "id": "hc-0005-4000-8000-000000000005"
     }
   ],
   "connections": {
     "Schedule": {
-      "main": [[{"node": "CheckHistLink", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "CheckHistLink",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "CheckHistLink": {
       "main": [
-        [{"node": "OK", "type": "main", "index": 0}],
-        [{"node": "FormatDiscord", "type": "main", "index": 0}]
+        [
+          {
+            "node": "OK",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "FormatDiscord",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "FormatDiscord": {
-      "main": [[{"node": "SendToDiscord", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "SendToDiscord",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "settings": {
     "executionOrder": "v1",
-    "callerPolicy": "workflowsFromSameOwner"
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "aHM9O6mSwMNPTwdI"
   }
 }

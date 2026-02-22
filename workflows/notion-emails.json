@@ -291,7 +291,8 @@
   "settings": {
     "executionOrder": "v1",
     "callerPolicy": "workflowsFromSameOwner",
-    "availableInMCP": false
+    "availableInMCP": false,
+    "errorWorkflow": "aHM9O6mSwMNPTwdI"
   },
   "staticData": null,
   "meta": null,

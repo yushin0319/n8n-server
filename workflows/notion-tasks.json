@@ -520,7 +520,10 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [500, 900],
+      "position": [
+        500,
+        900
+      ],
       "id": "get-prep-001",
       "name": "PrepGet"
     },
@@ -533,18 +536,27 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Notion-Version", "value": "2022-06-28" }
+            {
+              "name": "Notion-Version",
+              "value": "2022-06-28"
+            }
           ]
         },
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [750, 900],
+      "position": [
+        750,
+        900
+      ],
       "id": "get-blocks-001",
       "name": "GetBlocks",
       "credentials": {
-        "notionApi": { "id": "StdChbKZz3co4jDO", "name": "Notion account" }
+        "notionApi": {
+          "id": "StdChbKZz3co4jDO",
+          "name": "Notion account"
+        }
       }
     },
     {
@@ -554,7 +566,10 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1000, 900],
+      "position": [
+        1000,
+        900
+      ],
       "id": "get-fmt-001",
       "name": "FormatGet"
     },
@@ -566,7 +581,10 @@
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
-      "position": [1250, 900],
+      "position": [
+        1250,
+        900
+      ],
       "id": "get-respond-001",
       "name": "RespondGet"
     }
@@ -820,7 +838,8 @@
   "settings": {
     "executionOrder": "v1",
     "callerPolicy": "workflowsFromSameOwner",
-    "availableInMCP": false
+    "availableInMCP": false,
+    "errorWorkflow": "aHM9O6mSwMNPTwdI"
   },
   "staticData": null,
   "meta": null,
