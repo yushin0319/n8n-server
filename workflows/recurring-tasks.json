@@ -1,0 +1,289 @@
+{
+  "id": "NKY960IvoIjpLH6m",
+  "name": "Recurring Tasks Scheduler",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "triggerAtHour": 22,
+              "triggerAtMinute": 30
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 300],
+      "name": "ScheduleTrigger",
+      "id": "rt-sched-001"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const today = new Date().toISOString().split('T')[0];\nconst queryBody = JSON.stringify({\n  filter: {\n    and: [\n      { property: '有効', checkbox: { equals: true } },\n      { property: '次回予定日', date: { on_or_before: today } }\n    ]\n  }\n});\nreturn [{ json: { requestBody: queryBody } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "name": "PrepQuery",
+      "id": "rt-prep-query-001"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.notion.com/v1/databases/3142570f-e49f-80cf-8383-cc62030339c9/query",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2022-06-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.requestBody }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [500, 300],
+      "name": "QueryDB",
+      "id": "rt-query-db-001",
+      "credentials": {
+        "notionApi": {
+          "id": "StdChbKZz3co4jDO",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const results = $input.first().json.results || [];\nif (results.length === 0) {\n  return [{ json: { hasDue: false } }];\n}\nconst items = results.map(page => {\n  const titleEntry = Object.entries(page.properties).find(([k, v]) => v.type === 'title');\n  const taskName = titleEntry ? titleEntry[1].title.map(t => t.plain_text).join('') : '(無題)';\n  const frequency = page.properties['頻度']?.select?.name || 'monthly';\n  const templateText = (page.properties['テンプレ本文']?.rich_text || []).map(t => t.plain_text).join('');\n  const defPageId = page.id;\n  return { json: { hasDue: true, defPageId, taskName, frequency, templateText } };\n});\nreturn items;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [750, 300],
+      "name": "ParseDueTasks",
+      "id": "rt-parse-001"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "rt-cond-001",
+              "leftValue": "={{ $json.hasDue }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1000, 300],
+      "name": "HasDueTasks",
+      "id": "rt-if-001"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const items = $input.all();\nreturn items.map(item => {\n  const d = item.json;\n  const body = {\n    parent: { database_id: '2a02570f-e49f-802b-a67c-fe4c230a5699' },\n    properties: {\n      '': { title: [{ text: { content: d.taskName } }] },\n      'ステータス': { status: { name: '未着手' } }\n    }\n  };\n  if (d.templateText) {\n    body.children = [{\n      object: 'block',\n      type: 'paragraph',\n      paragraph: {\n        rich_text: [{ type: 'text', text: { content: d.templateText } }]\n      }\n    }];\n  }\n  return { json: { ...d, requestBody: JSON.stringify(body) } };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1250, 300],
+      "name": "PrepCreate",
+      "id": "rt-prep-create-001"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.notion.com/v1/pages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2022-06-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.requestBody }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1500, 300],
+      "name": "CreateTask",
+      "id": "rt-create-001",
+      "credentials": {
+        "notionApi": {
+          "id": "StdChbKZz3co4jDO",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const items = $input.all();\nconst originals = $('ParseDueTasks').all();\nreturn items.map((item, i) => {\n  const original = originals[i].json;\n  const today = new Date().toISOString().split('T')[0];\n  const nextDate = new Date();\n  switch (original.frequency) {\n    case 'daily': nextDate.setDate(nextDate.getDate() + 1); break;\n    case 'weekly': nextDate.setDate(nextDate.getDate() + 7); break;\n    case 'biweekly': nextDate.setDate(nextDate.getDate() + 14); break;\n    case 'monthly': nextDate.setMonth(nextDate.getMonth() + 1); break;\n    default: nextDate.setMonth(nextDate.getMonth() + 1); break;\n  }\n  const nextDue = nextDate.toISOString().split('T')[0];\n  const body = {\n    properties: {\n      '最終実行日': { date: { start: today } },\n      '次回予定日': { date: { start: nextDue } }\n    }\n  };\n  return { json: { pageId: original.defPageId, taskName: original.taskName, requestBody: JSON.stringify(body) } };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1750, 300],
+      "name": "PrepUpdate",
+      "id": "rt-prep-update-001"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://api.notion.com/v1/pages/{{ $json.pageId }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2022-06-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.requestBody }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2000, 300],
+      "name": "UpdateDef",
+      "id": "rt-update-def-001",
+      "credentials": {
+        "notionApi": {
+          "id": "StdChbKZz3co4jDO",
+          "name": "Notion account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "ScheduleTrigger": {
+      "main": [
+        [
+          {
+            "node": "PrepQuery",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepQuery": {
+      "main": [
+        [
+          {
+            "node": "QueryDB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "QueryDB": {
+      "main": [
+        [
+          {
+            "node": "ParseDueTasks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ParseDueTasks": {
+      "main": [
+        [
+          {
+            "node": "HasDueTasks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HasDueTasks": {
+      "main": [
+        [
+          {
+            "node": "PrepCreate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "PrepCreate": {
+      "main": [
+        [
+          {
+            "node": "CreateTask",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CreateTask": {
+      "main": [
+        [
+          {
+            "node": "PrepUpdate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepUpdate": {
+      "main": [
+        [
+          {
+            "node": "UpdateDef",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "aHM9O6mSwMNPTwdI"
+  }
+}
