@@ -1,1 +1,250 @@
-{"updatedAt":"2026-02-06T09:21:46.291Z","createdAt":"2026-02-06T09:13:11.387Z","id":"oGx9uiLsxLGfGDcJ","name":"Gmail to Notion 重要メール","description":null,"active":true,"isArchived":false,"nodes":[{"parameters":{"rule":{"interval":[{"field":"hours","hoursInterval":1}]}},"id":"a1","name":"Schedule","type":"n8n-nodes-base.scheduleTrigger","typeVersion":1.2,"position":[0,0]},{"parameters":{"operation":"getAll","returnAll":true,"simple":true,"filters":{"q":"is:unread"}},"id":"a2","name":"GmailGetAll","type":"n8n-nodes-base.gmail","typeVersion":2.1,"position":[220,0],"credentials":{"gmailOAuth2":{"id":"rqMLM5TDLPFAXf6K","name":"Gmail account"}}},{"parameters":{"jsCode":"const items = $input.all();\nif (items.length === 0) return [];\nreturn items.map(item => {\n  const e = item.json;\n  const subject = (e.Subject || e.subject || '(件名なし)').substring(0, 2000);\n  const from = e.From || e.from || '不明';\n  const snippet = (e.snippet || '').substring(0, 2000);\n  const messageId = e.id;\n  let dateISO;\n  try {\n    const ts = e.internalDate ? Number(e.internalDate) : null;\n    dateISO = ts ? new Date(ts).toISOString() : (e.date ? new Date(e.date).toISOString() : new Date().toISOString());\n  } catch(_) { dateISO = new Date().toISOString(); }\n  const body = {\n    parent: { database_id: '2ff2570f-e49f-8119-aaaf-f688605e5aa3' },\n    properties: {\n      '件名': { title: [{ text: { content: subject } }] },\n      '差出人': { rich_text: [{ text: { content: from.substring(0, 2000) } }] },\n      '日時': { date: { start: dateISO } },\n      '重要度': { select: { name: '確認' } },\n      'スニペット': { rich_text: [{ text: { content: snippet } }] },\n      'ステータス': { select: { name: '未読' } }\n    }\n  };\n  return { json: { requestBody: JSON.stringify(body), messageId } };\n});"},"id":"a3","name":"PrepareNotionBody","type":"n8n-nodes-base.code","typeVersion":2,"position":[440,0]},{"parameters":{"method":"POST","url":"https://api.notion.com/v1/pages","authentication":"predefinedCredentialType","nodeCredentialType":"notionApi","sendBody":true,"specifyBody":"json","jsonBody":"={{ $json.requestBody }}"},"id":"a4","name":"CreateNotionPage","type":"n8n-nodes-base.httpRequest","typeVersion":4.2,"position":[660,0],"credentials":{"notionApi":{"id":"StdChbKZz3co4jDO","name":"Notion account"}}},{"parameters":{"jsCode":"const prepItems = $('PrepareNotionBody').all();\nreturn prepItems.map(item => ({\n  json: { messageId: item.json.messageId }\n}));"},"id":"a5","name":"ExtractMessageIds","type":"n8n-nodes-base.code","typeVersion":2,"position":[880,0]},{"parameters":{"operation":"markAsRead","messageId":"={{ $json.messageId }}"},"id":"a6","name":"MarkAsRead","type":"n8n-nodes-base.gmail","typeVersion":2.1,"position":[1100,0],"credentials":{"gmailOAuth2":{"id":"rqMLM5TDLPFAXf6K","name":"Gmail account"}}}],"connections":{"Schedule":{"main":[[{"node":"GmailGetAll","type":"main","index":0}]]},"GmailGetAll":{"main":[[{"node":"PrepareNotionBody","type":"main","index":0}]]},"PrepareNotionBody":{"main":[[{"node":"CreateNotionPage","type":"main","index":0}]]},"CreateNotionPage":{"main":[[{"node":"ExtractMessageIds","type":"main","index":0}]]},"ExtractMessageIds":{"main":[[{"node":"MarkAsRead","type":"main","index":0}]]}},"settings":{"executionOrder":"v1","callerPolicy":"workflowsFromSameOwner","errorWorkflow":"aHM9O6mSwMNPTwdI","availableInMCP":false},"staticData":{"node:Schedule":{"recurrenceRules":[]}},"meta":null,"pinData":null,"versionId":"eb599368-1143-49fe-8af0-1872b4577946","activeVersionId":"eb599368-1143-49fe-8af0-1872b4577946","versionCounter":7,"triggerCount":1,"shared":[{"updatedAt":"2026-02-06T09:13:11.392Z","createdAt":"2026-02-06T09:13:11.392Z","role":"workflow:owner","workflowId":"oGx9uiLsxLGfGDcJ","projectId":"k3NcATkkRynsrhxy","project":{"updatedAt":"2026-02-06T06:05:33.918Z","createdAt":"2026-02-06T06:00:08.916Z","id":"k3NcATkkRynsrhxy","name":"yushin fudo <yushin.fudo1986@gmail.com>","type":"personal","icon":null,"description":null,"creatorId":"764f26a8-9cd2-4591-b0b1-a7d6a9369581","projectRelations":[{"updatedAt":"2026-02-06T06:00:08.917Z","createdAt":"2026-02-06T06:00:08.917Z","userId":"764f26a8-9cd2-4591-b0b1-a7d6a9369581","projectId":"k3NcATkkRynsrhxy","user":{"updatedAt":"2026-02-06T07:34:05.000Z","createdAt":"2026-02-06T06:00:07.509Z","id":"764f26a8-9cd2-4591-b0b1-a7d6a9369581","email":"yushin.fudo1986@gmail.com","firstName":"yushin","lastName":"fudo","personalizationAnswers":{"version":"v4","personalization_survey_submitted_at":"2026-02-06T06:05:40.446Z","personalization_survey_n8n_version":"2.6.3"},"settings":{"userActivated":true,"firstSuccessfulWorkflowId":"ywVQSyQv29B-uyUiLxvCB","userActivatedAt":1770358124897},"disabled":false,"mfaEnabled":false,"lastActiveAt":"2026-02-06","isPending":false}}]}}],"tags":[],"activeVersion":{"updatedAt":"2026-02-06T09:21:46.293Z","createdAt":"2026-02-06T09:21:46.293Z","versionId":"eb599368-1143-49fe-8af0-1872b4577946","workflowId":"oGx9uiLsxLGfGDcJ","nodes":[{"parameters":{"rule":{"interval":[{"field":"hours","hoursInterval":1}]}},"id":"a1","name":"Schedule","type":"n8n-nodes-base.scheduleTrigger","typeVersion":1.2,"position":[0,0]},{"parameters":{"operation":"getAll","returnAll":true,"simple":true,"filters":{"q":"is:unread"}},"id":"a2","name":"GmailGetAll","type":"n8n-nodes-base.gmail","typeVersion":2.1,"position":[220,0],"credentials":{"gmailOAuth2":{"id":"rqMLM5TDLPFAXf6K","name":"Gmail account"}}},{"parameters":{"jsCode":"const items = $input.all();\nif (items.length === 0) return [];\nreturn items.map(item => {\n  const e = item.json;\n  const subject = (e.Subject || e.subject || '(件名なし)').substring(0, 2000);\n  const from = e.From || e.from || '不明';\n  const snippet = (e.snippet || '').substring(0, 2000);\n  const messageId = e.id;\n  let dateISO;\n  try {\n    const ts = e.internalDate ? Number(e.internalDate) : null;\n    dateISO = ts ? new Date(ts).toISOString() : (e.date ? new Date(e.date).toISOString() : new Date().toISOString());\n  } catch(_) { dateISO = new Date().toISOString(); }\n  const body = {\n    parent: { database_id: '2ff2570f-e49f-8119-aaaf-f688605e5aa3' },\n    properties: {\n      '件名': { title: [{ text: { content: subject } }] },\n      '差出人': { rich_text: [{ text: { content: from.substring(0, 2000) } }] },\n      '日時': { date: { start: dateISO } },\n      '重要度': { select: { name: '確認' } },\n      'スニペット': { rich_text: [{ text: { content: snippet } }] },\n      'ステータス': { select: { name: '未読' } }\n    }\n  };\n  return { json: { requestBody: JSON.stringify(body), messageId } };\n});"},"id":"a3","name":"PrepareNotionBody","type":"n8n-nodes-base.code","typeVersion":2,"position":[440,0]},{"parameters":{"method":"POST","url":"https://api.notion.com/v1/pages","authentication":"predefinedCredentialType","nodeCredentialType":"notionApi","sendBody":true,"specifyBody":"json","jsonBody":"={{ $json.requestBody }}"},"id":"a4","name":"CreateNotionPage","type":"n8n-nodes-base.httpRequest","typeVersion":4.2,"position":[660,0],"credentials":{"notionApi":{"id":"StdChbKZz3co4jDO","name":"Notion account"}}},{"parameters":{"jsCode":"const prepItems = $('PrepareNotionBody').all();\nreturn prepItems.map(item => ({\n  json: { messageId: item.json.messageId }\n}));"},"id":"a5","name":"ExtractMessageIds","type":"n8n-nodes-base.code","typeVersion":2,"position":[880,0]},{"parameters":{"operation":"markAsRead","messageId":"={{ $json.messageId }}"},"id":"a6","name":"MarkAsRead","type":"n8n-nodes-base.gmail","typeVersion":2.1,"position":[1100,0],"credentials":{"gmailOAuth2":{"id":"rqMLM5TDLPFAXf6K","name":"Gmail account"}}}],"connections":{"Schedule":{"main":[[{"node":"GmailGetAll","type":"main","index":0}]]},"GmailGetAll":{"main":[[{"node":"PrepareNotionBody","type":"main","index":0}]]},"PrepareNotionBody":{"main":[[{"node":"CreateNotionPage","type":"main","index":0}]]},"CreateNotionPage":{"main":[[{"node":"ExtractMessageIds","type":"main","index":0}]]},"ExtractMessageIds":{"main":[[{"node":"MarkAsRead","type":"main","index":0}]]}},"authors":"yushin fudo","name":null,"description":null,"autosaved":false,"workflowPublishHistory":[{"createdAt":"2026-02-06T09:21:46.605Z","id":29,"workflowId":"oGx9uiLsxLGfGDcJ","versionId":"eb599368-1143-49fe-8af0-1872b4577946","event":"activated","userId":"764f26a8-9cd2-4591-b0b1-a7d6a9369581"}]}}
+{
+  "id": "oGx9uiLsxLGfGDcJ",
+  "name": "Gmail to Notion 重要メール",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "a1",
+      "name": "Schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "returnAll": true,
+        "simple": true,
+        "filters": {
+          "q": "is:unread"
+        }
+      },
+      "id": "a2",
+      "name": "GmailGetAll",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        220,
+        0
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "rqMLM5TDLPFAXf6K",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nif (items.length === 0) return [];\nconst emails = [];\nfor (const item of items) {\n  const e = item.json;\n  const subject = (e.Subject || e.subject || '(件名なし)').substring(0, 200);\n  const from = e.From || e.from || '不明';\n  const snippet = (e.snippet || '').substring(0, 300);\n  const messageId = e.id;\n  let dateISO;\n  try {\n    const ts = e.internalDate ? Number(e.internalDate) : null;\n    dateISO = ts ? new Date(ts).toISOString() : (e.date ? new Date(e.date).toISOString() : new Date().toISOString());\n  } catch(_) { dateISO = new Date().toISOString(); }\n  emails.push({ subject, from, snippet, messageId, dateISO });\n}\nconst emailList = emails.map((e, i) => `${i + 1}. 件名: ${e.subject}, 差出人: ${e.from}, スニペット: ${e.snippet}`).join('\\n');\nconst prompt = `以下のメール一覧を「重要」「不要」「確認」に分類してください。\\n\\n分類基準:\\n- 重要: 銀行・金融通知、インフラ関連（Oracle Cloud, AWS等）、セキュリティ関連、個人宛の重要連絡\\n- 不要: 広告・宣伝メール、自動通知（GitHub等）、飲食店プロモーション、ポイント付与通知\\n- 確認: 上記のどちらにも明確に該当しないもの\\n\\nメール一覧:\\n${emailList}\\n\\nJSON配列で返答してください（他のテキストは不要）:\\n[{\"index\": 1, \"importance\": \"重要\"}, {\"index\": 2, \"importance\": \"不要\"}, ...]`;\nconst geminiBody = JSON.stringify({\n  contents: [{ parts: [{ text: prompt }] }],\n  generationConfig: { temperature: 0.1, maxOutputTokens: 1000 }\n});\nreturn [{ json: { geminiBody, emails } }];"
+      },
+      "id": "a3",
+      "name": "PrepareClassify",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.geminiBody }}",
+        "options": {}
+      },
+      "id": "a3b",
+      "name": "GeminiClassify",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        0
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "rlflsmwVLnPi2SAN",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const geminiResponse = $input.first().json;\nconst emailData = $('PrepareClassify').first().json.emails;\nlet classifications = [];\ntry {\n  const responseText = geminiResponse.candidates?.[0]?.content?.parts?.[0]?.text || '';\n  const jsonMatch = responseText.match(/\\[[\\s\\S]*\\]/);\n  if (jsonMatch) {\n    classifications = JSON.parse(jsonMatch[0]);\n  }\n} catch (e) {}\nconst classMap = {};\nfor (const c of classifications) {\n  classMap[c.index] = c.importance || '確認';\n}\nreturn emailData.map((email, i) => {\n  const importance = classMap[i + 1] || '確認';\n  const body = {\n    parent: { database_id: '2ff2570f-e49f-8119-aaaf-f688605e5aa3' },\n    properties: {\n      '件名': { title: [{ text: { content: email.subject } }] },\n      '差出人': { rich_text: [{ text: { content: email.from.substring(0, 2000) } }] },\n      '日時': { date: { start: email.dateISO } },\n      '重要度': { select: { name: importance } },\n      'スニペット': { rich_text: [{ text: { content: email.snippet } }] },\n      'ステータス': { select: { name: '未読' } }\n    }\n  };\n  return { json: { requestBody: JSON.stringify(body), messageId: email.messageId } };\n});"
+      },
+      "id": "a3c",
+      "name": "BuildNotionBody",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.notion.com/v1/pages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.requestBody }}"
+      },
+      "id": "a4",
+      "name": "CreateNotionPage",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1100,
+        0
+      ],
+      "credentials": {
+        "notionApi": {
+          "id": "StdChbKZz3co4jDO",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const prepItems = $('BuildNotionBody').all();\nreturn prepItems.map(item => ({\n  json: { messageId: item.json.messageId }\n}));"
+      },
+      "id": "a5",
+      "name": "ExtractMessageIds",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1320,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "markAsRead",
+        "messageId": "={{ $json.messageId }}"
+      },
+      "id": "a6",
+      "name": "MarkAsRead",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1540,
+        0
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "rqMLM5TDLPFAXf6K",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule": {
+      "main": [
+        [
+          {
+            "node": "GmailGetAll",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GmailGetAll": {
+      "main": [
+        [
+          {
+            "node": "PrepareClassify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepareClassify": {
+      "main": [
+        [
+          {
+            "node": "GeminiClassify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GeminiClassify": {
+      "main": [
+        [
+          {
+            "node": "BuildNotionBody",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "BuildNotionBody": {
+      "main": [
+        [
+          {
+            "node": "CreateNotionPage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CreateNotionPage": {
+      "main": [
+        [
+          {
+            "node": "ExtractMessageIds",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ExtractMessageIds": {
+      "main": [
+        [
+          {
+            "node": "MarkAsRead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "aHM9O6mSwMNPTwdI",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": null
+}
