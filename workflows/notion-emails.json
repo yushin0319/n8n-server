@@ -33,27 +33,6 @@
                 "conditions": [
                   {
                     "leftValue": "={{ $json.body.action }}",
-                    "rightValue": "list",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals"
-                    }
-                  }
-                ],
-                "combinator": "and"
-              },
-              "renameOutput": true,
-              "outputKey": "list"
-            },
-            {
-              "conditions": {
-                "options": {
-                  "caseSensitive": true,
-                  "leftValue": ""
-                },
-                "conditions": [
-                  {
-                    "leftValue": "={{ $json.body.action }}",
                     "rightValue": "update",
                     "operator": {
                       "type": "string",
@@ -65,6 +44,27 @@
               },
               "renameOutput": true,
               "outputKey": "update"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": ""
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.action }}",
+                    "rightValue": "search",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "search"
             },
             {
               "conditions": {
@@ -102,71 +102,6 @@
     },
     {
       "parameters": {
-        "jsCode": "const input = $input.first().json.body || $input.first().json;\nconst importance = input.importance || '確認';\nconst filterObj = { property: '重要度', select: { equals: importance } };\nif (importance === '重要') {\n  const compoundFilter = {\n    and: [\n      { property: '重要度', select: { equals: '重要' } },\n      { property: 'ステータス', select: { equals: '未読' } }\n    ]\n  };\n  return [{ json: { queryBody: JSON.stringify({ filter: compoundFilter, sorts: [{ property: '日時', direction: 'descending' }] }) } }];\n}\nreturn [{ json: { queryBody: JSON.stringify({ filter: filterObj, sorts: [{ property: '日時', direction: 'descending' }] }) } }];"
-      },
-      "id": "b2b",
-      "name": "BuildQuery",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        440,
-        -120
-      ]
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://api.notion.com/v1/databases/2ff2570f-e49f-8119-aaaf-f688605e5aa3/query",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "notionApi",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ $json.queryBody }}"
-      },
-      "id": "b3",
-      "name": "QueryEmails",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        660,
-        -120
-      ],
-      "credentials": {
-        "notionApi": {
-          "id": "StdChbKZz3co4jDO",
-          "name": "Notion account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "jsCode": "const results = $input.first().json.results || [];\nconst emails = results.map(page => {\n  const subject = (page.properties['件名']?.title || []).map(t => t.plain_text).join('') || '(無題)';\n  const from = (page.properties['差出人']?.rich_text || []).map(t => t.plain_text).join('') || '';\n  const date = page.properties['日時']?.date?.start || '';\n  const importance = page.properties['重要度']?.select?.name || '未設定';\n  const snippet = (page.properties['スニペット']?.rich_text || []).map(t => t.plain_text).join('') || '';\n  const status = page.properties['ステータス']?.select?.name || '未設定';\n  const reason = (page.properties['理由']?.rich_text || []).map(t => t.plain_text).join('') || '';\n  return { id: page.id, subject, from, date, importance, snippet, status, reason, url: page.url };\n});\nreturn [{ json: { action: 'list', count: emails.length, emails } }];"
-      },
-      "id": "b4",
-      "name": "FormatEmails",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        880,
-        -120
-      ]
-    },
-    {
-      "parameters": {
-        "respondWith": "json",
-        "responseBody": "={{ $json }}"
-      },
-      "id": "b5",
-      "name": "RespondList",
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.1,
-      "position": [
-        1100,
-        -120
-      ]
-    },
-    {
-      "parameters": {
         "jsCode": "const input = $input.first().json.body || $input.first().json;\nconst pageId = input.page_id;\nif (!pageId) throw new Error('page_id is required');\nconst body = { properties: {} };\nif (input.importance !== undefined) {\n  body.properties['重要度'] = { select: { name: input.importance } };\n}\nif (input.reason !== undefined) {\n  body.properties['理由'] = { rich_text: [{ text: { content: input.reason } }] };\n}\nif (input.status !== undefined) {\n  body.properties['ステータス'] = { select: { name: input.status } };\n}\nreturn [{ json: { pageId, requestBody: JSON.stringify(body) } }];"
       },
       "id": "b6",
@@ -175,7 +110,7 @@
       "typeVersion": 2,
       "position": [
         440,
-        120
+        -120
       ]
     },
     {
@@ -194,7 +129,7 @@
       "typeVersion": 4.2,
       "position": [
         660,
-        120
+        -120
       ],
       "credentials": {
         "notionApi": {
@@ -208,8 +143,75 @@
         "jsCode": "const d = $input.first().json;\nreturn [{ json: { success: true, page_id: d.id } }];",
         "options": {}
       },
-      "id": "0e6be4fe-46b3-4bb2-9244-d52f247b7bc8",
+      "id": "b-format-update",
       "name": "FormatUpdate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}"
+      },
+      "id": "b8",
+      "name": "RespondUpdate",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1100,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const input = $input.first().json.body || $input.first().json;\nconst filters = [];\nif (input.importance) {\n  filters.push({ property: '重要度', select: { equals: input.importance } });\n}\nif (input.status) {\n  filters.push({ property: 'ステータス', select: { equals: input.status } });\n}\nif (input.query) {\n  filters.push({ property: '件名', title: { contains: input.query } });\n}\nif (input.from) {\n  filters.push({ property: '差出人', rich_text: { contains: input.from } });\n}\nif (input.date_from) {\n  filters.push({ property: '日時', date: { on_or_after: input.date_from } });\n}\nif (input.date_to) {\n  filters.push({ property: '日時', date: { on_or_before: input.date_to } });\n}\nconst body = {};\nif (filters.length > 0) {\n  body.filter = filters.length === 1 ? filters[0] : { and: filters };\n}\nbody.sorts = [{ property: '日時', direction: 'descending' }];\nif (input.limit) {\n  body.page_size = Math.min(input.limit, 100);\n}\nreturn [{ json: { requestBody: JSON.stringify(body) } }];"
+      },
+      "id": "b-prep-search",
+      "name": "PrepSearch",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.notion.com/v1/databases/2ff2570f-e49f-8119-aaaf-f688605e5aa3/query",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.requestBody }}"
+      },
+      "id": "b-search-query",
+      "name": "SearchQuery",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        120
+      ],
+      "credentials": {
+        "notionApi": {
+          "id": "StdChbKZz3co4jDO",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const results = $input.first().json.results || [];\nconst emails = results.map(page => {\n  const subject = (page.properties['件名']?.title || []).map(t => t.plain_text).join('') || '(無題)';\n  const from = (page.properties['差出人']?.rich_text || []).map(t => t.plain_text).join('') || '';\n  const date = page.properties['日時']?.date?.start || '';\n  const importance = page.properties['重要度']?.select?.name || '未設定';\n  const snippet = (page.properties['スニペット']?.rich_text || []).map(t => t.plain_text).join('') || '';\n  const status = page.properties['ステータス']?.select?.name || '未設定';\n  const reason = (page.properties['理由']?.rich_text || []).map(t => t.plain_text).join('') || '';\n  return { id: page.id, subject, from, date, importance, snippet, status, reason, url: page.url };\n});\nreturn [{ json: { action: 'search', count: emails.length, emails } }];"
+      },
+      "id": "b-format-search",
+      "name": "FormatSearch",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -222,8 +224,8 @@
         "respondWith": "json",
         "responseBody": "={{ JSON.stringify($json) }}"
       },
-      "id": "b8",
-      "name": "RespondUpdate",
+      "id": "b-respond-search",
+      "name": "RespondSearch",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
@@ -241,7 +243,7 @@
       "typeVersion": 2,
       "position": [
         440,
-        -360
+        360
       ]
     },
     {
@@ -260,7 +262,7 @@
       "typeVersion": 4.2,
       "position": [
         660,
-        -360
+        360
       ],
       "credentials": {
         "notionApi": {
@@ -279,7 +281,7 @@
       "typeVersion": 2,
       "position": [
         880,
-        -360
+        360
       ]
     },
     {
@@ -293,7 +295,7 @@
       "typeVersion": 1.1,
       "position": [
         1100,
-        -300
+        420
       ]
     },
     {
@@ -306,7 +308,7 @@
       "typeVersion": 2,
       "position": [
         1100,
-        -420
+        300
       ]
     },
     {
@@ -325,7 +327,7 @@
       "typeVersion": 4.2,
       "position": [
         1320,
-        -420
+        300
       ],
       "credentials": {
         "notionApi": {
@@ -352,13 +354,6 @@
       "main": [
         [
           {
-            "node": "BuildQuery",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
             "node": "PrepareUpdate",
             "type": "main",
             "index": 0
@@ -366,40 +361,14 @@
         ],
         [
           {
+            "node": "PrepSearch",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
             "node": "BuildBriefingQuery",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "BuildQuery": {
-      "main": [
-        [
-          {
-            "node": "QueryEmails",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "QueryEmails": {
-      "main": [
-        [
-          {
-            "node": "FormatEmails",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "FormatEmails": {
-      "main": [
-        [
-          {
-            "node": "RespondList",
             "type": "main",
             "index": 0
           }
@@ -433,6 +402,39 @@
         [
           {
             "node": "RespondUpdate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepSearch": {
+      "main": [
+        [
+          {
+            "node": "SearchQuery",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SearchQuery": {
+      "main": [
+        [
+          {
+            "node": "FormatSearch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FormatSearch": {
+      "main": [
+        [
+          {
+            "node": "RespondSearch",
             "type": "main",
             "index": 0
           }
