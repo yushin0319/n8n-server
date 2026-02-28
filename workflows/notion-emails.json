@@ -1,11 +1,7 @@
 {
-  "updatedAt": "2026-02-06T09:36:12.004Z",
-  "createdAt": "2026-02-06T09:13:21.295Z",
   "id": "eR0S42ouMZUeNKG6",
   "name": "Notion Emails",
-  "description": null,
   "active": true,
-  "isArchived": false,
   "nodes": [
     {
       "parameters": {
@@ -85,20 +81,33 @@
     },
     {
       "parameters": {
+        "jsCode": "const input = $input.first().json.body || $input.first().json;\nconst importance = input.importance || '確認';\nconst filterObj = { property: '重要度', select: { equals: importance } };\nif (importance === '重要') {\n  const compoundFilter = {\n    and: [\n      { property: '重要度', select: { equals: '重要' } },\n      { property: 'ステータス', select: { equals: '未読' } }\n    ]\n  };\n  return [{ json: { queryBody: JSON.stringify({ filter: compoundFilter, sorts: [{ property: '日時', direction: 'descending' }] }) } }];\n}\nreturn [{ json: { queryBody: JSON.stringify({ filter: filterObj, sorts: [{ property: '日時', direction: 'descending' }] }) } }];"
+      },
+      "id": "b2b",
+      "name": "BuildQuery",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        -120
+      ]
+    },
+    {
+      "parameters": {
         "method": "POST",
         "url": "https://api.notion.com/v1/databases/2ff2570f-e49f-8119-aaaf-f688605e5aa3/query",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "notionApi",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "{\"filter\": {\"property\": \"重要度\", \"select\": {\"equals\": \"確認\"}}, \"sorts\": [{\"property\": \"日時\", \"direction\": \"descending\"}]}"
+        "jsonBody": "={{ $json.queryBody }}"
       },
       "id": "b3",
       "name": "QueryEmails",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        440,
+        660,
         -120
       ],
       "credentials": {
@@ -117,7 +126,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        660,
+        880,
         -120
       ]
     },
@@ -131,7 +140,7 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        880,
+        1100,
         -120
       ]
     },
@@ -175,6 +184,20 @@
     },
     {
       "parameters": {
+        "jsCode": "const d = $input.first().json;\nreturn [{ json: { success: true, page_id: d.id } }];",
+        "options": {}
+      },
+      "id": "0e6be4fe-46b3-4bb2-9244-d52f247b7bc8",
+      "name": "FormatUpdate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        120
+      ]
+    },
+    {
+      "parameters": {
         "respondWith": "json",
         "responseBody": "={{ JSON.stringify($json) }}"
       },
@@ -183,23 +206,9 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        880,
+        1100,
         120
       ]
-    },
-    {
-      "parameters": {
-        "jsCode": "const d = $input.first().json;\nreturn [{ json: { success: true, page_id: d.id } }];",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        770,
-        120
-      ],
-      "name": "FormatUpdate",
-      "id": "0e6be4fe-46b3-4bb2-9244-d52f247b7bc8"
     }
   ],
   "connections": {
@@ -218,7 +227,7 @@
       "main": [
         [
           {
-            "node": "QueryEmails",
+            "node": "BuildQuery",
             "type": "main",
             "index": 0
           }
@@ -226,6 +235,17 @@
         [
           {
             "node": "PrepareUpdate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "BuildQuery": {
+      "main": [
+        [
+          {
+            "node": "QueryEmails",
             "type": "main",
             "index": 0
           }
@@ -296,336 +316,5 @@
   },
   "staticData": null,
   "meta": null,
-  "pinData": null,
-  "versionId": "ef26011c-a050-4ef9-83bd-0279f5862fb2",
-  "activeVersionId": "ef26011c-a050-4ef9-83bd-0279f5862fb2",
-  "versionCounter": 8,
-  "triggerCount": 1,
-  "shared": [
-    {
-      "updatedAt": "2026-02-06T09:13:21.298Z",
-      "createdAt": "2026-02-06T09:13:21.298Z",
-      "role": "workflow:owner",
-      "workflowId": "eR0S42ouMZUeNKG6",
-      "projectId": "k3NcATkkRynsrhxy",
-      "project": {
-        "updatedAt": "2026-02-06T06:05:33.918Z",
-        "createdAt": "2026-02-06T06:00:08.916Z",
-        "id": "k3NcATkkRynsrhxy",
-        "name": "yushin fudo <yushin.fudo1986@gmail.com>",
-        "type": "personal",
-        "icon": null,
-        "description": null,
-        "creatorId": "764f26a8-9cd2-4591-b0b1-a7d6a9369581",
-        "projectRelations": [
-          {
-            "updatedAt": "2026-02-06T06:00:08.917Z",
-            "createdAt": "2026-02-06T06:00:08.917Z",
-            "userId": "764f26a8-9cd2-4591-b0b1-a7d6a9369581",
-            "projectId": "k3NcATkkRynsrhxy",
-            "user": {
-              "updatedAt": "2026-02-06T07:34:05.000Z",
-              "createdAt": "2026-02-06T06:00:07.509Z",
-              "id": "764f26a8-9cd2-4591-b0b1-a7d6a9369581",
-              "email": "yushin.fudo1986@gmail.com",
-              "firstName": "yushin",
-              "lastName": "fudo",
-              "personalizationAnswers": {
-                "version": "v4",
-                "personalization_survey_submitted_at": "2026-02-06T06:05:40.446Z",
-                "personalization_survey_n8n_version": "2.6.3"
-              },
-              "settings": {
-                "userActivated": true,
-                "firstSuccessfulWorkflowId": "ywVQSyQv29B-uyUiLxvCB",
-                "userActivatedAt": 1770358124897
-              },
-              "disabled": false,
-              "mfaEnabled": false,
-              "lastActiveAt": "2026-02-06",
-              "isPending": false
-            }
-          }
-        ]
-      }
-    }
-  ],
-  "tags": [],
-  "activeVersion": {
-    "updatedAt": "2026-02-06T09:36:12.006Z",
-    "createdAt": "2026-02-06T09:36:12.006Z",
-    "versionId": "ef26011c-a050-4ef9-83bd-0279f5862fb2",
-    "workflowId": "eR0S42ouMZUeNKG6",
-    "nodes": [
-      {
-        "parameters": {
-          "httpMethod": "POST",
-          "path": "notion-emails",
-          "responseMode": "responseNode",
-          "options": {}
-        },
-        "id": "b1",
-        "name": "Webhook",
-        "type": "n8n-nodes-base.webhook",
-        "typeVersion": 2,
-        "position": [
-          0,
-          0
-        ],
-        "webhookId": "notion-emails-hook"
-      },
-      {
-        "parameters": {
-          "rules": {
-            "values": [
-              {
-                "conditions": {
-                  "options": {
-                    "caseSensitive": true,
-                    "leftValue": ""
-                  },
-                  "conditions": [
-                    {
-                      "leftValue": "={{ $json.body.action }}",
-                      "rightValue": "list",
-                      "operator": {
-                        "type": "string",
-                        "operation": "equals"
-                      }
-                    }
-                  ],
-                  "combinator": "and"
-                },
-                "renameOutput": true,
-                "outputKey": "list"
-              },
-              {
-                "conditions": {
-                  "options": {
-                    "caseSensitive": true,
-                    "leftValue": ""
-                  },
-                  "conditions": [
-                    {
-                      "leftValue": "={{ $json.body.action }}",
-                      "rightValue": "update",
-                      "operator": {
-                        "type": "string",
-                        "operation": "equals"
-                      }
-                    }
-                  ],
-                  "combinator": "and"
-                },
-                "renameOutput": true,
-                "outputKey": "update"
-              }
-            ]
-          },
-          "options": {}
-        },
-        "id": "b2",
-        "name": "Switch",
-        "type": "n8n-nodes-base.switch",
-        "typeVersion": 3,
-        "position": [
-          220,
-          0
-        ]
-      },
-      {
-        "parameters": {
-          "method": "POST",
-          "url": "https://api.notion.com/v1/databases/2ff2570f-e49f-8119-aaaf-f688605e5aa3/query",
-          "authentication": "predefinedCredentialType",
-          "nodeCredentialType": "notionApi",
-          "sendBody": true,
-          "specifyBody": "json",
-          "jsonBody": "{\"filter\": {\"property\": \"重要度\", \"select\": {\"equals\": \"確認\"}}, \"sorts\": [{\"property\": \"日時\", \"direction\": \"descending\"}]}"
-        },
-        "id": "b3",
-        "name": "QueryEmails",
-        "type": "n8n-nodes-base.httpRequest",
-        "typeVersion": 4.2,
-        "position": [
-          440,
-          -120
-        ],
-        "credentials": {
-          "notionApi": {
-            "id": "StdChbKZz3co4jDO",
-            "name": "Notion account"
-          }
-        }
-      },
-      {
-        "parameters": {
-          "jsCode": "const results = $input.first().json.results || [];\nconst emails = results.map(page => {\n  const subject = (page.properties['件名']?.title || []).map(t => t.plain_text).join('') || '(無題)';\n  const from = (page.properties['差出人']?.rich_text || []).map(t => t.plain_text).join('') || '';\n  const date = page.properties['日時']?.date?.start || '';\n  const importance = page.properties['重要度']?.select?.name || '未設定';\n  const snippet = (page.properties['スニペット']?.rich_text || []).map(t => t.plain_text).join('') || '';\n  const status = page.properties['ステータス']?.select?.name || '未設定';\n  const reason = (page.properties['理由']?.rich_text || []).map(t => t.plain_text).join('') || '';\n  return { id: page.id, subject, from, date, importance, snippet, status, reason, url: page.url };\n});\nreturn [{ json: { action: 'list', count: emails.length, emails } }];"
-        },
-        "id": "b4",
-        "name": "FormatEmails",
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          660,
-          -120
-        ]
-      },
-      {
-        "parameters": {
-          "respondWith": "json",
-          "responseBody": "={{ $json }}"
-        },
-        "id": "b5",
-        "name": "RespondList",
-        "type": "n8n-nodes-base.respondToWebhook",
-        "typeVersion": 1.1,
-        "position": [
-          880,
-          -120
-        ]
-      },
-      {
-        "parameters": {
-          "jsCode": "const input = $input.first().json.body || $input.first().json;\nconst pageId = input.page_id;\nif (!pageId) throw new Error('page_id is required');\nconst body = { properties: {} };\nif (input.importance !== undefined) {\n  body.properties['重要度'] = { select: { name: input.importance } };\n}\nif (input.reason !== undefined) {\n  body.properties['理由'] = { rich_text: [{ text: { content: input.reason } }] };\n}\nif (input.status !== undefined) {\n  body.properties['ステータス'] = { select: { name: input.status } };\n}\nreturn [{ json: { pageId, requestBody: JSON.stringify(body) } }];"
-        },
-        "id": "b6",
-        "name": "PrepareUpdate",
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          440,
-          120
-        ]
-      },
-      {
-        "parameters": {
-          "method": "PATCH",
-          "url": "=https://api.notion.com/v1/pages/{{ $json.pageId }}",
-          "authentication": "predefinedCredentialType",
-          "nodeCredentialType": "notionApi",
-          "sendBody": true,
-          "specifyBody": "json",
-          "jsonBody": "={{ $json.requestBody }}"
-        },
-        "id": "b7",
-        "name": "UpdatePage",
-        "type": "n8n-nodes-base.httpRequest",
-        "typeVersion": 4.2,
-        "position": [
-          660,
-          120
-        ],
-        "credentials": {
-          "notionApi": {
-            "id": "StdChbKZz3co4jDO",
-            "name": "Notion account"
-          }
-        }
-      },
-      {
-        "parameters": {
-          "respondWith": "json",
-          "responseBody": "={{ { success: true, page_id: $json.id } }}"
-        },
-        "id": "b8",
-        "name": "RespondUpdate",
-        "type": "n8n-nodes-base.respondToWebhook",
-        "typeVersion": 1.1,
-        "position": [
-          880,
-          120
-        ]
-      }
-    ],
-    "connections": {
-      "Webhook": {
-        "main": [
-          [
-            {
-              "node": "Switch",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Switch": {
-        "main": [
-          [
-            {
-              "node": "QueryEmails",
-              "type": "main",
-              "index": 0
-            }
-          ],
-          [
-            {
-              "node": "PrepareUpdate",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "QueryEmails": {
-        "main": [
-          [
-            {
-              "node": "FormatEmails",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "FormatEmails": {
-        "main": [
-          [
-            {
-              "node": "RespondList",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "PrepareUpdate": {
-        "main": [
-          [
-            {
-              "node": "UpdatePage",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "UpdatePage": {
-        "main": [
-          [
-            {
-              "node": "RespondUpdate",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      }
-    },
-    "authors": "yushin fudo",
-    "name": null,
-    "description": null,
-    "autosaved": false,
-    "workflowPublishHistory": [
-      {
-        "createdAt": "2026-02-06T09:36:12.312Z",
-        "id": 30,
-        "workflowId": "eR0S42ouMZUeNKG6",
-        "versionId": "ef26011c-a050-4ef9-83bd-0279f5862fb2",
-        "event": "activated",
-        "userId": "764f26a8-9cd2-4591-b0b1-a7d6a9369581"
-      }
-    ]
-  }
+  "pinData": null
 }
