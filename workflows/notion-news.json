@@ -33,27 +33,6 @@
                 "conditions": [
                   {
                     "leftValue": "={{ $json.body.action }}",
-                    "rightValue": "list",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals"
-                    }
-                  }
-                ],
-                "combinator": "and"
-              },
-              "renameOutput": true,
-              "outputKey": "list"
-            },
-            {
-              "conditions": {
-                "options": {
-                  "caseSensitive": true,
-                  "leftValue": ""
-                },
-                "conditions": [
-                  {
-                    "leftValue": "={{ $json.body.action }}",
                     "rightValue": "update",
                     "operator": {
                       "type": "string",
@@ -65,27 +44,6 @@
               },
               "renameOutput": true,
               "outputKey": "update"
-            },
-            {
-              "conditions": {
-                "options": {
-                  "caseSensitive": true,
-                  "leftValue": ""
-                },
-                "conditions": [
-                  {
-                    "leftValue": "={{ $json.body.action }}",
-                    "rightValue": "batch_update",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals"
-                    }
-                  }
-                ],
-                "combinator": "and"
-              },
-              "renameOutput": true,
-              "outputKey": "batch_update"
             },
             {
               "conditions": {
@@ -144,60 +102,6 @@
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "https://api.notion.com/v1/databases/2ff2570f-e49f-817d-8288-e7c8667641a9/query",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "notionApi",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "{\"filter\": {\"property\": \"\\u65e2\\u8aad\", \"checkbox\": {\"equals\": false}}, \"sorts\": [{\"property\": \"\\u65e5\\u4ed8\", \"direction\": \"descending\"}]}"
-      },
-      "id": "nn-list-query",
-      "name": "ListQuery",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        500,
-        100
-      ],
-      "credentials": {
-        "notionApi": {
-          "id": "StdChbKZz3co4jDO",
-          "name": "Notion account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "mode": "runOnceForAllItems",
-        "jsCode": "const results = $input.first().json.results || [];\nconst news = results.map(page => {\n  const title = (page.properties['タイトル']?.title || []).map(t => t.plain_text).join('') || '(無題)';\n  const url = page.properties['URL']?.url || '';\n  const category = page.properties['カテゴリ']?.select?.name || '';\n  const source = (page.properties['ソース']?.rich_text || []).map(t => t.plain_text).join('') || '';\n  const date = page.properties['日付']?.date?.start || '';\n  const summary = (page.properties['要約']?.rich_text || []).map(t => t.plain_text).join('') || '';\n  const read = page.properties['既読']?.checkbox || false;\n  const featured = page.properties['注目']?.checkbox || false;\n  return { id: page.id, title, url, category, source, date, summary, read, featured };\n});\nreturn [{ json: { action: 'list', count: news.length, news } }];"
-      },
-      "id": "nn-format-list",
-      "name": "FormatList",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        750,
-        100
-      ]
-    },
-    {
-      "parameters": {
-        "respondWith": "json",
-        "responseBody": "={{ JSON.stringify($json) }}",
-        "options": {}
-      },
-      "id": "nn-respond-list",
-      "name": "RespondList",
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.5,
-      "position": [
-        1000,
-        100
-      ]
-    },
-    {
-      "parameters": {
         "mode": "runOnceForAllItems",
         "jsCode": "const input = $input.first().json.body || $input.first().json;\nconst pageId = input.page_id;\nif (!pageId) throw new Error('page_id is required');\nconst body = { properties: {} };\nif (input.read !== undefined) {\n  body.properties['既読'] = { checkbox: !!input.read };\n}\nif (input.featured !== undefined) {\n  body.properties['注目'] = { checkbox: !!input.featured };\n}\nif (input.category !== undefined) {\n  body.properties['カテゴリ'] = { select: { name: input.category } };\n}\nreturn [{ json: { pageId, requestBody: JSON.stringify(body) } }];"
       },
@@ -207,7 +111,7 @@
       "typeVersion": 2,
       "position": [
         500,
-        300
+        200
       ]
     },
     {
@@ -226,7 +130,7 @@
       "typeVersion": 4.2,
       "position": [
         750,
-        300
+        200
       ],
       "credentials": {
         "notionApi": {
@@ -246,7 +150,7 @@
       "typeVersion": 2,
       "position": [
         1000,
-        300
+        200
       ]
     },
     {
@@ -261,75 +165,7 @@
       "typeVersion": 1.5,
       "position": [
         1250,
-        300
-      ]
-    },
-    {
-      "parameters": {
-        "mode": "runOnceForAllItems",
-        "jsCode": "const input = $input.first().json.body || $input.first().json;\nconst items = input.items || [];\nif (!items.length) throw new Error('items array is required');\nconst results = [];\nfor (const item of items) {\n  const pageId = item.page_id;\n  if (!pageId) continue;\n  const body = { properties: {} };\n  if (item.read !== undefined) {\n    body.properties['既読'] = { checkbox: !!item.read };\n  }\n  if (item.featured !== undefined) {\n    body.properties['注目'] = { checkbox: !!item.featured };\n  }\n  if (item.category !== undefined) {\n    body.properties['カテゴリ'] = { select: { name: item.category } };\n  }\n  results.push({ json: { pageId, requestBody: JSON.stringify(body) } });\n}\nreturn results;"
-      },
-      "id": "nn-prep-batch",
-      "name": "PrepBatch",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        500,
-        500
-      ]
-    },
-    {
-      "parameters": {
-        "method": "PATCH",
-        "url": "=https://api.notion.com/v1/pages/{{ $json.pageId }}",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "notionApi",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ $json.requestBody }}"
-      },
-      "id": "nn-batch-update",
-      "name": "BatchUpdate",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        750,
-        500
-      ],
-      "credentials": {
-        "notionApi": {
-          "id": "StdChbKZz3co4jDO",
-          "name": "Notion account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "mode": "runOnceForAllItems",
-        "jsCode": "const items = $input.all();\nconst updated = items.map(item => ({ id: item.json.id, success: !!item.json.id }));\nreturn [{ json: { action: 'batch_update', count: updated.length, updated } }];"
-      },
-      "id": "nn-format-batch",
-      "name": "FormatBatch",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1000,
-        500
-      ]
-    },
-    {
-      "parameters": {
-        "respondWith": "json",
-        "responseBody": "={{ JSON.stringify($json) }}",
-        "options": {}
-      },
-      "id": "nn-respond-batch",
-      "name": "RespondBatch",
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.5,
-      "position": [
-        1250,
-        500
+        200
       ]
     },
     {
@@ -343,7 +179,7 @@
       "typeVersion": 2,
       "position": [
         500,
-        700
+        400
       ]
     },
     {
@@ -362,7 +198,7 @@
       "typeVersion": 4.2,
       "position": [
         750,
-        700
+        400
       ],
       "credentials": {
         "notionApi": {
@@ -382,7 +218,7 @@
       "typeVersion": 2,
       "position": [
         1000,
-        700
+        400
       ]
     },
     {
@@ -397,7 +233,7 @@
       "typeVersion": 1.5,
       "position": [
         1250,
-        700
+        400
       ]
     },
     {
@@ -410,7 +246,7 @@
       "typeVersion": 2,
       "position": [
         500,
-        -100
+        600
       ]
     },
     {
@@ -429,7 +265,7 @@
       "typeVersion": 4.2,
       "position": [
         750,
-        -100
+        600
       ],
       "credentials": {
         "notionApi": {
@@ -448,7 +284,7 @@
       "typeVersion": 2,
       "position": [
         1000,
-        -100
+        600
       ]
     },
     {
@@ -463,7 +299,7 @@
       "typeVersion": 1.5,
       "position": [
         1250,
-        -40
+        660
       ]
     },
     {
@@ -476,7 +312,7 @@
       "typeVersion": 2,
       "position": [
         1250,
-        -160
+        540
       ]
     },
     {
@@ -495,7 +331,7 @@
       "typeVersion": 4.2,
       "position": [
         1500,
-        -160
+        540
       ],
       "credentials": {
         "notionApi": {
@@ -522,21 +358,7 @@
       "main": [
         [
           {
-            "node": "ListQuery",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
             "node": "PrepUpdate",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "PrepBatch",
             "type": "main",
             "index": 0
           }
@@ -551,28 +373,6 @@
         [
           {
             "node": "BuildBriefingQuery",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "ListQuery": {
-      "main": [
-        [
-          {
-            "node": "FormatList",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "FormatList": {
-      "main": [
-        [
-          {
-            "node": "RespondList",
             "type": "main",
             "index": 0
           }
@@ -606,39 +406,6 @@
         [
           {
             "node": "RespondUpdate",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "PrepBatch": {
-      "main": [
-        [
-          {
-            "node": "BatchUpdate",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "BatchUpdate": {
-      "main": [
-        [
-          {
-            "node": "FormatBatch",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "FormatBatch": {
-      "main": [
-        [
-          {
-            "node": "RespondBatch",
             "type": "main",
             "index": 0
           }
