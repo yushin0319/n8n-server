@@ -46,7 +46,7 @@ n8n ワークフローが操作する Notion データベースの定義。
 - **不要**: 広告・宣伝、自動通知（GitHub 等）、飲食店プロモ、ポイント通知
 - **確認**: 判断できないもの（デフォルト）
 
-**アクション**: list / update / briefing
+**アクション**: update / search / briefing
 
 ---
 
@@ -55,7 +55,7 @@ n8n ワークフローが操作する Notion データベースの定義。
 - **DB ID**: `2ff2570f-e49f-817d-8288-e7c8667641a9`
 - **Webhook**: `notion-news`
 - **WF ID**: `VamRqRKYszmI2Mdh`
-- **取込 WF**: `zV7aOFYfN4AUWmOL`（Zenn + HN → Gemini 翻訳・スコアリング → Notion、日次 7:00）
+- **取込 WF**: `zV7aOFYfN4AUWmOL`（Zenn + HN → Gemini 翻訳・スコアリング → Notion、日次 0:00）
 
 | プロパティ | 型 | 値 / 備考 |
 |-----------|-----|----------|
@@ -68,7 +68,7 @@ n8n ワークフローが操作する Notion データベースの定義。
 | 既読 | checkbox | 処理済みフラグ |
 | 注目 | checkbox | 興味プロファイル上位5件 |
 
-**アクション**: list / update / batch_update / search / briefing
+**アクション**: update / search / briefing
 
 ---
 
