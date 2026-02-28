@@ -68,7 +68,7 @@ n8n ワークフローが操作する Notion データベースの定義。
 | 既読 | checkbox | 処理済みフラグ |
 | 注目 | checkbox | 興味プロファイル上位5件 |
 
-**アクション**: list / update / batch_update / search
+**アクション**: list / update / batch_update / search / briefing
 
 ---
 
