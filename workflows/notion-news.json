@@ -107,6 +107,27 @@
               },
               "renameOutput": true,
               "outputKey": "search"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": ""
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.action }}",
+                    "rightValue": "briefing",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "briefing"
             }
           ]
         },
@@ -378,6 +399,111 @@
         1250,
         700
       ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const queryBody = JSON.stringify({ filter: { property: '既読', checkbox: { equals: false } }, sorts: [{ property: '日付', direction: 'descending' }] });\nreturn [{ json: { queryBody } }];"
+      },
+      "id": "nn-briefing-query-build",
+      "name": "BuildBriefingQuery",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        500,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.notion.com/v1/databases/2ff2570f-e49f-817d-8288-e7c8667641a9/query",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.queryBody }}"
+      },
+      "id": "nn-briefing-query",
+      "name": "QueryBriefingNews",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        750,
+        -100
+      ],
+      "credentials": {
+        "notionApi": {
+          "id": "StdChbKZz3co4jDO",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const results = $input.first().json.results || [];\nconst featuredNews = [];\nconst regularNews = [];\nconst allPageIds = [];\nfor (const page of results) {\n  const title = (page.properties['タイトル']?.title || []).map(t => t.plain_text).join('') || '(無題)';\n  const url = page.properties['URL']?.url || '';\n  const category = page.properties['カテゴリ']?.select?.name || '';\n  const source = (page.properties['ソース']?.rich_text || []).map(t => t.plain_text).join('') || '';\n  const date = page.properties['日付']?.date?.start || '';\n  const summary = (page.properties['要約']?.rich_text || []).map(t => t.plain_text).join('') || '';\n  const featured = page.properties['注目']?.checkbox || false;\n  const newsData = { id: page.id, title, url, category, source, date, summary, featured };\n  if (featured) {\n    featuredNews.push(newsData);\n  } else {\n    regularNews.push(newsData);\n  }\n  allPageIds.push(page.id);\n}\nconst briefingResponse = { action: 'briefing', featured: { count: featuredNews.length, news: featuredNews }, regular: { count: regularNews.length, news: regularNews }, marked_read_count: allPageIds.length };\nreturn [{ json: { briefingResponse, allPageIds } }];"
+      },
+      "id": "nn-briefing-process",
+      "name": "ProcessBriefing",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1000,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json.briefingResponse) }}",
+        "options": {}
+      },
+      "id": "nn-briefing-respond",
+      "name": "RespondBriefing",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1250,
+        -40
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const ids = $input.first().json.allPageIds || [];\nif (ids.length === 0) return [];\nconst updateBody = JSON.stringify({ properties: { '既読': { checkbox: true } } });\nreturn ids.map(pageId => ({ json: { pageId, requestBody: updateBody } }));"
+      },
+      "id": "nn-briefing-prep-read",
+      "name": "PrepareMarkRead",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1250,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://api.notion.com/v1/pages/{{ $json.pageId }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.requestBody }}"
+      },
+      "id": "nn-briefing-mark-read",
+      "name": "MarkRead",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1500,
+        -160
+      ],
+      "credentials": {
+        "notionApi": {
+          "id": "StdChbKZz3co4jDO",
+          "name": "Notion account"
+        }
+      },
+      "continueOnFail": true
     }
   ],
   "connections": {
@@ -418,6 +544,13 @@
         [
           {
             "node": "PrepSearch",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "BuildBriefingQuery",
             "type": "main",
             "index": 0
           }
@@ -539,6 +672,55 @@
         [
           {
             "node": "RespondSearch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "BuildBriefingQuery": {
+      "main": [
+        [
+          {
+            "node": "QueryBriefingNews",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "QueryBriefingNews": {
+      "main": [
+        [
+          {
+            "node": "ProcessBriefing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ProcessBriefing": {
+      "main": [
+        [
+          {
+            "node": "RespondBriefing",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "PrepareMarkRead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepareMarkRead": {
+      "main": [
+        [
+          {
+            "node": "MarkRead",
             "type": "main",
             "index": 0
           }
