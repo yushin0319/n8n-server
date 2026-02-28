@@ -65,6 +65,27 @@
               },
               "renameOutput": true,
               "outputKey": "update"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": ""
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.action }}",
+                    "rightValue": "briefing",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "briefing"
             }
           ]
         },
@@ -209,6 +230,110 @@
         1100,
         120
       ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const queryBody = JSON.stringify({ filter: { property: 'ステータス', select: { equals: '未読' } }, sorts: [{ property: '日時', direction: 'descending' }] });\nreturn [{ json: { queryBody } }];"
+      },
+      "id": "c1",
+      "name": "BuildBriefingQuery",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        -360
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.notion.com/v1/databases/2ff2570f-e49f-8119-aaaf-f688605e5aa3/query",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.queryBody }}"
+      },
+      "id": "c2",
+      "name": "QueryBriefingEmails",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        -360
+      ],
+      "credentials": {
+        "notionApi": {
+          "id": "StdChbKZz3co4jDO",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const results = $input.first().json.results || [];\nconst importantEmails = [];\nconst unclassifiedEmails = [];\nconst allPageIds = [];\nfor (const page of results) {\n  const subject = (page.properties['件名']?.title || []).map(t => t.plain_text).join('') || '(無題)';\n  const from = (page.properties['差出人']?.rich_text || []).map(t => t.plain_text).join('') || '';\n  const date = page.properties['日時']?.date?.start || '';\n  const importance = page.properties['重要度']?.select?.name || '未設定';\n  const snippet = (page.properties['スニペット']?.rich_text || []).map(t => t.plain_text).join('') || '';\n  const reason = (page.properties['理由']?.rich_text || []).map(t => t.plain_text).join('') || '';\n  const emailData = { id: page.id, subject, from, date, importance, snippet, reason, url: page.url };\n  if (importance === '重要') {\n    importantEmails.push(emailData);\n  } else if (importance === '確認') {\n    unclassifiedEmails.push(emailData);\n  }\n  allPageIds.push(page.id);\n}\nconst briefingResponse = { action: 'briefing', important: { count: importantEmails.length, emails: importantEmails }, unclassified: { count: unclassifiedEmails.length, emails: unclassifiedEmails }, marked_read_count: allPageIds.length };\nreturn [{ json: { briefingResponse, allPageIds } }];"
+      },
+      "id": "c3",
+      "name": "ProcessBriefing",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        -360
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json.briefingResponse) }}"
+      },
+      "id": "c4",
+      "name": "RespondBriefing",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1100,
+        -300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const ids = $input.first().json.allPageIds || [];\nif (ids.length === 0) return [];\nconst updateBody = JSON.stringify({ properties: { 'ステータス': { select: { name: '既読' } } } });\nreturn ids.map(pageId => ({ json: { pageId, requestBody: updateBody } }));"
+      },
+      "id": "c5",
+      "name": "PrepareMarkRead",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        -420
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://api.notion.com/v1/pages/{{ $json.pageId }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.requestBody }}"
+      },
+      "id": "c6",
+      "name": "MarkRead",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1320,
+        -420
+      ],
+      "credentials": {
+        "notionApi": {
+          "id": "StdChbKZz3co4jDO",
+          "name": "Notion account"
+        }
+      },
+      "continueOnFail": true
     }
   ],
   "connections": {
@@ -235,6 +360,13 @@
         [
           {
             "node": "PrepareUpdate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "BuildBriefingQuery",
             "type": "main",
             "index": 0
           }
@@ -301,6 +433,55 @@
         [
           {
             "node": "RespondUpdate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "BuildBriefingQuery": {
+      "main": [
+        [
+          {
+            "node": "QueryBriefingEmails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "QueryBriefingEmails": {
+      "main": [
+        [
+          {
+            "node": "ProcessBriefing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ProcessBriefing": {
+      "main": [
+        [
+          {
+            "node": "RespondBriefing",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "PrepareMarkRead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepareMarkRead": {
+      "main": [
+        [
+          {
+            "node": "MarkRead",
             "type": "main",
             "index": 0
           }
