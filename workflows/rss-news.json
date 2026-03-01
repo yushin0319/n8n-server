@@ -157,7 +157,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const geminiResponse = $input.first().json;\nconst originalItems = $('WaitBoth').all();\nlet selected = [];\ntry {\n  const responseText = geminiResponse.candidates?.[0]?.content?.parts?.[0]?.text || '';\n  const jsonMatch = responseText.match(/\\{[\\s\\S]*\\}/);\n  if (jsonMatch) {\n    const parsed = JSON.parse(jsonMatch[0]);\n    if (parsed.zenn) selected = selected.concat(parsed.zenn);\n    if (parsed.hn) selected = selected.concat(parsed.hn);\n    if (parsed.top5) selected = parsed.top5;\n    if (parsed.ranked) selected = parsed.ranked.slice(0, 6);\n  }\n} catch (e) {}\nconst selectedSet = new Set(selected);\nreturn originalItems.map((item, i) => {\n  const d = Object.assign({}, item.json);\n  d.isTop5 = selectedSet.has(i + 1);\n  return { json: d };\n});"
+        "jsCode": "const geminiResponse = $input.first().json;\nconst originalItems = $('WaitBoth').all();\nlet selected = [];\ntry {\n  const responseText = geminiResponse.candidates?.[0]?.content?.parts?.[0]?.text || '';\n  const zennMatch = responseText.match(/zenn[^[]*\\[([0-9,\\s]+)\\]/i);\n  const hnMatch = responseText.match(/hn[^[]*\\[([0-9,\\s]+)\\]/i);\n  const extract = (m) => m[1].split(',').map(n => parseInt(n.trim())).filter(n => !isNaN(n));\n  if (zennMatch) selected = selected.concat(extract(zennMatch));\n  if (hnMatch) selected = selected.concat(extract(hnMatch));\n} catch (e) {}\nconst selectedSet = new Set(selected);\nreturn originalItems.map((item, i) => {\n  const d = Object.assign({}, item.json);\n  d.isTop5 = selectedSet.has(i + 1);\n  return { json: d };\n});"
       },
       "id": "a1000001-0001-0001-0001-000000000013",
       "name": "ApplyScores",
