@@ -117,7 +117,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const items = $input.all();\nif (items.length === 0) return [];\nconst articleList = items.map((item, i) => {\n  const d = item.json;\n  const title = (d.title || '').substring(0, 100);\n  const snippet = (d.contentSnippet || d['content:encodedSnippet'] || '').replace(/<[^>]*>/g, '').substring(0, 150);\n  return `${i + 1}. ${title} - ${snippet}`;\n}).join('\\n');\nconst prompt = `以下のニュース記事を、この興味プロファイルとの関連度でランク付けしてください。\\n\\n興味プロファイル:\\n1. Claude Code実践活用（Skills, Hooks, Agent Teams等）\\n2. AI批判・問題提起（AI万能論への反論、倫理的課題）\\n3. 個人開発×低コストスタック（月額0円〜、Hono, Bun, Cloudflare Workers等）\\n4. セキュリティ事故・実例（APIキー漏洩、認証不備等）\\n5. ローカルファースト・自己ホスト（クラウド依存しない技術選択）\\n6. 言語・ランタイム本質検証（比較・検証記事）\\n\\n記事一覧:\\n${articleList}\\n\\n上位5件のインデックスをJSON形式で返答してください（他のテキストは不要）:\\n{\"top5\": [3, 7, 1, 12, 5]}`;\nconst geminiBody = JSON.stringify({\n  contents: [{ parts: [{ text: prompt }] }],\n  generationConfig: { temperature: 0.1, maxOutputTokens: 200 }\n});\nreturn [{ json: { geminiBody } }];"
+        "jsCode": "const items = $input.all();\nif (items.length === 0) return [];\nconst articleList = items.map((item, i) => {\n  const d = item.json;\n  const title = (d.title || '').substring(0, 100);\n  const snippet = (d.contentSnippet || d['content:encodedSnippet'] || '').replace(/<[^>]*>/g, '').substring(0, 150);\n  return `${i + 1}. ${title} - ${snippet}`;\n}).join('\\n');\nconst prompt = `以下のニュース記事を、この興味プロファイルとの関連度でランク付けしてください。\\n\\n興味プロファイル:\\n1. Claude Code実践活用（Skills, Hooks, Agent Teams等）\\n2. AI批判・問題提起（AI万能論への反論、倫理的課題）\\n3. 個人開発×低コストスタック（月額0円〜、Hono, Bun, Cloudflare Workers等）\\n4. セキュリティ事故・実例（APIキー漏洩、認証不備等）\\n5. ローカルファースト・自己ホスト（クラウド依存しない技術選択）\\n6. 言語・ランタイム本質検証（比較・検証記事）\\n\\n記事一覧:\\n${articleList}\\n\\n上位5件のインデックスを純粋なJSON形式のみで返答してください（コメントや説明は一切不要）:\\n{\"top5\": [3, 7, 1, 12, 5]}`;\nconst geminiBody = JSON.stringify({\n  contents: [{ parts: [{ text: prompt }] }],\n  generationConfig: { temperature: 0.1, maxOutputTokens: 200 }\n});\nreturn [{ json: { geminiBody } }];"
       },
       "id": "a1000001-0001-0001-0001-000000000011",
       "name": "ScoreInterest",
@@ -157,7 +157,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const geminiResponse = $input.first().json;\nconst originalItems = $('WaitBoth').all();\nlet top5 = [];\ntry {\n  const responseText = geminiResponse.candidates?.[0]?.content?.parts?.[0]?.text || '';\n  const jsonMatch = responseText.match(/\\{[\\s\\S]*\\}/);\n  if (jsonMatch) {\n    const parsed = JSON.parse(jsonMatch[0]);\n    top5 = parsed.top5 || [];\n  }\n} catch (e) {}\nconst top5Set = new Set(top5);\nreturn originalItems.map((item, i) => {\n  const d = Object.assign({}, item.json);\n  d.isTop5 = top5Set.has(i + 1);\n  return { json: d };\n});"
+        "jsCode": "const geminiResponse = $input.first().json;\nconst originalItems = $('WaitBoth').all();\nlet top5 = [];\ntry {\n  const responseText = geminiResponse.candidates?.[0]?.content?.parts?.[0]?.text || '';\n  const jsonMatch = responseText.match(/\\{[\\s\\S]*\\}/);\n  if (jsonMatch) {\n    const cleaned = jsonMatch[0].replace(/\\/\\/.*$/gm, '');\n    const parsed = JSON.parse(cleaned);\n    top5 = parsed.top5 || [];\n  }\n} catch (e) {}\nconst top5Set = new Set(top5);\nreturn originalItems.map((item, i) => {\n  const d = Object.assign({}, item.json);\n  d.isTop5 = top5Set.has(i + 1);\n  return { json: d };\n});"
       },
       "id": "a1000001-0001-0001-0001-000000000013",
       "name": "ApplyScores",
