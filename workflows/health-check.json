@@ -58,7 +58,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "REDACTED_DISCORD_WEBHOOK",
+        "url": "={{$env.DISCORD_WEBHOOK_URL}}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
