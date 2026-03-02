@@ -24,7 +24,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://discord.com/api/webhooks/1469823456706171053/kw9HG_VERKDhbxpgP0mL7VvsM3Knrc01jBNfvnbBcgypA_qZSlEDM0pyXrkn3TilsrRX",
+        "url": "={{$env.DISCORD_WEBHOOK_URL}}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
