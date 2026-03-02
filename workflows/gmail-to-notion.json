@@ -85,7 +85,7 @@
           "name": "Google Gemini(PaLM) Api account"
         }
       },
-      "onError": "continueRegularOutput"
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
