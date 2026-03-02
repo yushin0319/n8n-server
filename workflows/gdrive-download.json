@@ -1,0 +1,160 @@
+{
+  "name": "Google Drive - Download",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "gdrive-download",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "5f9cf5cf-0f71-49a3-9fed-d1cbb277f9d5",
+      "name": "Webhook",
+      "webhookId": "3fca1ef9-23c2-4cc4-acb0-13126c09ef56"
+    },
+    {
+      "parameters": {
+        "jsCode": "// [共通パターン] Webhook認証チェック - 全n8nワークフロー共通\n// WEBHOOK_SECRET 環境変数で認証キーを管理（n8n設定 > Environment Variables）\nconst secret = $input.first().json.headers['x-webhook-secret'];\nif (secret !== $env.WEBHOOK_SECRET) {\n  throw new Error('Forbidden: Invalid webhook secret');\n}\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "id": "fe60504d-b358-466b-b037-57d530d3b90c",
+      "name": "AuthCheck"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body;\nconst fileId = body.file_id;\nif (!fileId) throw new Error('file_id is required');\nreturn [{ json: { fileId } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ],
+      "id": "18a20577-e542-4282-9625-7d1704bae4d2",
+      "name": "PrepDownload"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://www.googleapis.com/drive/v3/files/{{ $json.fileId }}?alt=media",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        680,
+        0
+      ],
+      "id": "34c81017-9e73-46f3-955b-e6756d904397",
+      "name": "DownloadRequest",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "PLACEHOLDER",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// n8n wraps raw text response in { data: \"...\" }\nconst raw = $json;\nlet content;\nif (raw.data !== undefined) {\n  content = raw.data;\n} else if (typeof raw === 'string') {\n  content = raw;\n} else {\n  content = JSON.stringify(raw);\n}\nconst fileId = $('PrepDownload').first().json.fileId;\nreturn [{ json: { action: 'download', file_id: fileId, content } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        920,
+        0
+      ],
+      "id": "f1822305-33c8-46ea-b64a-eb34e16b96dc",
+      "name": "FormatDownload"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1160,
+        0
+      ],
+      "id": "4a2bf4e5-f09f-4a36-ae96-87d1c469aa1e",
+      "name": "RespondDownload"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "AuthCheck",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AuthCheck": {
+      "main": [
+        [
+          {
+            "node": "PrepDownload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepDownload": {
+      "main": [
+        [
+          {
+            "node": "DownloadRequest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DownloadRequest": {
+      "main": [
+        [
+          {
+            "node": "FormatDownload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FormatDownload": {
+      "main": [
+        [
+          {
+            "node": "RespondDownload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

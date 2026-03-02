@@ -1,0 +1,225 @@
+{
+  "name": "Google Drive - Upload",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "gdrive-upload",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "bcaf1601-28e2-40b7-b2fe-cacd3bfbd5a1",
+      "name": "Webhook",
+      "webhookId": "530d9f84-b674-413a-825d-e0abfb0b55b0"
+    },
+    {
+      "parameters": {
+        "jsCode": "// [共通パターン] Webhook認証チェック - 全n8nワークフロー共通\n// WEBHOOK_SECRET 環境変数で認証キーを管理（n8n設定 > Environment Variables）\nconst secret = $input.first().json.headers['x-webhook-secret'];\nif (secret !== $env.WEBHOOK_SECRET) {\n  throw new Error('Forbidden: Invalid webhook secret');\n}\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "id": "0057bc63-9c0f-4991-8875-c4123fc8966f",
+      "name": "AuthCheck"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body;\nconst name = body.name || 'untitled.txt';\nconst fileContent = body.content || '';\nconst folderId = body.folder_id || 'root';\nconst mimeType = body.mime_type || 'text/plain';\nconst encoding = body.encoding || 'utf-8';\nreturn [{ json: { name, fileContent, folderId, mimeType, encoding } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ],
+      "id": "93a94500-9449-495c-87a0-423a942cb786",
+      "name": "PrepUpload"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://www.googleapis.com/drive/v3/files?fields=id,name,mimeType,webViewLink",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ name: $json.name, parents: [$json.folderId], mimeType: $json.mimeType }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        680,
+        0
+      ],
+      "id": "bfda0fb8-3b14-4715-b090-80e949835dbd",
+      "name": "CreateEmpty",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "PLACEHOLDER",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const fileContent = $('PrepUpload').first().json.fileContent;\nconst fileId = $json.id;\nconst name = $json.name;\nconst webViewLink = $json.webViewLink;\nconst mimeType = $('PrepUpload').first().json.mimeType;\nconst encoding = $('PrepUpload').first().json.encoding || 'utf-8';\n\n// Size limit check (5MB) to prevent memory exhaustion\nconst MAX_SIZE = 5 * 1024 * 1024;\nconst contentSize = encoding === 'base64' ? Math.ceil(fileContent.length * 3 / 4) : fileContent.length;\nif (contentSize > MAX_SIZE) {\n  throw new Error('Content too large: ' + Math.round(contentSize / 1024 / 1024) + 'MB exceeds 5MB limit');\n}\n\n// Create binary data from content (supports utf-8 for text, base64 for binary)\nconst binaryData = Buffer.from(fileContent, encoding);\n\nreturn [{\n  json: { fileId, name, webViewLink, mimeType },\n  binary: {\n    file: {\n      data: binaryData.toString('base64'),\n      mimeType: mimeType,\n      fileName: name\n    }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        920,
+        0
+      ],
+      "id": "8f6b5d08-f216-4768-a5a9-4516ec2e9b29",
+      "name": "PrepContent"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://www.googleapis.com/upload/drive/v3/files/{{ $json.fileId }}?uploadType=media",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "sendBody": true,
+        "options": {},
+        "contentType": "binaryData",
+        "inputDataFieldName": "file"
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1160,
+        0
+      ],
+      "id": "9bcc2699-3017-4198-a748-83fae9a0edc7",
+      "name": "UpdateContent",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "PLACEHOLDER",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $input.first().json;\nconst prep = $('PrepContent').first().json;\nreturn [{ json: { action: 'upload', success: true, id: d.id || prep.fileId, name: d.name || prep.name, url: prep.webViewLink } }];",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1400,
+        0
+      ],
+      "name": "FormatUpload",
+      "id": "42af4ff4-edee-49da-b14a-dd1298d705b6"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1640,
+        0
+      ],
+      "id": "7e9b9df4-605b-41e9-aa44-dac13eb411e8",
+      "name": "RespondUpload"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "AuthCheck",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AuthCheck": {
+      "main": [
+        [
+          {
+            "node": "PrepUpload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepUpload": {
+      "main": [
+        [
+          {
+            "node": "CreateEmpty",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CreateEmpty": {
+      "main": [
+        [
+          {
+            "node": "PrepContent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepContent": {
+      "main": [
+        [
+          {
+            "node": "UpdateContent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "UpdateContent": {
+      "main": [
+        [
+          {
+            "node": "FormatUpload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FormatUpload": {
+      "main": [
+        [
+          {
+            "node": "RespondUpload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
