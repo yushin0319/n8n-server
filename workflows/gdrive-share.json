@@ -1,0 +1,163 @@
+{
+  "name": "Google Drive - Share",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "gdrive-share",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "e0da21c6-b949-4e63-b0af-764ee5c7de89",
+      "name": "Webhook",
+      "webhookId": "96838f48-4cfa-4cf5-8426-8dfcb2828170"
+    },
+    {
+      "parameters": {
+        "jsCode": "// [共通パターン] Webhook認証チェック - 全n8nワークフロー共通\n// WEBHOOK_SECRET 環境変数で認証キーを管理（n8n設定 > Environment Variables）\nconst secret = $input.first().json.headers['x-webhook-secret'];\nif (secret !== $env.WEBHOOK_SECRET) {\n  throw new Error('Forbidden: Invalid webhook secret');\n}\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "id": "1d7a8e3a-cf29-45ce-bb4d-f7384355e168",
+      "name": "AuthCheck"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body;\nconst fileId = body.file_id;\nif (!fileId) throw new Error('file_id is required');\nconst role = body.role || 'reader';\nconst shareType = body.type || 'anyone';\nreturn [{ json: { fileId, role, shareType } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ],
+      "id": "gdrive-share-001",
+      "name": "PrepShare"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://www.googleapis.com/drive/v3/files/{{ $json.fileId }}/permissions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ role: $json.role, type: $json.shareType }) }}"
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        680,
+        0
+      ],
+      "id": "gdrive-share-002",
+      "name": "ShareRequest",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "PLACEHOLDER",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const perm = $json;\nconst prep = $('PrepShare').first().json;\nreturn [{ json: { action: 'share', success: true, file_id: prep.fileId, permission_id: perm.id, role: perm.role, type: perm.type } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        920,
+        0
+      ],
+      "id": "gdrive-share-003",
+      "name": "FormatShare"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1160,
+        0
+      ],
+      "id": "gdrive-share-004",
+      "name": "RespondShare"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "AuthCheck",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AuthCheck": {
+      "main": [
+        [
+          {
+            "node": "PrepShare",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepShare": {
+      "main": [
+        [
+          {
+            "node": "ShareRequest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ShareRequest": {
+      "main": [
+        [
+          {
+            "node": "FormatShare",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FormatShare": {
+      "main": [
+        [
+          {
+            "node": "RespondShare",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

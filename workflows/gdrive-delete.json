@@ -1,0 +1,164 @@
+{
+  "name": "Google Drive - Delete",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "gdrive-delete",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "6ae43db0-4ebb-4b83-a0a6-a41c11dea72a",
+      "name": "Webhook",
+      "webhookId": "3be17342-a37c-44d8-ba5d-2e5bd2c1b2f9"
+    },
+    {
+      "parameters": {
+        "jsCode": "// [共通パターン] Webhook認証チェック - 全n8nワークフロー共通\n// WEBHOOK_SECRET 環境変数で認証キーを管理（n8n設定 > Environment Variables）\nconst secret = $input.first().json.headers['x-webhook-secret'];\nif (secret !== $env.WEBHOOK_SECRET) {\n  throw new Error('Forbidden: Invalid webhook secret');\n}\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "id": "74a6d1b9-1245-417a-b9fa-7b0a6cd13095",
+      "name": "AuthCheck"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body;\nconst fileId = body.file_id;\nif (!fileId) throw new Error('file_id is required');\nreturn [{ json: { fileId } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ],
+      "id": "094fa593-cfde-4a3b-9d98-ea5120cf822f",
+      "name": "PrepDelete"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://www.googleapis.com/drive/v3/files/{{ $json.fileId }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "options": {},
+        "sendBody": true,
+        "jsonBody": "={{ JSON.stringify({ trashed: true }) }}",
+        "specifyBody": "json"
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        680,
+        0
+      ],
+      "id": "708d2dac-2860-46e8-896a-5f1f1152c1a2",
+      "name": "DeleteRequest",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "PLACEHOLDER",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $input.first().json;\nconst fileId = $('PrepDelete').first().json.fileId;\nreturn [{ json: { action: 'delete', success: true, file_id: fileId } }];",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        920,
+        0
+      ],
+      "name": "FormatDelete",
+      "id": "b2fd7d5f-5bf1-4942-873c-cd437b676daa"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1160,
+        0
+      ],
+      "id": "1389eec8-ac5e-4b77-b8bd-234a361c101f",
+      "name": "RespondDelete"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "AuthCheck",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AuthCheck": {
+      "main": [
+        [
+          {
+            "node": "PrepDelete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepDelete": {
+      "main": [
+        [
+          {
+            "node": "DeleteRequest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DeleteRequest": {
+      "main": [
+        [
+          {
+            "node": "FormatDelete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FormatDelete": {
+      "main": [
+        [
+          {
+            "node": "RespondDelete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

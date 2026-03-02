@@ -1,0 +1,203 @@
+{
+  "name": "Google Drive - Move",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "gdrive-move",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "99a0d53e-5a8b-4912-89cd-dd58b385aac6",
+      "name": "Webhook",
+      "webhookId": "26f9bc22-a12c-4c74-a7da-d847172ae404"
+    },
+    {
+      "parameters": {
+        "jsCode": "// [共通パターン] Webhook認証チェック - 全n8nワークフロー共通\n// WEBHOOK_SECRET 環境変数で認証キーを管理（n8n設定 > Environment Variables）\nconst secret = $input.first().json.headers['x-webhook-secret'];\nif (secret !== $env.WEBHOOK_SECRET) {\n  throw new Error('Forbidden: Invalid webhook secret');\n}\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "id": "dfbe0962-f81d-44eb-845e-46f06c47480e",
+      "name": "AuthCheck"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body;\nconst fileId = body.file_id;\nconst folderId = body.folder_id;\nif (!fileId) throw new Error('file_id is required');\nif (!folderId) throw new Error('folder_id is required');\nreturn [{ json: { fileId, folderId } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ],
+      "id": "gdrive-move-001",
+      "name": "PrepMove"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://www.googleapis.com/drive/v3/files/{{ $json.fileId }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "options": {},
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "fields",
+              "value": "id,name,parents"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        680,
+        0
+      ],
+      "id": "gdrive-move-002",
+      "name": "GetParents",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "PLACEHOLDER",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://www.googleapis.com/drive/v3/files/{{ $('PrepMove').first().json.fileId }}?addParents={{ $('PrepMove').first().json.folderId }}&fields=id,name,webViewLink{{ $json.parents && $json.parents.length ? '&removeParents=' + $json.parents.join(',') : '' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        920,
+        0
+      ],
+      "id": "gdrive-move-003",
+      "name": "MoveRequest",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "PLACEHOLDER",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $json;\nconst prep = $('PrepMove').first().json;\nreturn [{ json: { action: 'move', success: true, id: d.id, name: d.name, url: d.webViewLink, folder_id: prep.folderId } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1160,
+        0
+      ],
+      "id": "gdrive-move-004",
+      "name": "FormatMove"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1400,
+        0
+      ],
+      "id": "gdrive-move-005",
+      "name": "RespondMove"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "AuthCheck",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AuthCheck": {
+      "main": [
+        [
+          {
+            "node": "PrepMove",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepMove": {
+      "main": [
+        [
+          {
+            "node": "GetParents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GetParents": {
+      "main": [
+        [
+          {
+            "node": "MoveRequest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MoveRequest": {
+      "main": [
+        [
+          {
+            "node": "FormatMove",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FormatMove": {
+      "main": [
+        [
+          {
+            "node": "RespondMove",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
