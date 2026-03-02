@@ -14,6 +14,14 @@ SKIPPED=0
 # settings 内の binaryMode, availableInMCP 等は 400 エラーになるため除外
 BODY_FILTER='{name, nodes, connections, staticData, settings: (.settings | {executionOrder, callerPolicy, errorWorkflow} | with_entries(select(.value != null)))}'
 
+call_api() {
+  local method="$1" url="$2" bodyfile="$3"
+  curl -s -w "\n%{http_code}" -X "$method" "$url" \
+    -H "Content-Type: application/json" \
+    -H "X-N8N-API-KEY: ${N8N_API_KEY}" \
+    --data-binary "@${bodyfile}"
+}
+
 deploy_workflow() {
   local file="$1"
   local filename
@@ -44,86 +52,66 @@ deploy_workflow() {
   bodyfile=$(mktemp)
   jq "$BODY_FILTER" "$file" > "$bodyfile"
 
-  # 既存ワークフローの存在確認
-  local http_code
-  http_code=$(curl -s -o /dev/null -w "%{http_code}" \
+  # 既存ワークフローの存在確認 → PUT(更新) or POST(新規)
+  local check_code
+  check_code=$(curl -s -o /dev/null -w "%{http_code}" \
     "${N8N_API_URL}/workflows/${wf_id}" \
     -H "X-N8N-API-KEY: ${N8N_API_KEY}")
 
-  if [ "$http_code" = "200" ]; then
-    # 既存 → PUT で更新
-    echo "  Updating existing workflow..."
-    local result
-    result=$(curl -s -w "\n%{http_code}" -X PUT \
-      "${N8N_API_URL}/workflows/${wf_id}" \
-      -H "Content-Type: application/json" \
-      -H "X-N8N-API-KEY: ${N8N_API_KEY}" \
-      --data-binary "@${bodyfile}")
-
-    local resp_code
-    resp_code=$(echo "$result" | tail -1)
-
-    if [ "$resp_code" = "200" ]; then
-      echo "  Updated successfully"
-    else
-      local resp_body
-      resp_body=$(echo "$result" | sed '$d')
-      echo "  FAIL: HTTP $resp_code"
-      echo "  Response: $resp_body"
+  local method url ok_codes
+  case "$check_code" in
+    200)
+      echo "  Updating existing workflow..."
+      method="PUT"
+      url="${N8N_API_URL}/workflows/${wf_id}"
+      ok_codes="200"
+      ;;
+    404)
+      echo "  Creating new workflow..."
+      method="POST"
+      url="${N8N_API_URL}/workflows"
+      ok_codes="200 201"
+      ;;
+    *)
+      echo "  FAIL: Could not check workflow (HTTP $check_code)"
       FAIL=$((FAIL + 1))
       rm -f "$bodyfile"
       return
-    fi
-  elif [ "$http_code" = "404" ]; then
-    # 新規 → POST で作成
-    echo "  Creating new workflow..."
-    local result
-    result=$(curl -s -w "\n%{http_code}" -X POST \
-      "${N8N_API_URL}/workflows" \
-      -H "Content-Type: application/json" \
-      -H "X-N8N-API-KEY: ${N8N_API_KEY}" \
-      --data-binary "@${bodyfile}")
+      ;;
+  esac
 
-    local resp_code
-    resp_code=$(echo "$result" | tail -1)
+  local result resp_code resp_body
+  result=$(call_api "$method" "$url" "$bodyfile")
+  resp_code=$(echo "$result" | tail -1)
+  resp_body=$(echo "$result" | sed '$d')
+  rm -f "$bodyfile"
 
-    if [ "$resp_code" = "200" ] || [ "$resp_code" = "201" ]; then
-      echo "  Created successfully"
+  # shellcheck disable=SC2076
+  if [[ " $ok_codes " =~ " $resp_code " ]]; then
+    echo "  Success: HTTP $resp_code"
+    if [ "$method" = "POST" ]; then
       local new_id
-      new_id=$(echo "$result" | sed '$d' | jq -r '.id')
+      new_id=$(echo "$resp_body" | jq -r '.id')
       if [ "$new_id" != "$wf_id" ]; then
         echo "  WARNING: New ID ($new_id) differs from file ID ($wf_id). Update the JSON file."
       fi
       wf_id="$new_id"
-    else
-      echo "  FAIL: HTTP $resp_code"
-      FAIL=$((FAIL + 1))
-      rm -f "$bodyfile"
-      return
     fi
   else
-    echo "  FAIL: Could not check workflow (HTTP $http_code)"
+    echo "  FAIL: HTTP $resp_code"
+    [ -n "$resp_body" ] && echo "  Response: $resp_body"
     FAIL=$((FAIL + 1))
-    rm -f "$bodyfile"
     return
   fi
 
-  rm -f "$bodyfile"
-
   # active フラグに応じて activate/deactivate
-  if [ "$wf_active" = "true" ]; then
-    local act_code
-    act_code=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
-      "${N8N_API_URL}/workflows/${wf_id}/activate" \
-      -H "X-N8N-API-KEY: ${N8N_API_KEY}")
-    echo "  Activate: HTTP $act_code"
-  else
-    local deact_code
-    deact_code=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
-      "${N8N_API_URL}/workflows/${wf_id}/deactivate" \
-      -H "X-N8N-API-KEY: ${N8N_API_KEY}")
-    echo "  Deactivate: HTTP $deact_code"
-  fi
+  local toggle
+  toggle=$([ "$wf_active" = "true" ] && echo "activate" || echo "deactivate")
+  local toggle_code
+  toggle_code=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+    "${N8N_API_URL}/workflows/${wf_id}/${toggle}" \
+    -H "X-N8N-API-KEY: ${N8N_API_KEY}")
+  echo "  ${toggle^}: HTTP $toggle_code"
 
   SUCCESS=$((SUCCESS + 1))
 }
