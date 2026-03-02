@@ -1,0 +1,181 @@
+{
+  "name": "Google Drive - List",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "gdrive-list",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "3f5de440-cf0b-44bd-a4e6-2b9ca328efde",
+      "name": "Webhook",
+      "webhookId": "21389f58-5073-4dc9-aa56-836a86081463"
+    },
+    {
+      "parameters": {
+        "jsCode": "// [共通パターン] Webhook認証チェック - 全n8nワークフロー共通\n// WEBHOOK_SECRET 環境変数で認証キーを管理（n8n設定 > Environment Variables）\nconst secret = $input.first().json.headers['x-webhook-secret'];\nif (secret !== $env.WEBHOOK_SECRET) {\n  throw new Error('Forbidden: Invalid webhook secret');\n}\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "id": "f757cfd4-5aed-470c-8834-8903f35c7f6b",
+      "name": "AuthCheck"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body;\nconst folderId = body.folder_id || 'root';\nconst pageSize = body.page_size || 20;\nconst pageToken = body.page_token || '';\nlet q = `'${folderId}' in parents and trashed = false`;\nconst fields = 'nextPageToken,files(id,name,mimeType,size,modifiedTime,webViewLink)';\nreturn [{ json: { q, pageSize, fields, pageToken } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ],
+      "id": "bd22661c-2fa2-498c-98c4-8ae79b90063c",
+      "name": "PrepList"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://www.googleapis.com/drive/v3/files",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "options": {},
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "={{ $json.q }}"
+            },
+            {
+              "name": "pageSize",
+              "value": "={{ $json.pageSize }}"
+            },
+            {
+              "name": "fields",
+              "value": "={{ $json.fields }}"
+            },
+            {
+              "name": "pageToken",
+              "value": "={{ $json.pageToken }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        680,
+        0
+      ],
+      "id": "eebf7a86-d74f-4ba4-b011-71c46f4dffb3",
+      "name": "ListRequest",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "PLACEHOLDER",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $json;\nconst files = (data.files || []).map(f => ({\n  id: f.id,\n  name: f.name,\n  type: f.mimeType,\n  size: f.size ? parseInt(f.size) : null,\n  modified: f.modifiedTime,\n  url: f.webViewLink\n}));\nreturn [{ json: { action: 'list', count: files.length, next_page_token: data.nextPageToken || null, files } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        920,
+        0
+      ],
+      "id": "cbc36c22-72a0-4800-8774-374bb2240fb8",
+      "name": "FormatList"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1160,
+        0
+      ],
+      "id": "db308146-25aa-4774-b62a-3f8ef59c5281",
+      "name": "RespondList"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "AuthCheck",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AuthCheck": {
+      "main": [
+        [
+          {
+            "node": "PrepList",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepList": {
+      "main": [
+        [
+          {
+            "node": "ListRequest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ListRequest": {
+      "main": [
+        [
+          {
+            "node": "FormatList",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FormatList": {
+      "main": [
+        [
+          {
+            "node": "RespondList",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

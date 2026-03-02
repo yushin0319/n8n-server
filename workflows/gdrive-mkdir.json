@@ -1,0 +1,164 @@
+{
+  "name": "Google Drive - Mkdir",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "gdrive-mkdir",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "40cd050a-d8d8-464b-9ca1-9e310fc81162",
+      "name": "Webhook",
+      "webhookId": "4f7afbef-0738-4833-a653-38bdb2f976f8"
+    },
+    {
+      "parameters": {
+        "jsCode": "// [共通パターン] Webhook認証チェック - 全n8nワークフロー共通\n// WEBHOOK_SECRET 環境変数で認証キーを管理（n8n設定 > Environment Variables）\nconst secret = $input.first().json.headers['x-webhook-secret'];\nif (secret !== $env.WEBHOOK_SECRET) {\n  throw new Error('Forbidden: Invalid webhook secret');\n}\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "id": "282b9d69-432f-42e7-917d-b30c12046e2e",
+      "name": "AuthCheck"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body;\nconst name = body.name;\nif (!name) throw new Error('name is required');\nconst parentId = body.parent_id || 'root';\nreturn [{ json: {\n  name: name,\n  mimeType: 'application/vnd.google-apps.folder',\n  parents: [parentId]\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ],
+      "id": "58a6c91c-2813-4643-b924-75be124afa27",
+      "name": "PrepMkdir"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://www.googleapis.com/drive/v3/files?fields=id,name,mimeType,webViewLink",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "options": {},
+        "sendBody": true,
+        "jsonBody": "={{ JSON.stringify({ name: $json.name, mimeType: $json.mimeType, parents: $json.parents }) }}",
+        "specifyBody": "json"
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        680,
+        0
+      ],
+      "id": "1be9f98e-1c6f-4816-bc07-939425daaa86",
+      "name": "MkdirRequest",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "PLACEHOLDER",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $input.first().json;\nreturn [{ json: { action: 'mkdir', success: true, id: d.id, name: d.name, url: d.webViewLink } }];",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        920,
+        0
+      ],
+      "name": "FormatMkdir",
+      "id": "14ac271a-60c7-4bfb-8779-97b832a73669"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1160,
+        0
+      ],
+      "id": "1f933a8b-5320-4e50-822c-f9b54ae19cd7",
+      "name": "RespondMkdir"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "AuthCheck",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AuthCheck": {
+      "main": [
+        [
+          {
+            "node": "PrepMkdir",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepMkdir": {
+      "main": [
+        [
+          {
+            "node": "MkdirRequest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MkdirRequest": {
+      "main": [
+        [
+          {
+            "node": "FormatMkdir",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FormatMkdir": {
+      "main": [
+        [
+          {
+            "node": "RespondMkdir",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
