@@ -1,0 +1,177 @@
+{
+  "name": "Google Drive - Search",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "gdrive-search",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "e81635fd-7e69-410a-b659-d3a15e0353ff",
+      "name": "Webhook",
+      "webhookId": "fa3c65c3-db11-48ec-83c8-e53d760c6197"
+    },
+    {
+      "parameters": {
+        "jsCode": "// [共通パターン] Webhook認証チェック - 全n8nワークフロー共通\n// WEBHOOK_SECRET 環境変数で認証キーを管理（n8n設定 > Environment Variables）\nconst secret = $input.first().json.headers['x-webhook-secret'];\nif (secret !== $env.WEBHOOK_SECRET) {\n  throw new Error('Forbidden: Invalid webhook secret');\n}\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "id": "4e3cbe5d-4eae-4a54-a6a6-c6ce4fd29f18",
+      "name": "AuthCheck"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body;\nconst query = body.query || '';\nconst mimeType = body.mime_type || '';\nlet qParts = ['trashed = false'];\nif (query) qParts.push(`name contains '${query.replace(/'/g, \"\\\\'\")}'`);\nif (mimeType) qParts.push(`mimeType = '${mimeType}'`);\nconst q = qParts.join(' and ');\nconst fields = 'nextPageToken,files(id,name,mimeType,size,modifiedTime,webViewLink,parents)';\nconst pageSize = body.page_size || 20;\nreturn [{ json: { q, fields, pageSize } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ],
+      "id": "718f6d07-e302-46ae-a808-4d1e945aa65b",
+      "name": "PrepSearch"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://www.googleapis.com/drive/v3/files",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "options": {},
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "={{ $json.q }}"
+            },
+            {
+              "name": "pageSize",
+              "value": "={{ $json.pageSize }}"
+            },
+            {
+              "name": "fields",
+              "value": "={{ $json.fields }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        680,
+        0
+      ],
+      "id": "8b222d2e-8292-40ad-a089-1f153474c6ad",
+      "name": "SearchRequest",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "PLACEHOLDER",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $json;\nconst files = (data.files || []).map(f => ({\n  id: f.id,\n  name: f.name,\n  type: f.mimeType,\n  size: f.size ? parseInt(f.size) : null,\n  modified: f.modifiedTime,\n  url: f.webViewLink,\n  parents: f.parents\n}));\nreturn [{ json: { action: 'search', count: files.length, files } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        920,
+        0
+      ],
+      "id": "fde0362f-31df-492a-af57-76252255930f",
+      "name": "FormatSearch"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1160,
+        0
+      ],
+      "id": "5a7931ab-5141-496a-8bbf-669667fba53f",
+      "name": "RespondSearch"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "AuthCheck",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AuthCheck": {
+      "main": [
+        [
+          {
+            "node": "PrepSearch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepSearch": {
+      "main": [
+        [
+          {
+            "node": "SearchRequest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SearchRequest": {
+      "main": [
+        [
+          {
+            "node": "FormatSearch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FormatSearch": {
+      "main": [
+        [
+          {
+            "node": "RespondSearch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

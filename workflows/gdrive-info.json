@@ -1,0 +1,170 @@
+{
+  "name": "Google Drive - Info",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "gdrive-info",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "2b0ac041-1a0d-4aa4-a4af-144ca41480f5",
+      "name": "Webhook",
+      "webhookId": "e6341827-4c8a-4c4f-a537-0686252af1d5"
+    },
+    {
+      "parameters": {
+        "jsCode": "// [共通パターン] Webhook認証チェック - 全n8nワークフロー共通\n// WEBHOOK_SECRET 環境変数で認証キーを管理（n8n設定 > Environment Variables）\nconst secret = $input.first().json.headers['x-webhook-secret'];\nif (secret !== $env.WEBHOOK_SECRET) {\n  throw new Error('Forbidden: Invalid webhook secret');\n}\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "id": "75a113d9-de7c-4d01-8a57-25a99cadcf19",
+      "name": "AuthCheck"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body;\nconst fileId = body.file_id;\nif (!fileId) throw new Error('file_id is required');\nreturn [{ json: { fileId } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ],
+      "id": "b7f54db9-8015-44eb-a12f-c8394bd01efd",
+      "name": "PrepInfo"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://www.googleapis.com/drive/v3/files/{{ $json.fileId }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "options": {},
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "fields",
+              "value": "id,name,mimeType,size,modifiedTime,createdTime,webViewLink,parents,shared,description"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        680,
+        0
+      ],
+      "id": "f64053a6-d60e-46fb-ac86-fda1019940cc",
+      "name": "InfoRequest",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "PLACEHOLDER",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $input.first().json;\nreturn [{ json: Object.assign({ action: 'info' }, d) }];",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        920,
+        0
+      ],
+      "name": "FormatInfo",
+      "id": "9d18f42f-2f32-444f-956b-e9b6099a7e4c"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1160,
+        0
+      ],
+      "id": "67184def-975f-4d16-9215-af4e4128069b",
+      "name": "RespondInfo"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "AuthCheck",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AuthCheck": {
+      "main": [
+        [
+          {
+            "node": "PrepInfo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepInfo": {
+      "main": [
+        [
+          {
+            "node": "InfoRequest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "InfoRequest": {
+      "main": [
+        [
+          {
+            "node": "FormatInfo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FormatInfo": {
+      "main": [
+        [
+          {
+            "node": "RespondInfo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
