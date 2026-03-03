@@ -602,6 +602,13 @@
             "type": "main",
             "index": 0
           }
+        ],
+        [
+          {
+            "node": "PrepSummarize",
+            "type": "main",
+            "index": 0
+          }
         ]
       ]
     },
@@ -618,6 +625,13 @@
     },
     "SummarizeArticles": {
       "main": [
+        [
+          {
+            "node": "BuildBriefingResponse",
+            "type": "main",
+            "index": 0
+          }
+        ],
         [
           {
             "node": "BuildBriefingResponse",
