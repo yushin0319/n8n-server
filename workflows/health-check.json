@@ -44,7 +44,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const now = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });\nconst discordBody = {\n  username: 'n8n Health Check',\n  embeds: [{\n    title: 'HistLink Backend DOWN',\n    description: `${now} にヘルスチェックが失敗しました。\\nhttps://histlink-backend.onrender.com/`,\n    color: 15158332\n  }]\n};\nreturn [{ json: { discordBody: JSON.stringify(discordBody) } }];"
+        "jsCode": "const now = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });\nreturn [{ json: { embed: {\n  title: 'HistLink Backend DOWN',\n  description: now + ' \\u306b\\u30d8\\u30eb\\u30b9\\u30c1\\u30a7\\u30c3\\u30af\\u304c\\u5931\\u6557\\u3057\\u307e\\u3057\\u305f\\u3002',\n  color: 15158332\n}}}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -57,29 +57,34 @@
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "={{$env.DISCORD_WEBHOOK_URL}}",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
+        "authentication": "webhook",
+        "content": "",
+        "options": {
+          "username": "n8n Health Check"
+        },
+        "embeds": {
+          "values": [
             {
-              "name": "Content-Type",
-              "value": "application/json"
+              "inputMethod": "json",
+              "json": "={{ JSON.stringify($json.embed) }}"
             }
           ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ $json.discordBody }}"
+        }
       },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
       "position": [
         660,
         100
       ],
       "name": "SendToDiscord",
-      "id": "hc-0004-4000-8000-000000000004"
+      "id": "hc-0004-4000-8000-000000000004",
+      "credentials": {
+        "discordWebhookApi": {
+          "id": "Q1WzkHihMyOyHODS",
+          "name": "Discord Webhook account"
+        }
+      }
     },
     {
       "parameters": {},
