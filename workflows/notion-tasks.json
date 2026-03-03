@@ -501,7 +501,7 @@
     },
     {
       "parameters": {
-        "jsCode": "let hasContent = false;\nlet pageId = null;\ntry {\n  const prepData = $('PrepAppend').first().json;\n  hasContent = !!prepData.hasContent;\n  pageId = prepData.pageId;\n} catch(e) {}\n\nconst data = $input.first().json;\nconst contentAppended = hasContent && data.object === 'list';\n\nreturn [{ json: {\n  action: 'update',\n  success: true,\n  id: pageId,\n  url: pageId ? 'https://www.notion.so/' + pageId.replace(/-/g, '') : null,\n  hasContent,\n  contentAppended\n}}];",
+        "jsCode": "let hasContent = false;\nlet pageId = null;\ntry {\n  const prepData = $('PrepAppend').first().json;\n  hasContent = !!prepData.hasContent;\n  pageId = prepData.pageId;\n} catch(e) {\n  throw new Error('PrepAppend取得エラー: ' + (e.message || e));\n}\n\nconst data = $input.first().json;\nconst contentAppended = hasContent && data.object === 'list';\n\nreturn [{ json: {\n  action: 'update',\n  success: true,\n  id: pageId,\n  url: pageId ? 'https://www.notion.so/' + pageId.replace(/-/g, '') : null,\n  hasContent,\n  contentAppended\n}}];",
         "options": {}
       },
       "type": "n8n-nodes-base.code",
