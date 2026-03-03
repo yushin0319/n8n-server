@@ -339,7 +339,7 @@
           "name": "Notion account"
         }
       },
-      "onError": "continueErrorOutput"
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -373,7 +373,7 @@
         1500,
         800
       ],
-      "onError": "continueErrorOutput"
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -414,7 +414,7 @@
           "name": "Google Gemini(PaLM) Api account"
         }
       },
-      "onError": "continueErrorOutput"
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -602,13 +602,6 @@
             "type": "main",
             "index": 0
           }
-        ],
-        [
-          {
-            "node": "PrepSummarize",
-            "type": "main",
-            "index": 0
-          }
         ]
       ]
     },
@@ -625,13 +618,6 @@
     },
     "SummarizeArticles": {
       "main": [
-        [
-          {
-            "node": "BuildBriefingResponse",
-            "type": "main",
-            "index": 0
-          }
-        ],
         [
           {
             "node": "BuildBriefingResponse",
