@@ -13,7 +13,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const errorData = $input.first().json;\nconst execution = errorData.execution || {};\nconst error = execution.error || {};\nconst execUrl = execution.url || '';\nconst lastNode = execution.lastNodeExecuted || 'unknown';\nconst errorDetail = (error.description || error.message || 'unknown').substring(0, 300);\nconst now = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });\nreturn [{ json: {\n  embed: {\n    title: '\\u26a0\\ufe0f n8n \\u30a8\\u30e9\\u30fc',\n    color: 15158332,\n    fields: [\n      { name: '\\u30ce\\u30fc\\u30c9', value: lastNode, inline: true },\n      { name: '\\u6642\\u523b', value: now, inline: true },\n      { name: '\\u30a8\\u30e9\\u30fc', value: errorDetail },\n      { name: '\\u5b9f\\u884c\\u30ed\\u30b0', value: execUrl || 'N/A' }\n    ]\n  }\n}}];"
+        "jsCode": "const WF_MAP = {\n  'c8ZI0oriZgjePMud': 'Notion Tasks',\n  'oGx9uiLsxLGfGDcJ': 'Gmail to Notion',\n  'eR0S42ouMZUeNKG6': 'Notion Emails',\n  'VamRqRKYszmI2Mdh': 'Notion News',\n  'zV7aOFYfN4AUWmOL': 'RSS\\u30cb\\u30e5\\u30fc\\u30b9\\u53ce\\u96c6',\n  'BG2MtyVnocJvwz2f': 'GitHub\\u65e5\\u6b21\\u30b5\\u30de\\u30ea\\u30fc',\n  'NKY960IvoIjpLH6m': 'Recurring Tasks',\n  'hzu5NmntpfNSEIgO': 'Health Check',\n  'IVGYXlxoKKGURa4y': 'Server Status',\n  '8CCP4flWRe4eaKoF': 'Discord Notify'\n};\nconst errorData = $input.first().json;\nconst execution = errorData.execution || {};\nconst error = execution.error || {};\nconst execUrl = execution.url || '';\nconst lastNode = execution.lastNodeExecuted || 'unknown';\nconst errorDetail = (error.description || error.message || 'unknown').substring(0, 200);\nlet wfName = 'unknown';\nconst match = execUrl.match(/\\/workflow\\/([^\\/]+)\\//);\nif (match) wfName = WF_MAP[match[1]] || match[1];\nconst msg = `n8n\\u30a8\\u30e9\\u30fc\\u767a\\u751f\\n\\n\\u30ef\\u30fc\\u30af\\u30d5\\u30ed\\u30fc:\\n${wfName}\\n\\u30ce\\u30fc\\u30c9:\\n${lastNode}\\n\\u30a8\\u30e9\\u30fc\\u5185\\u5bb9:\\n${errorDetail}`;\nreturn [{ json: { message: msg } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -24,17 +24,9 @@
     {
       "parameters": {
         "authentication": "webhook",
-        "content": "",
+        "content": "={{ $json.message }}",
         "options": {
           "username": "n8n"
-        },
-        "embeds": {
-          "values": [
-            {
-              "inputMethod": "json",
-              "json": "={{ JSON.stringify($json.embed) }}"
-            }
-          ]
         }
       },
       "type": "n8n-nodes-base.discord",
