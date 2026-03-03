@@ -19,7 +19,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const msg = $input.first().json;\nconst discordBody = {\n  username: 'n8n',\n  content: msg.body.message || 'No message provided'\n};\nreturn [{ json: { discordBody: JSON.stringify(discordBody), originalMessage: msg.body.message || '' } }];"
+        "jsCode": "const msg = $input.first().json;\nconst message = msg.body.message || 'No message provided';\nreturn [{ json: { message } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -29,30 +29,27 @@
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "={{$env.DISCORD_WEBHOOK_URL}}",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ $json.discordBody }}"
+        "authentication": "webhook",
+        "content": "={{ $json.message }}",
+        "options": {
+          "username": "n8n"
+        }
       },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
       "position": [440, 0],
       "name": "SendToDiscord",
-      "id": "a1b2c3d4-0003-4000-8000-000000000003"
+      "id": "a1b2c3d4-0003-4000-8000-000000000003",
+      "credentials": {
+        "discordWebhookApi": {
+          "id": "PLACEHOLDER",
+          "name": "Discord Webhook"
+        }
+      }
     },
     {
       "parameters": {
-        "jsCode": "const original = $('FormatDiscord').first().json;\nreturn [{ json: { success: true, message: original.originalMessage } }];"
+        "jsCode": "const original = $('FormatDiscord').first().json;\nreturn [{ json: { success: true, message: original.message } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
