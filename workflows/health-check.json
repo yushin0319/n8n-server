@@ -44,7 +44,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const now = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });\nreturn [{ json: { embed: {\n  title: 'HistLink Backend DOWN',\n  description: now + ' \\u306b\\u30d8\\u30eb\\u30b9\\u30c1\\u30a7\\u30c3\\u30af\\u304c\\u5931\\u6557\\u3057\\u307e\\u3057\\u305f\\u3002',\n  color: 15158332\n}}}];"
+        "jsCode": "const now = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });\nreturn [{ json: { embed: {\n  title: 'HistLink Backend DOWN',\n  description: now + ' にヘルスチェックが失敗しました。',\n  color: 15158332\n}}}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
