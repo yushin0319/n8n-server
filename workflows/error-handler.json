@@ -13,7 +13,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const errorData = $input.first().json;\nconst execution = errorData.execution || {};\nconst error = execution.error || {};\nconst execUrl = execution.url || '';\nconst lastNode = execution.lastNodeExecuted || 'unknown';\nconst errorDetail = (error.description || error.message || 'unknown').substring(0, 300);\nconst now = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });\nconst discordBody = {\n  username: 'n8n',\n  embeds: [{\n    title: '\\u26a0\\ufe0f n8n \\u30a8\\u30e9\\u30fc',\n    color: 15158332,\n    fields: [\n      { name: '\\u30ce\\u30fc\\u30c9', value: lastNode, inline: true },\n      { name: '\\u6642\\u523b', value: now, inline: true },\n      { name: '\\u30a8\\u30e9\\u30fc', value: errorDetail },\n      { name: '\\u5b9f\\u884c\\u30ed\\u30b0', value: execUrl || 'N/A' }\n    ]\n  }]\n};\nreturn [{ json: { discordBody: JSON.stringify(discordBody) } }];"
+        "jsCode": "const errorData = $input.first().json;\nconst execution = errorData.execution || {};\nconst error = execution.error || {};\nconst execUrl = execution.url || '';\nconst lastNode = execution.lastNodeExecuted || 'unknown';\nconst errorDetail = (error.description || error.message || 'unknown').substring(0, 300);\nconst now = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });\nreturn [{ json: {\n  embed: {\n    title: '\\u26a0\\ufe0f n8n \\u30a8\\u30e9\\u30fc',\n    color: 15158332,\n    fields: [\n      { name: '\\u30ce\\u30fc\\u30c9', value: lastNode, inline: true },\n      { name: '\\u6642\\u523b', value: now, inline: true },\n      { name: '\\u30a8\\u30e9\\u30fc', value: errorDetail },\n      { name: '\\u5b9f\\u884c\\u30ed\\u30b0', value: execUrl || 'N/A' }\n    ]\n  }\n}}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -23,26 +23,31 @@
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "={{$env.DISCORD_WEBHOOK_URL}}",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
+        "authentication": "webhook",
+        "content": "",
+        "options": {
+          "username": "n8n"
+        },
+        "embeds": {
+          "values": [
             {
-              "name": "Content-Type",
-              "value": "application/json"
+              "inputMethod": "json",
+              "json": "={{ JSON.stringify($json.embed) }}"
             }
           ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ $json.discordBody }}"
+        }
       },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
       "position": [440, 0],
       "name": "SendToDiscord",
-      "id": "err-0003-4000-8000-000000000003"
+      "id": "err-0003-4000-8000-000000000003",
+      "credentials": {
+        "discordWebhookApi": {
+          "id": "PLACEHOLDER",
+          "name": "Discord Webhook"
+        }
+      }
     }
   ],
   "connections": {
