@@ -105,7 +105,7 @@
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "const input = $input.first().json.body || $input.first().json;\nconst pageId = input.page_id;\nif (!pageId) throw new Error('page_id is required');\nconst body = { properties: {} };\nif (input.read !== undefined) {\n  body.properties['\u65e2\u8aad'] = { checkbox: !!input.read };\n}\nif (input.featured !== undefined) {\n  body.properties['\u6ce8\u76ee'] = { checkbox: !!input.featured };\n}\nif (input.category !== undefined) {\n  body.properties['\u30ab\u30c6\u30b4\u30ea'] = { select: { name: input.category } };\n}\nreturn [{ json: { pageId, requestBody: JSON.stringify(body) } }];"
+        "jsCode": "const input = $input.first().json.body || $input.first().json;\nconst pageId = input.page_id;\nif (!pageId) throw new Error('page_id is required');\nconst body = { properties: {} };\nif (input.read !== undefined) {\n  body.properties['既読'] = { checkbox: !!input.read };\n}\nif (input.featured !== undefined) {\n  body.properties['注目'] = { checkbox: !!input.featured };\n}\nif (input.category !== undefined) {\n  body.properties['カテゴリ'] = { select: { name: input.category } };\n}\nreturn [{ json: { pageId, requestBody: JSON.stringify(body) } }];"
       },
       "id": "nn-prep-update",
       "name": "PrepUpdate",
@@ -173,7 +173,7 @@
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "const input = $input.first().json.body || $input.first().json;\nconst filters = [];\nif (input.source) {\n  filters.push({ property: '\u30bd\u30fc\u30b9', rich_text: { contains: input.source } });\n}\nif (input.category) {\n  filters.push({ property: '\u30ab\u30c6\u30b4\u30ea', select: { equals: input.category } });\n}\nif (input.query) {\n  filters.push({ property: '\u30bf\u30a4\u30c8\u30eb', title: { contains: input.query } });\n}\nif (input.featured !== undefined) {\n  filters.push({ property: '\u6ce8\u76ee', checkbox: { equals: !!input.featured } });\n}\nif (input.read !== undefined) {\n  filters.push({ property: '\u65e2\u8aad', checkbox: { equals: !!input.read } });\n}\nif (input.date_from) {\n  filters.push({ property: '\u65e5\u4ed8', date: { on_or_after: input.date_from } });\n}\nif (input.date_to) {\n  filters.push({ property: '\u65e5\u4ed8', date: { on_or_before: input.date_to } });\n}\nconst body = {};\nif (filters.length > 0) {\n  body.filter = filters.length === 1 ? filters[0] : { and: filters };\n}\nbody.sorts = [{ property: '\u65e5\u4ed8', direction: 'descending' }];\nif (input.limit) {\n  body.page_size = Math.min(input.limit, 100);\n}\nreturn [{ json: { requestBody: JSON.stringify(body) } }];"
+        "jsCode": "const input = $input.first().json.body || $input.first().json;\nconst filters = [];\nif (input.source) {\n  filters.push({ property: 'ソース', rich_text: { contains: input.source } });\n}\nif (input.category) {\n  filters.push({ property: 'カテゴリ', select: { equals: input.category } });\n}\nif (input.query) {\n  filters.push({ property: 'タイトル', title: { contains: input.query } });\n}\nif (input.featured !== undefined) {\n  filters.push({ property: '注目', checkbox: { equals: !!input.featured } });\n}\nif (input.read !== undefined) {\n  filters.push({ property: '既読', checkbox: { equals: !!input.read } });\n}\nif (input.date_from) {\n  filters.push({ property: '日付', date: { on_or_after: input.date_from } });\n}\nif (input.date_to) {\n  filters.push({ property: '日付', date: { on_or_before: input.date_to } });\n}\nconst body = {};\nif (filters.length > 0) {\n  body.filter = filters.length === 1 ? filters[0] : { and: filters };\n}\nbody.sorts = [{ property: '日付', direction: 'descending' }];\nif (input.limit) {\n  body.page_size = Math.min(input.limit, 100);\n}\nreturn [{ json: { requestBody: JSON.stringify(body) } }];"
       },
       "id": "nn-prep-search",
       "name": "PrepSearch",
@@ -212,7 +212,7 @@
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "const results = $input.first().json.results || [];\nconst news = results.map(page => {\n  const title = (page.properties['\u30bf\u30a4\u30c8\u30eb']?.title || []).map(t => t.plain_text).join('') || '(\u7121\u984c)';\n  const url = page.properties['URL']?.url || '';\n  const category = page.properties['\u30ab\u30c6\u30b4\u30ea']?.select?.name || '';\n  const source = (page.properties['\u30bd\u30fc\u30b9']?.rich_text || []).map(t => t.plain_text).join('') || '';\n  const date = page.properties['\u65e5\u4ed8']?.date?.start || '';\n  const summary = (page.properties['\u8981\u7d04']?.rich_text || []).map(t => t.plain_text).join('') || '';\n  const read = page.properties['\u65e2\u8aad']?.checkbox || false;\n  const featured = page.properties['\u6ce8\u76ee']?.checkbox || false;\n  return { id: page.id, title, url, category, source, date, summary, read, featured };\n});\nreturn [{ json: { action: 'search', count: news.length, news } }];"
+        "jsCode": "const results = $input.first().json.results || [];\nconst news = results.map(page => {\n  const title = (page.properties['タイトル']?.title || []).map(t => t.plain_text).join('') || '(無題)';\n  const url = page.properties['URL']?.url || '';\n  const category = page.properties['カテゴリ']?.select?.name || '';\n  const source = (page.properties['ソース']?.rich_text || []).map(t => t.plain_text).join('') || '';\n  const date = page.properties['日付']?.date?.start || '';\n  const summary = (page.properties['要約']?.rich_text || []).map(t => t.plain_text).join('') || '';\n  const read = page.properties['既読']?.checkbox || false;\n  const featured = page.properties['注目']?.checkbox || false;\n  return { id: page.id, title, url, category, source, date, summary, read, featured };\n});\nreturn [{ json: { action: 'search', count: news.length, news } }];"
       },
       "id": "nn-format-search",
       "name": "FormatSearch",
@@ -240,7 +240,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const queryBody = JSON.stringify({ filter: { property: '\u65e2\u8aad', checkbox: { equals: false } }, sorts: [{ property: '\u65e5\u4ed8', direction: 'descending' }] });\nreturn [{ json: { queryBody } }];"
+        "jsCode": "const queryBody = JSON.stringify({ filter: { property: '既読', checkbox: { equals: false } }, sorts: [{ property: '日付', direction: 'descending' }] });\nreturn [{ json: { queryBody } }];"
       },
       "id": "nn-briefing-query-build",
       "name": "BuildBriefingQuery",
@@ -278,7 +278,8 @@
     },
     {
       "parameters": {
-        "jsCode": "const results = $input.first().json.results || [];\nconst featuredNews = [];\nconst regularNews = [];\nconst allPageIds = [];\nfor (const page of results) {\n  const title = (page.properties['\u30bf\u30a4\u30c8\u30eb']?.title || []).map(t => t.plain_text).join('') || '(\u7121\u984c)';\n  const url = page.properties['URL']?.url || '';\n  const category = page.properties['\u30ab\u30c6\u30b4\u30ea']?.select?.name || '';\n  const source = (page.properties['\u30bd\u30fc\u30b9']?.rich_text || []).map(t => t.plain_text).join('') || '';\n  const date = page.properties['\u65e5\u4ed8']?.date?.start || '';\n  const summary = (page.properties['\u8981\u7d04']?.rich_text || []).map(t => t.plain_text).join('') || '';\n  const featured = page.properties['\u6ce8\u76ee']?.checkbox || false;\n  const newsData = { id: page.id, title, url, category, source, date, summary, featured };\n  if (featured) {\n    featuredNews.push(newsData);\n  } else {\n    regularNews.push(newsData);\n  }\n  allPageIds.push(page.id);\n}\nconst briefingResponse = { action: 'briefing', featured: { count: featuredNews.length, news: featuredNews }, regular: { count: regularNews.length, news: regularNews }, marked_read_count: allPageIds.length };\nif (allPageIds.length === 0) {\n  return [[], [{ json: briefingResponse }]];\n}\nreturn [[{ json: { briefingResponse, allPageIds } }], []];"
+        "jsCode": "const results = $input.first().json.results || [];\nconst featuredNews = [];\nconst regularNews = [];\nconst allPageIds = [];\nfor (const page of results) {\n  const title = (page.properties['タイトル']?.title || []).map(t => t.plain_text).join('') || '(無題)';\n  const url = page.properties['URL']?.url || '';\n  const category = page.properties['カテゴリ']?.select?.name || '';\n  const source = (page.properties['ソース']?.rich_text || []).map(t => t.plain_text).join('') || '';\n  const date = page.properties['日付']?.date?.start || '';\n  const summary = (page.properties['要約']?.rich_text || []).map(t => t.plain_text).join('') || '';\n  const featured = page.properties['注目']?.checkbox || false;\n  const newsData = { id: page.id, title, url, category, source, date, summary, featured };\n  if (featured) {\n    featuredNews.push(newsData);\n  } else {\n    regularNews.push(newsData);\n  }\n  allPageIds.push(page.id);\n}\nconst briefingResponse = { action: 'briefing', featured: { count: featuredNews.length, news: featuredNews }, regular: { count: regularNews.length, news: regularNews }, marked_read_count: allPageIds.length };\nif (allPageIds.length === 0) {\n  return [[], [{ json: briefingResponse }]];\n}\nreturn [[{ json: { briefingResponse, allPageIds } }], []];",
+        "numberOfOutputs": 2
       },
       "id": "nn-briefing-process",
       "name": "ProcessBriefing",
@@ -306,7 +307,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const ids = $input.first().json.allPageIds || [];\nif (ids.length === 0) return [];\nconst updateBody = JSON.stringify({ properties: { '\u65e2\u8aad': { checkbox: true } } });\nreturn ids.map(pageId => ({ json: { pageId, requestBody: updateBody } }));"
+        "jsCode": "const ids = $input.first().json.allPageIds || [];\nif (ids.length === 0) return [];\nconst updateBody = JSON.stringify({ properties: { '既読': { checkbox: true } } });\nreturn ids.map(pageId => ({ json: { pageId, requestBody: updateBody } }));"
       },
       "id": "nn-briefing-prep-read",
       "name": "PrepareMarkRead",
@@ -351,7 +352,10 @@
       "name": "LogMarkReadFail",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1750, 540]
+      "position": [
+        1750,
+        540
+      ]
     },
     {
       "parameters": {
@@ -436,7 +440,10 @@
       "name": "RethrowSummarize",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2000, 1000]
+      "position": [
+        2000,
+        1000
+      ]
     },
     {
       "parameters": {
@@ -464,7 +471,10 @@
       "name": "RespondFallback",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
-      "position": [500, 800]
+      "position": [
+        500,
+        800
+      ]
     }
   ],
   "connections": {
