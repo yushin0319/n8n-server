@@ -336,18 +336,7 @@
           "id": "StdChbKZz3co4jDO",
           "name": "Notion account"
         }
-      },
-      "onError": "continueErrorOutput"
-    },
-    {
-      "parameters": {
-        "jsCode": "const err = $input.first().json;\nconsole.error('MarkRead失敗:', err.error?.message || err.message || JSON.stringify(err).substring(0, 200));\nreturn [{ json: { markReadFailed: true } }];"
-      },
-      "id": "c7",
-      "name": "LogMarkReadFail",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [1540, 300]
+      }
     },
     {
       "parameters": {
@@ -525,14 +514,7 @@
     },
     "MarkRead": {
       "main": [
-        [],
-        [
-          {
-            "node": "LogMarkReadFail",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        []
       ]
     }
   },
