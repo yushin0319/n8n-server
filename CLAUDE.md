@@ -45,9 +45,9 @@ gh workflow run deploy.yml --repo yushin0319/n8n-server --field deploy_all=true
 
 - `deploy.yml`: workflows/ 変更時に自動デプロイ（変更ファイルのみ）
 - `gemini-review.yml`: shared-workflows 経由の PR レビュー
-- pre-push hook: `validate_workflows.py` 実行
+- pre-commit hook: `validate_workflows.py` 実行（コミット時にゲート）
 
 ## テスト方針
 
-- `validate_workflows.py` による静的解析（3チェック項目）
+- `validate_workflows.py` による静的解析（8チェック項目）
 - TDD ポリシー適用範囲外（テストフレームワークなし）
