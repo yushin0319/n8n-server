@@ -340,21 +340,7 @@
           "id": "StdChbKZz3co4jDO",
           "name": "Notion account"
         }
-      },
-      "onError": "continueErrorOutput"
-    },
-    {
-      "parameters": {
-        "jsCode": "const err = $input.first().json;\nconsole.error('MarkRead失敗:', err.error?.message || err.message || JSON.stringify(err).substring(0, 200));\nreturn [{ json: { markReadFailed: true } }];"
-      },
-      "id": "nn-log-markread-fail",
-      "name": "LogMarkReadFail",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1750,
-        540
-      ]
+      }
     },
     {
       "parameters": {
@@ -428,21 +414,7 @@
           "id": "rlflsmwVLnPi2SAN",
           "name": "Google Gemini(PaLM) Api account"
         }
-      },
-      "onError": "continueErrorOutput"
-    },
-    {
-      "parameters": {
-        "jsCode": "const err = $input.first().json;\nconst msg = err.error?.message || err.message || JSON.stringify(err).substring(0, 200);\nthrow new Error('SummarizeArticles API error: ' + msg);"
-      },
-      "id": "nn-rethrow-summarize",
-      "name": "RethrowSummarize",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        2000,
-        1000
-      ]
+      }
     },
     {
       "parameters": {
@@ -653,14 +625,7 @@
     },
     "MarkRead": {
       "main": [
-        [],
-        [
-          {
-            "node": "LogMarkReadFail",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        []
       ]
     },
     "PrepFetchUrls": {
@@ -701,13 +666,6 @@
         [
           {
             "node": "BuildBriefingResponse",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "RethrowSummarize",
             "type": "main",
             "index": 0
           }
