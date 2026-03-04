@@ -91,7 +91,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const items = $input.all();\nconst results = [];\nfor (let i = 0; i < items.length; i++) {\n  const geminiResponse = items[i].json;\n  const original = $('PrepareHN').all()[i].json;\n  let translatedTitle = original.title;\n  let translatedSnippet = original.contentSnippet || '';\n  try {\n    const responseText = geminiResponse.candidates?.[0]?.content?.parts?.[0]?.text || '';\n    const jsonMatch = responseText.match(/\\{[\\s\\S]*\\}/);\n    if (jsonMatch) {\n      const parsed = JSON.parse(jsonMatch[0]);\n      translatedTitle = parsed.title || translatedTitle;\n      translatedSnippet = parsed.summary || translatedSnippet;\n    }\n  } catch (e) { console.error('ApplyHN parse error:', e.message); }\n  const rebuilt = Object.assign({}, original);\n  delete rebuilt.geminiBody;\n  rebuilt.title = translatedTitle;\n  rebuilt.contentSnippet = translatedSnippet;\n  results.push({ json: rebuilt });\n}\nreturn results;"
+        "jsCode": "const items = $input.all();\nconst results = [];\nfor (let i = 0; i < items.length; i++) {\n  const geminiResponse = items[i].json;\n  const original = $('PrepareHN').all()[i].json;\n  let translatedTitle = original.title;\n  let translatedSnippet = original.contentSnippet || '';\n  try {\n    const responseText = geminiResponse.candidates?.[0]?.content?.parts?.[0]?.text || '';\n    const jsonMatch = responseText.match(/\\{[\\s\\S]*\\}/);\n    if (jsonMatch) {\n      const parsed = JSON.parse(jsonMatch[0]);\n      translatedTitle = parsed.title || translatedTitle;\n      translatedSnippet = parsed.summary || translatedSnippet;\n    }\n  } catch (e) { throw new Error('ApplyHN: HN翻訳結果のパースに失敗: ' + e.message); }\n  const rebuilt = Object.assign({}, original);\n  delete rebuilt.geminiBody;\n  rebuilt.title = translatedTitle;\n  rebuilt.contentSnippet = translatedSnippet;\n  results.push({ json: rebuilt });\n}\nreturn results;"
       },
       "id": "a1000001-0001-0001-0001-000000000010",
       "name": "ApplyHN",
@@ -157,7 +157,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const geminiResponse = $input.first().json;\nconst originalItems = $('WaitBoth').all();\nlet selected = [];\ntry {\n  const responseText = geminiResponse.candidates?.[0]?.content?.parts?.[0]?.text || '';\n  const parsed = JSON.parse(responseText);\n  for (const val of Object.values(parsed)) {\n    if (Array.isArray(val)) {\n      selected = selected.concat(val.filter(n => typeof n === 'number'));\n    }\n  }\n} catch (e) { console.error('ApplyScores parse error:', e.message); }\nconst selectedSet = new Set(selected);\nreturn originalItems.map((item, i) => {\n  const d = Object.assign({}, item.json);\n  d.isTop5 = selectedSet.has(i + 1);\n  return { json: d };\n});"
+        "jsCode": "const geminiResponse = $input.first().json;\nconst originalItems = $('WaitBoth').all();\nlet selected = [];\ntry {\n  const responseText = geminiResponse.candidates?.[0]?.content?.parts?.[0]?.text || '';\n  const parsed = JSON.parse(responseText);\n  for (const val of Object.values(parsed)) {\n    if (Array.isArray(val)) {\n      selected = selected.concat(val.filter(n => typeof n === 'number'));\n    }\n  }\n} catch (e) { throw new Error('ApplyScores: スコアリング結果のパースに失敗: ' + e.message); }\nconst selectedSet = new Set(selected);\nreturn originalItems.map((item, i) => {\n  const d = Object.assign({}, item.json);\n  d.isTop5 = selectedSet.has(i + 1);\n  return { json: d };\n});"
       },
       "id": "a1000001-0001-0001-0001-000000000013",
       "name": "ApplyScores",
@@ -205,6 +205,26 @@
           "name": "Notion account"
         }
       }
+    },
+    {
+      "parameters": {
+        "jsCode": "const err = $input.first().json;\nconst msg = err.error?.message || err.message || JSON.stringify(err).substring(0, 200);\nthrow new Error('GeminiTranslate API error: ' + msg);"
+      },
+      "id": "a1000001-0001-0001-0001-000000000014",
+      "name": "RethrowTranslate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [880, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const err = $input.first().json;\nconst msg = err.error?.message || err.message || JSON.stringify(err).substring(0, 200);\nthrow new Error('GeminiScore API error: ' + msg);"
+      },
+      "id": "a1000001-0001-0001-0001-000000000015",
+      "name": "RethrowScore",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1760, 200]
     }
   ],
   "connections": {
@@ -265,6 +285,13 @@
             "type": "main",
             "index": 0
           }
+        ],
+        [
+          {
+            "node": "RethrowTranslate",
+            "type": "main",
+            "index": 0
+          }
         ]
       ]
     },
@@ -306,6 +333,13 @@
         [
           {
             "node": "ApplyScores",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "RethrowScore",
             "type": "main",
             "index": 0
           }
