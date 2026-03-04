@@ -135,7 +135,9 @@
             }
           ]
         },
-        "options": {}
+        "options": {
+          "fallbackOutput": "extra"
+        }
       },
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3,
@@ -587,6 +589,20 @@
       ],
       "id": "get-respond-001",
       "name": "RespondGet"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ error: 'Unknown action', message: 'Supported actions: list, create, update, search, get', received: $json.body?.action || 'none' }) }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [500, 1100],
+      "id": "fallback-respond-001",
+      "name": "RespondFallback"
     }
   ],
   "connections": {
@@ -634,6 +650,13 @@
         [
           {
             "node": "PrepGet",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "RespondFallback",
             "type": "main",
             "index": 0
           }

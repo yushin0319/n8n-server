@@ -89,7 +89,9 @@
             }
           ]
         },
-        "options": {}
+        "options": {
+          "fallbackOutput": "extra"
+        }
       },
       "id": "b2",
       "name": "Switch",
@@ -335,7 +337,31 @@
           "name": "Notion account"
         }
       },
-      "continueOnFail": true
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const err = $input.first().json;\nconsole.error('MarkRead失敗:', err.error?.message || err.message || JSON.stringify(err).substring(0, 200));\nreturn [{ json: { markReadFailed: true } }];"
+      },
+      "id": "c7",
+      "name": "LogMarkReadFail",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1540, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ error: 'Unknown action', message: 'Supported actions: update, search, briefing', received: $json.body?.action || 'none' }) }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "id": "c8",
+      "name": "RespondFallback",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [440, 500]
     }
   ],
   "connections": {
@@ -369,6 +395,13 @@
         [
           {
             "node": "BuildBriefingQuery",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "RespondFallback",
             "type": "main",
             "index": 0
           }
@@ -484,6 +517,18 @@
         [
           {
             "node": "MarkRead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MarkRead": {
+      "main": [
+        [],
+        [
+          {
+            "node": "LogMarkReadFail",
             "type": "main",
             "index": 0
           }
