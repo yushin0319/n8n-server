@@ -17,6 +17,7 @@
       "id": "a1b2c3d4-0001-4000-8000-000000000001",
       "webhookId": "a1b2c3d4-0001-4000-8000-000000000001"
     },
+
     {
       "parameters": {
         "jsCode": "const msg = $input.first().json;\nconst message = msg.body.message || 'No message provided';\nreturn [{ json: { message } }];"
@@ -72,16 +73,16 @@
   ],
   "connections": {
     "Webhook": {
-      "main": [[{"node": "FormatDiscord", "type": "main", "index": 0}]]
+      "main": [[{ "node": "FormatDiscord", "type": "main", "index": 0 }]]
     },
     "FormatDiscord": {
-      "main": [[{"node": "SendToDiscord", "type": "main", "index": 0}]]
+      "main": [[{ "node": "SendToDiscord", "type": "main", "index": 0 }]]
     },
     "SendToDiscord": {
-      "main": [[{"node": "FormatResponse", "type": "main", "index": 0}]]
+      "main": [[{ "node": "FormatResponse", "type": "main", "index": 0 }]]
     },
     "FormatResponse": {
-      "main": [[{"node": "Respond", "type": "main", "index": 0}]]
+      "main": [[{ "node": "Respond", "type": "main", "index": 0 }]]
     }
   },
   "settings": {
