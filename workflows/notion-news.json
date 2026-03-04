@@ -278,7 +278,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const results = $input.first().json.results || [];\nconst featuredNews = [];\nconst regularNews = [];\nconst allPageIds = [];\nfor (const page of results) {\n  const title = (page.properties['\u30bf\u30a4\u30c8\u30eb']?.title || []).map(t => t.plain_text).join('') || '(\u7121\u984c)';\n  const url = page.properties['URL']?.url || '';\n  const category = page.properties['\u30ab\u30c6\u30b4\u30ea']?.select?.name || '';\n  const source = (page.properties['\u30bd\u30fc\u30b9']?.rich_text || []).map(t => t.plain_text).join('') || '';\n  const date = page.properties['\u65e5\u4ed8']?.date?.start || '';\n  const summary = (page.properties['\u8981\u7d04']?.rich_text || []).map(t => t.plain_text).join('') || '';\n  const featured = page.properties['\u6ce8\u76ee']?.checkbox || false;\n  const newsData = { id: page.id, title, url, category, source, date, summary, featured };\n  if (featured) {\n    featuredNews.push(newsData);\n  } else {\n    regularNews.push(newsData);\n  }\n  allPageIds.push(page.id);\n}\nconst briefingResponse = { action: 'briefing', featured: { count: featuredNews.length, news: featuredNews }, regular: { count: regularNews.length, news: regularNews }, marked_read_count: allPageIds.length };\nreturn [{ json: { briefingResponse, allPageIds } }];"
+        "jsCode": "const results = $input.first().json.results || [];\nconst featuredNews = [];\nconst regularNews = [];\nconst allPageIds = [];\nfor (const page of results) {\n  const title = (page.properties['\u30bf\u30a4\u30c8\u30eb']?.title || []).map(t => t.plain_text).join('') || '(\u7121\u984c)';\n  const url = page.properties['URL']?.url || '';\n  const category = page.properties['\u30ab\u30c6\u30b4\u30ea']?.select?.name || '';\n  const source = (page.properties['\u30bd\u30fc\u30b9']?.rich_text || []).map(t => t.plain_text).join('') || '';\n  const date = page.properties['\u65e5\u4ed8']?.date?.start || '';\n  const summary = (page.properties['\u8981\u7d04']?.rich_text || []).map(t => t.plain_text).join('') || '';\n  const featured = page.properties['\u6ce8\u76ee']?.checkbox || false;\n  const newsData = { id: page.id, title, url, category, source, date, summary, featured };\n  if (featured) {\n    featuredNews.push(newsData);\n  } else {\n    regularNews.push(newsData);\n  }\n  allPageIds.push(page.id);\n}\nconst briefingResponse = { action: 'briefing', featured: { count: featuredNews.length, news: featuredNews }, regular: { count: regularNews.length, news: regularNews }, marked_read_count: allPageIds.length };\nif (allPageIds.length === 0) {\n  return [[], [{ json: briefingResponse }]];\n}\nreturn [[{ json: { briefingResponse, allPageIds } }], []];"
       },
       "id": "nn-briefing-process",
       "name": "ProcessBriefing",
@@ -609,6 +609,13 @@
           },
           {
             "node": "PrepareMarkRead",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "RespondBriefing",
             "type": "main",
             "index": 0
           }
