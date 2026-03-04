@@ -89,7 +89,9 @@
             }
           ]
         },
-        "options": {}
+        "options": {
+          "fallbackOutput": "extra"
+        }
       },
       "id": "nn-switch",
       "name": "Switch",
@@ -339,7 +341,17 @@
           "name": "Notion account"
         }
       },
-      "onError": "continueRegularOutput"
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const err = $input.first().json;\nconsole.error('MarkRead失敗:', err.error?.message || err.message || JSON.stringify(err).substring(0, 200));\nreturn [{ json: { markReadFailed: true } }];"
+      },
+      "id": "nn-log-markread-fail",
+      "name": "LogMarkReadFail",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1750, 540]
     },
     {
       "parameters": {
@@ -414,12 +426,22 @@
           "name": "Google Gemini(PaLM) Api account"
         }
       },
-      "onError": "continueRegularOutput"
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const err = $input.first().json;\nconst msg = err.error?.message || err.message || JSON.stringify(err).substring(0, 200);\nthrow new Error('SummarizeArticles API error: ' + msg);"
+      },
+      "id": "nn-rethrow-summarize",
+      "name": "RethrowSummarize",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2000, 1000]
     },
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "const geminiResponse = $input.first().json;\nconst briefingData = $('ProcessBriefing').first().json;\nconst response = JSON.parse(JSON.stringify(briefingData.briefingResponse));\ntry {\n  let responseText = geminiResponse.candidates?.[0]?.content?.parts?.[0]?.text || '';\n  const lines = responseText.split(String.fromCharCode(10));\n  const filtered = lines.filter(l => !l.trim().startsWith(String.fromCharCode(96,96,96)));\n  responseText = filtered.join(String.fromCharCode(10)).trim();\n  const jsonMatch = responseText.match(/\\{[\\s\\S]*\\}/);\n  if (jsonMatch) {\n    const parsed = JSON.parse(jsonMatch[0]);\n    const summaries = parsed.articles || [];\n    for (const s of summaries) {\n      if (s.index >= 0 && s.index < response.featured.news.length && s.summary) {\n        response.featured.news[s.index].summary = s.summary;\n      }\n    }\n  }\n} catch (e) { console.error('BuildBriefingResponse parse error:', e.message); }\nreturn [{ json: response }];"
+        "jsCode": "const geminiResponse = $input.first().json;\nconst briefingData = $('ProcessBriefing').first().json;\nconst response = JSON.parse(JSON.stringify(briefingData.briefingResponse));\ntry {\n  let responseText = geminiResponse.candidates?.[0]?.content?.parts?.[0]?.text || '';\n  const lines = responseText.split(String.fromCharCode(10));\n  const filtered = lines.filter(l => !l.trim().startsWith(String.fromCharCode(96,96,96)));\n  responseText = filtered.join(String.fromCharCode(10)).trim();\n  const jsonMatch = responseText.match(/\\{[\\s\\S]*\\}/);\n  if (jsonMatch) {\n    const parsed = JSON.parse(jsonMatch[0]);\n    const summaries = parsed.articles || [];\n    for (const s of summaries) {\n      if (s.index >= 0 && s.index < response.featured.news.length && s.summary) {\n        response.featured.news[s.index].summary = s.summary;\n      }\n    }\n  }\n} catch (e) { throw new Error('BuildBriefingResponse: Gemini要約のパースに失敗: ' + e.message); }\nreturn [{ json: response }];"
       },
       "id": "nn-build-briefing-response",
       "name": "BuildBriefingResponse",
@@ -429,6 +451,20 @@
         2250,
         800
       ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ error: 'Unknown action', message: 'Supported actions: update, search, briefing', received: $json.body?.action || 'none' }) }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "id": "nn-respond-fallback",
+      "name": "RespondFallback",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [500, 800]
     }
   ],
   "connections": {
@@ -462,6 +498,13 @@
         [
           {
             "node": "BuildBriefingQuery",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "RespondFallback",
             "type": "main",
             "index": 0
           }
@@ -583,6 +626,18 @@
         ]
       ]
     },
+    "MarkRead": {
+      "main": [
+        [],
+        [
+          {
+            "node": "LogMarkReadFail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "PrepFetchUrls": {
       "main": [
         [
@@ -621,6 +676,13 @@
         [
           {
             "node": "BuildBriefingResponse",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "RethrowSummarize",
             "type": "main",
             "index": 0
           }
