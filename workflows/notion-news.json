@@ -278,8 +278,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const results = $input.first().json.results || [];\nconst featuredNews = [];\nconst regularNews = [];\nconst allPageIds = [];\nfor (const page of results) {\n  const title = (page.properties['タイトル']?.title || []).map(t => t.plain_text).join('') || '(無題)';\n  const url = page.properties['URL']?.url || '';\n  const category = page.properties['カテゴリ']?.select?.name || '';\n  const source = (page.properties['ソース']?.rich_text || []).map(t => t.plain_text).join('') || '';\n  const date = page.properties['日付']?.date?.start || '';\n  const summary = (page.properties['要約']?.rich_text || []).map(t => t.plain_text).join('') || '';\n  const featured = page.properties['注目']?.checkbox || false;\n  const newsData = { id: page.id, title, url, category, source, date, summary, featured };\n  if (featured) {\n    featuredNews.push(newsData);\n  } else {\n    regularNews.push(newsData);\n  }\n  allPageIds.push(page.id);\n}\nconst briefingResponse = { action: 'briefing', featured: { count: featuredNews.length, news: featuredNews }, regular: { count: regularNews.length, news: regularNews }, marked_read_count: allPageIds.length };\nif (allPageIds.length === 0) {\n  return [[], [{ json: briefingResponse }]];\n}\nreturn [[{ json: { briefingResponse, allPageIds } }], []];",
-        "numberOfOutputs": 2
+        "jsCode": "const results = $input.first().json.results || [];\nconst featuredNews = [];\nconst regularNews = [];\nconst allPageIds = [];\nfor (const page of results) {\n  const title = (page.properties['タイトル']?.title || []).map(t => t.plain_text).join('') || '(無題)';\n  const url = page.properties['URL']?.url || '';\n  const category = page.properties['カテゴリ']?.select?.name || '';\n  const source = (page.properties['ソース']?.rich_text || []).map(t => t.plain_text).join('') || '';\n  const date = page.properties['日付']?.date?.start || '';\n  const summary = (page.properties['要約']?.rich_text || []).map(t => t.plain_text).join('') || '';\n  const featured = page.properties['注目']?.checkbox || false;\n  const newsData = { id: page.id, title, url, category, source, date, summary, featured };\n  if (featured) {\n    featuredNews.push(newsData);\n  } else {\n    regularNews.push(newsData);\n  }\n  allPageIds.push(page.id);\n}\nconst briefingResponse = { action: 'briefing', featured: { count: featuredNews.length, news: featuredNews }, regular: { count: regularNews.length, news: regularNews }, marked_read_count: allPageIds.length };\nif (allPageIds.length === 0) {\n  return [{ json: briefingResponse }];\n}\nreturn [{ json: { briefingResponse, allPageIds } }];"
       },
       "id": "nn-briefing-process",
       "name": "ProcessBriefing",
@@ -475,6 +474,38 @@
         500,
         800
       ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": ""
+          },
+          "conditions": [
+            {
+              "id": "has-news-check",
+              "leftValue": "={{ $json.allPageIds }}",
+              "rightValue": "",
+              "operator": {
+                "type": "array",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "nn-has-news",
+      "name": "HasNews",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1200,
+        600
+      ]
     }
   ],
   "connections": {
@@ -609,29 +640,6 @@
         ]
       ]
     },
-    "ProcessBriefing": {
-      "main": [
-        [
-          {
-            "node": "PrepFetchUrls",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "PrepareMarkRead",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "RespondBriefing",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "PrepareMarkRead": {
       "main": [
         [
@@ -708,6 +716,40 @@
     },
     "BuildBriefingResponse": {
       "main": [
+        [
+          {
+            "node": "RespondBriefing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ProcessBriefing": {
+      "main": [
+        [
+          {
+            "node": "HasNews",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HasNews": {
+      "main": [
+        [
+          {
+            "node": "PrepFetchUrls",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "PrepareMarkRead",
+            "type": "main",
+            "index": 0
+          }
+        ],
         [
           {
             "node": "RespondBriefing",
