@@ -86,8 +86,7 @@
           "id": "rlflsmwVLnPi2SAN",
           "name": "Google Gemini(PaLM) Api account"
         }
-      },
-      "onError": "continueErrorOutput"
+      }
     },
     {
       "parameters": {
@@ -152,8 +151,7 @@
           "id": "rlflsmwVLnPi2SAN",
           "name": "Google Gemini(PaLM) Api account"
         }
-      },
-      "onError": "continueErrorOutput"
+      }
     },
     {
       "parameters": {
@@ -205,26 +203,6 @@
           "name": "Notion account"
         }
       }
-    },
-    {
-      "parameters": {
-        "jsCode": "const err = $input.first().json;\nconst msg = err.error?.message || err.message || JSON.stringify(err).substring(0, 200);\nthrow new Error('GeminiTranslate API error: ' + msg);"
-      },
-      "id": "a1000001-0001-0001-0001-000000000014",
-      "name": "RethrowTranslate",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [880, 300]
-    },
-    {
-      "parameters": {
-        "jsCode": "const err = $input.first().json;\nconst msg = err.error?.message || err.message || JSON.stringify(err).substring(0, 200);\nthrow new Error('GeminiScore API error: ' + msg);"
-      },
-      "id": "a1000001-0001-0001-0001-000000000015",
-      "name": "RethrowScore",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [1760, 200]
     }
   ],
   "connections": {
@@ -285,13 +263,6 @@
             "type": "main",
             "index": 0
           }
-        ],
-        [
-          {
-            "node": "RethrowTranslate",
-            "type": "main",
-            "index": 0
-          }
         ]
       ]
     },
@@ -333,13 +304,6 @@
         [
           {
             "node": "ApplyScores",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "RethrowScore",
             "type": "main",
             "index": 0
           }
