@@ -84,8 +84,7 @@
           "id": "rlflsmwVLnPi2SAN",
           "name": "Google Gemini(PaLM) Api account"
         }
-      },
-      "onError": "continueErrorOutput"
+      }
     },
     {
       "parameters": {
@@ -157,16 +156,6 @@
           "name": "Gmail account"
         }
       }
-    },
-    {
-      "parameters": {
-        "jsCode": "const err = $input.first().json;\nconst msg = err.error?.message || err.message || JSON.stringify(err).substring(0, 200);\nthrow new Error('GeminiClassify API error: ' + msg);"
-      },
-      "id": "a3d",
-      "name": "RethrowClassify",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [880, 200]
     }
   ],
   "connections": {
@@ -208,13 +197,6 @@
         [
           {
             "node": "BuildNotionBody",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "RethrowClassify",
             "type": "main",
             "index": 0
           }
