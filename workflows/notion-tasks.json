@@ -132,6 +132,27 @@
               },
               "renameOutput": true,
               "outputKey": "get"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": ""
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.action }}",
+                    "rightValue": "replace",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "replace"
             }
           ]
         },
@@ -593,7 +614,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ error: 'Unknown action', message: 'Supported actions: list, create, update, search, get', received: $json.body?.action || 'none' }) }}",
+        "responseBody": "={{ JSON.stringify({ error: 'Unknown action', message: 'Supported actions: list, create, update, search, get, replace', received: $json.body?.action || 'none' }) }}",
         "options": {
           "responseCode": 400
         }
@@ -606,6 +627,209 @@
       ],
       "id": "fallback-respond-001",
       "name": "RespondFallback"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const input = $input.first().json.body || $input.first().json;\nconst pageId = input.page_id;\nconst taskContent = input.content || '';\nif (!pageId) throw new Error('page_id is required for replace action');\nif (!taskContent) throw new Error('content is required for replace action');\nreturn [{ json: { pageId, taskContent } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        500,
+        1200
+      ],
+      "id": "replace-prep-001",
+      "name": "PrepReplace"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.notion.com/v1/blocks/{{ $json.pageId }}/children?page_size=100",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2022-06-28"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        750,
+        1200
+      ],
+      "id": "replace-get-blocks-001",
+      "name": "GetBlocksForReplace",
+      "credentials": {
+        "notionApi": {
+          "id": "StdChbKZz3co4jDO",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const results = $input.first().json.results || [];\nconst blockIds = results.map(b => b.id);\nif (blockIds.length === 0) {\n  return [{ json: { hasBlocks: false } }];\n}\nreturn blockIds.map(id => ({ json: { hasBlocks: true, blockId: id } }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1000,
+        1200
+      ],
+      "id": "replace-extract-001",
+      "name": "ExtractBlockIds"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "if-has-blocks",
+              "leftValue": "={{ $json.hasBlocks }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1200,
+        1200
+      ],
+      "id": "replace-if-001",
+      "name": "IfBlocksExist"
+    },
+    {
+      "parameters": {
+        "method": "DELETE",
+        "url": "=https://api.notion.com/v1/blocks/{{ $json.blockId }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2022-06-28"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1450,
+        1100
+      ],
+      "id": "replace-delete-001",
+      "name": "DeleteBlock",
+      "credentials": {
+        "notionApi": {
+          "id": "StdChbKZz3co4jDO",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function parseRichText(text) {\n  const segments = [];\n  const re = /(\\*\\*(.+?)\\*\\*|`(.+?)`|\\[(.+?)\\]\\((.+?)\\))/g;\n  let last = 0;\n  let m;\n  while ((m = re.exec(text)) !== null) {\n    if (m.index > last) {\n      segments.push({ type: 'text', text: { content: text.slice(last, m.index) } });\n    }\n    if (m[2]) {\n      segments.push({ type: 'text', text: { content: m[2] }, annotations: { bold: true } });\n    } else if (m[3]) {\n      segments.push({ type: 'text', text: { content: m[3] }, annotations: { code: true } });\n    } else if (m[4] && m[5]) {\n      segments.push({ type: 'text', text: { content: m[4], link: { url: m[5] } } });\n    }\n    last = m.index + m[0].length;\n  }\n  if (last < text.length) {\n    segments.push({ type: 'text', text: { content: text.slice(last) } });\n  }\n  return segments.length ? segments : [{ type: 'text', text: { content: text } }];\n}\n\nfunction mdToBlocks(taskContent) {\n  const lines = taskContent.split('\\n');\n  const blocks = [];\n  for (const line of lines) {\n    if (line.match(/^## /)) {\n      blocks.push({ object: 'block', type: 'heading_2', heading_2: { rich_text: parseRichText(line.slice(3)) } });\n    } else if (line.match(/^### /)) {\n      blocks.push({ object: 'block', type: 'heading_3', heading_3: { rich_text: parseRichText(line.slice(4)) } });\n    } else if (line.match(/^- /)) {\n      blocks.push({ object: 'block', type: 'bulleted_list_item', bulleted_list_item: { rich_text: parseRichText(line.slice(2)) } });\n    } else if (line.match(/^\\d+\\. /)) {\n      blocks.push({ object: 'block', type: 'numbered_list_item', numbered_list_item: { rich_text: parseRichText(line.replace(/^\\d+\\. /, '')) } });\n    } else if (line.match(/^---$/)) {\n      blocks.push({ object: 'block', type: 'divider', divider: {} });\n    } else if (line.trim() === '') {\n      continue;\n    } else {\n      blocks.push({ object: 'block', type: 'paragraph', paragraph: { rich_text: parseRichText(line) } });\n    }\n  }\n  return blocks;\n}\n\nconst { pageId, taskContent } = $('PrepReplace').first().json;\nconst children = mdToBlocks(taskContent);\nconst contentBody = JSON.stringify({ children });\nreturn [{ json: { pageId, contentBody } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1700,
+        1200
+      ],
+      "id": "replace-prep-append-001",
+      "name": "PrepReplaceAppend"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://api.notion.com/v1/blocks/{{ $json.pageId }}/children",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2022-06-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.contentBody }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1950,
+        1200
+      ],
+      "id": "replace-append-001",
+      "name": "AppendReplaceContent",
+      "credentials": {
+        "notionApi": {
+          "id": "StdChbKZz3co4jDO",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const pageId = $('PrepReplace').first().json.pageId;\nreturn [{ json: {\n  action: 'replace',\n  success: true,\n  id: pageId,\n  url: 'https://www.notion.so/' + pageId.replace(/-/g, '')\n}}];",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2200,
+        1200
+      ],
+      "id": "replace-fmt-001",
+      "name": "FormatReplace"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        2450,
+        1200
+      ],
+      "id": "replace-respond-001",
+      "name": "RespondReplace"
     }
   ],
   "connections": {
@@ -653,6 +877,13 @@
         [
           {
             "node": "PrepGet",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PrepReplace",
             "type": "main",
             "index": 0
           }
@@ -854,6 +1085,101 @@
         [
           {
             "node": "RespondGet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepReplace": {
+      "main": [
+        [
+          {
+            "node": "GetBlocksForReplace",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GetBlocksForReplace": {
+      "main": [
+        [
+          {
+            "node": "ExtractBlockIds",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ExtractBlockIds": {
+      "main": [
+        [
+          {
+            "node": "IfBlocksExist",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IfBlocksExist": {
+      "main": [
+        [
+          {
+            "node": "DeleteBlock",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PrepReplaceAppend",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DeleteBlock": {
+      "main": [
+        [
+          {
+            "node": "PrepReplaceAppend",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepReplaceAppend": {
+      "main": [
+        [
+          {
+            "node": "AppendReplaceContent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AppendReplaceContent": {
+      "main": [
+        [
+          {
+            "node": "FormatReplace",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FormatReplace": {
+      "main": [
+        [
+          {
+            "node": "RespondReplace",
             "type": "main",
             "index": 0
           }
