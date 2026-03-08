@@ -9,7 +9,7 @@
           "interval": [
             {
               "field": "days",
-              "triggerAtHour": 15,
+              "triggerAtHour": 0,
               "triggerAtMinute": 0
             }
           ]
@@ -17,18 +17,24 @@
       },
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
-      "position": [0, 300],
+      "position": [
+        0,
+        300
+      ],
       "name": "ScheduleTrigger",
       "id": "rt-sched-001"
     },
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "const today = new Date().toISOString().split('T')[0];\nconst queryBody = JSON.stringify({\n  filter: {\n    and: [\n      { property: '有効', checkbox: { equals: true } },\n      { property: '次回予定日', date: { on_or_before: today } }\n    ]\n  }\n});\nreturn [{ json: { requestBody: queryBody } }];"
+        "jsCode": "const today = new Date().toLocaleDateString('sv-SE', {timeZone: 'Asia/Tokyo'});\nconst queryBody = JSON.stringify({\n  filter: {\n    and: [\n      { property: '有効', checkbox: { equals: true } },\n      { property: '次回予定日', date: { on_or_before: today } }\n    ]\n  }\n});\nreturn [{ json: { requestBody: queryBody } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [250, 300],
+      "position": [
+        250,
+        300
+      ],
       "name": "PrepQuery",
       "id": "rt-prep-query-001"
     },
@@ -54,7 +60,10 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [500, 300],
+      "position": [
+        500,
+        300
+      ],
       "name": "QueryDB",
       "id": "rt-query-db-001",
       "credentials": {
@@ -71,7 +80,10 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [750, 300],
+      "position": [
+        750,
+        300
+      ],
       "name": "ParseDueTasks",
       "id": "rt-parse-001"
     },
@@ -99,7 +111,10 @@
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [1000, 300],
+      "position": [
+        1000,
+        300
+      ],
       "name": "HasDueTasks",
       "id": "rt-if-001"
     },
@@ -110,7 +125,10 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1250, 300],
+      "position": [
+        1250,
+        300
+      ],
       "name": "PrepCreate",
       "id": "rt-prep-create-001"
     },
@@ -136,7 +154,10 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1500, 300],
+      "position": [
+        1500,
+        300
+      ],
       "name": "CreateTask",
       "id": "rt-create-001",
       "credentials": {
@@ -149,11 +170,14 @@
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "const items = $input.all();\nconst originals = $('ParseDueTasks').all();\nreturn items.map((item, i) => {\n  const original = originals[i].json;\n  const today = new Date().toISOString().split('T')[0];\n  const nextDate = new Date();\n  switch (original.frequency) {\n    case 'daily': nextDate.setDate(nextDate.getDate() + 1); break;\n    case 'weekly': nextDate.setDate(nextDate.getDate() + 7); break;\n    case 'biweekly': nextDate.setDate(nextDate.getDate() + 14); break;\n    case 'monthly': nextDate.setMonth(nextDate.getMonth() + 1); break;\n    default: nextDate.setMonth(nextDate.getMonth() + 1); break;\n  }\n  const nextDue = nextDate.toISOString().split('T')[0];\n  const body = {\n    properties: {\n      '最終実行日': { date: { start: today } },\n      '次回予定日': { date: { start: nextDue } }\n    }\n  };\n  return { json: { pageId: original.defPageId, taskName: original.taskName, requestBody: JSON.stringify(body) } };\n});"
+        "jsCode": "const items = $input.all();\nconst originals = $('ParseDueTasks').all();\nreturn items.map((item, i) => {\n  const original = originals[i].json;\n  const today = new Date().toLocaleDateString('sv-SE', {timeZone: 'Asia/Tokyo'});\n  const nextDate = new Date();\n  switch (original.frequency) {\n    case 'daily': nextDate.setDate(nextDate.getDate() + 1); break;\n    case 'weekly': nextDate.setDate(nextDate.getDate() + 7); break;\n    case 'biweekly': nextDate.setDate(nextDate.getDate() + 14); break;\n    case 'monthly': nextDate.setMonth(nextDate.getMonth() + 1); break;\n    default: nextDate.setMonth(nextDate.getMonth() + 1); break;\n  }\n  const nextDue = nextDate.toLocaleDateString('sv-SE', {timeZone: 'Asia/Tokyo'});\n  const body = {\n    properties: {\n      '最終実行日': { date: { start: today } },\n      '次回予定日': { date: { start: nextDue } }\n    }\n  };\n  return { json: { pageId: original.defPageId, taskName: original.taskName, requestBody: JSON.stringify(body) } };\n});"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1750, 300],
+      "position": [
+        1750,
+        300
+      ],
       "name": "PrepUpdate",
       "id": "rt-prep-update-001"
     },
@@ -179,7 +203,10 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2000, 300],
+      "position": [
+        2000,
+        300
+      ],
       "name": "UpdateDef",
       "id": "rt-update-def-001",
       "credentials": {
