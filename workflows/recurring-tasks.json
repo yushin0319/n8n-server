@@ -76,7 +76,7 @@
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "const results = $input.first().json.results || [];\nif (results.length === 0) {\n  return [{ json: { hasDue: false } }];\n}\nconst items = results.map(page => {\n  const titleEntry = Object.entries(page.properties).find(([k, v]) => v.type === 'title');\n  const taskName = titleEntry ? titleEntry[1].title.map(t => t.plain_text).join('') : '(無題)';\n  const frequency = page.properties['頻度']?.select?.name || 'monthly';\n  const templateText = (page.properties['テンプレ本文']?.rich_text || []).map(t => t.plain_text).join('');\n  const defPageId = page.id;\n  return { json: { hasDue: true, defPageId, taskName, frequency, templateText } };\n});\nreturn items;"
+        "jsCode": "const results = $input.first().json.results || [];\nif (results.length === 0) {\n  return [{ json: { hasDue: false } }];\n}\nconst items = results.map(page => {\n  const titleEntry = Object.entries(page.properties).find(([k, v]) => v.type === 'title');\n  const taskName = titleEntry ? titleEntry[1].title.map(t => t.plain_text).join('') : '(無題)';\n  const frequency = page.properties['頻度']?.multi_select?.[0]?.name || 'monthly';\n  const templateText = (page.properties['テンプレ本文']?.rich_text || []).map(t => t.plain_text).join('');\n  const defPageId = page.id;\n  return { json: { hasDue: true, defPageId, taskName, frequency, templateText } };\n});\nreturn items;"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
