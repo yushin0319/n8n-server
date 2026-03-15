@@ -264,7 +264,7 @@ add_node("GeminiWeeklyReport", "n8n-nodes-base.httpRequest", 4.2, {
     "nodeCredentialType": "googlePalmApi",
     "sendBody": True,
     "specifyBody": "json",
-    "jsonBody": '={{ JSON.stringify({ contents: [{ parts: [{ text: $json.prompt }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 2048, thinkingConfig: { thinkingBudget: 0 } } }) }}',
+    "jsonBody": '={{ JSON.stringify({ contents: [{ parts: [{ text: $json.prompt }] }], generationConfig: { temperature: 0.3 } }) }}',
     "options": {}
 }, [1200, 700], CRED_GEMINI)
 
@@ -439,7 +439,7 @@ add_node("GeminiTrendComment", "n8n-nodes-base.httpRequest", 4.2, {
     "nodeCredentialType": "googlePalmApi",
     "sendBody": True,
     "specifyBody": "json",
-    "jsonBody": '={{ JSON.stringify({ contents: [{ parts: [{ text: $json.trendPrompt }] }], generationConfig: { temperature: 0.8, maxOutputTokens: 1024 } }) }}',
+    "jsonBody": '={{ JSON.stringify({ contents: [{ parts: [{ text: $json.trendPrompt }] }], generationConfig: { temperature: 0.8 } }) }}',
     "options": {}
 }, [3360, 600], CRED_GEMINI)
 
@@ -464,7 +464,7 @@ add_node("GeminiAIApiComment", "n8n-nodes-base.httpRequest", 4.2, {
     "nodeCredentialType": "googlePalmApi",
     "sendBody": True,
     "specifyBody": "json",
-    "jsonBody": '={{ JSON.stringify({ contents: [{ parts: [{ text: $json.aiApiPrompt }] }], generationConfig: { temperature: 0.8, maxOutputTokens: 1024 } }) }}',
+    "jsonBody": '={{ JSON.stringify({ contents: [{ parts: [{ text: $json.aiApiPrompt }] }], generationConfig: { temperature: 0.8 } }) }}',
     "options": {}
 }, [3840, 600], CRED_GEMINI)
 
@@ -488,7 +488,7 @@ add_node("GeminiAISubComment", "n8n-nodes-base.httpRequest", 4.2, {
     "nodeCredentialType": "googlePalmApi",
     "sendBody": True,
     "specifyBody": "json",
-    "jsonBody": '={{ JSON.stringify({ contents: [{ parts: [{ text: $json.aiSubPrompt }] }], generationConfig: { temperature: 0.8, maxOutputTokens: 1024 } }) }}',
+    "jsonBody": '={{ JSON.stringify({ contents: [{ parts: [{ text: $json.aiSubPrompt }] }], generationConfig: { temperature: 0.8 } }) }}',
     "options": {}
 }, [4320, 600], CRED_GEMINI)
 
