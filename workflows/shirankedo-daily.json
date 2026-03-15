@@ -735,7 +735,7 @@
       "typeVersion": 4.2,
       "position": [
         1160,
-        2000
+        1950
       ],
       "credentials": {
         "githubApi": {
@@ -749,15 +749,28 @@
     },
     {
       "parameters": {
-        "jsCode": "// SplitInBatches完了後: 全バッチ結果を集約してリリースをパース\nlet allResults = [];\ntry { allResults = $('FetchReleaseBatch').all(); } catch { allResults = []; }\nconst now = new Date();\nconst dayAgo = new Date(now.getTime() - 72 * 60 * 60 * 1000);\nconst dayAgoISO = dayAgo.toISOString();\nconst releases = [];\nfor (const result of allResults) {\n  const data = result.json.data || result.json || {};\n  for (const key of Object.keys(data)) {\n    const repo = data[key];\n    if (!repo || !repo.releases) continue;\n    const repoName = repo.nameWithOwner;\n    for (const rel of repo.releases.nodes) {\n      if (rel.isPrerelease) continue;\n      if (!rel.publishedAt || rel.publishedAt < dayAgoISO) continue;\n      const tag = rel.tagName;\n      const rawVer = tag.includes('@') ? tag.split('@').pop() : tag;\n      const version = rawVer.replace(/^v/, '');\n      const parts = version.split('.');\n      let type = null;\n      if (parts.length >= 3) {\n        try {\n          const [maj, min, pat] = parts.map(p => parseInt(p));\n          if (!isNaN(maj) && !isNaN(min) && !isNaN(pat)) {\n            if (min === 0 && pat === 0) type = 'major';\n            else if (pat === 0) type = 'minor';\n          }\n        } catch {}\n      } else if (parts.length === 2) {\n        try {\n          if (!isNaN(parseInt(parts[0])) && !isNaN(parseInt(parts[1]))) type = 'minor';\n        } catch {}\n      }\n      if (!type) continue;\n      releases.push({ repo: repoName, tag, version, type, publishedAt: rel.publishedAt.substring(0, 10) });\n    }\n  }\n}\nreturn [{ json: { requestBody: JSON.stringify(releases), count: releases.length, releases } }];"
+        "jsCode": "// 各バッチのGraphQL結果からリリースを抽出してstaticDataに蓄積\nconst staticData = $getWorkflowStaticData('global');\nif (!staticData.releases) staticData.releases = [];\nconst now = new Date();\nconst cutoff = new Date(now.getTime() - 72 * 60 * 60 * 1000).toISOString();\nconst data = $input.first().json.data || $input.first().json || {};\nfor (const key of Object.keys(data)) {\n  const repo = data[key];\n  if (!repo || !repo.releases) continue;\n  const repoName = repo.nameWithOwner;\n  for (const rel of repo.releases.nodes) {\n    if (rel.isPrerelease) continue;\n    if (!rel.publishedAt || rel.publishedAt < cutoff) continue;\n    const tag = rel.tagName;\n    const rawVer = tag.includes('@') ? tag.split('@').pop() : tag;\n    const version = rawVer.replace(/^v/, '');\n    const parts = version.split('.');\n    let type = null;\n    if (parts.length >= 3) {\n      const [maj, min, pat] = parts.map(p => parseInt(p));\n      if (!isNaN(maj) && !isNaN(min) && !isNaN(pat)) {\n        if (min === 0 && pat === 0) type = 'major';\n        else if (pat === 0) type = 'minor';\n      }\n    } else if (parts.length === 2) {\n      if (!isNaN(parseInt(parts[0])) && !isNaN(parseInt(parts[1]))) type = 'minor';\n    }\n    if (!type) continue;\n    staticData.releases.push({ repo: repoName, tag, version, type, publishedAt: rel.publishedAt.substring(0, 10) });\n  }\n}\nreturn $input.all();"
+      },
+      "id": "a1000002-0001-0001-0001-000000000079",
+      "name": "AccumulateReleases",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1160,
+        2200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// SplitInBatches完了後: staticDataから蓄積リリースを取得\nconst staticData = $getWorkflowStaticData('global');\nconst releases = staticData.releases || [];\nstaticData.releases = [];\nreturn [{ json: { requestBody: JSON.stringify(releases), count: releases.length, releases } }];"
       },
       "id": "a1000002-0001-0001-0001-000000000061",
       "name": "ParseReleases",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1160,
-        2200
+        1380,
+        2100
       ]
     },
     {
@@ -1461,6 +1474,17 @@
       ]
     },
     "FetchReleaseBatch": {
+      "main": [
+        [
+          {
+            "node": "AccumulateReleases",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AccumulateReleases": {
       "main": [
         [
           {
