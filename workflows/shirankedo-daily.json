@@ -95,7 +95,7 @@
       "retryOnFail": true,
       "maxTries": 3,
       "waitBetweenTries": 5000,
-      "onError": "continueRegularOutput"
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -105,7 +105,32 @@
       "name": "ParseArXiv",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [500, 450]
+      "position": [500, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// arXiv APIエラー時: 空データを返してパイプライン続行\nreturn [{ json: { title: 'arXiv empty', url: '', description: '', source: 'arxiv' } }];"
+      },
+      "id": "a1000002-0001-0001-0001-000000000030",
+      "name": "ArXivFallback",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [500, 550]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://yushin-n8n.duckdns.org/webhook/discord-notify",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"message\":\"⚠ shirankedo: arXiv API エラー（3回リトライ後も失敗、論文取得スキップ）\"}",
+        "options": {}
+      },
+      "id": "a1000002-0001-0001-0001-000000000031",
+      "name": "DiscordArXivWarn",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [720, 600]
     },
     {
       "parameters": {
@@ -120,7 +145,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// 全ソースの記事を集約し、URL正規化+既存排除+重複統合\n// WaitAllFeeds(Merge)経由で全フィード完了後に実行される\nconst existingData = $('FetchExistingURLs').first().json;\nconst existingURLs = new Set((existingData.data || []).map(u => u.toLowerCase()));\n\nfunction normalizeUrl(url) {\n  try {\n    const u = new URL(url);\n    let host = u.hostname.replace(/^www\\./, '');\n    const tracking = new Set(['utm_source','utm_medium','utm_campaign','utm_term','utm_content','ref','source','via','fbclid','gclid']);\n    const params = new URLSearchParams(u.search);\n    for (const key of [...params.keys()]) {\n      if (tracking.has(key.toLowerCase())) params.delete(key);\n    }\n    let path = u.pathname.replace(/\\/+$/, '') || '/';\n    const qs = params.toString();\n    return 'https://' + host + path + (qs ? '?' + qs : '');\n  } catch { return url; }\n}\n\nfunction extractRssItems(nodeName, sourceName) {\n  try {\n    const items = $(nodeName).all();\n    return items.map(item => {\n      const d = item.json;\n      return {\n        title: (d.title || '').substring(0, 200),\n        url: d.link || d.url || '',\n        description: (d.contentSnippet || d.description || '').replace(/<[^>]+>/g, '').substring(0, 200),\n        source: sourceName\n      };\n    });\n  } catch (e) {\n    return [];\n  }\n}\n\nconst rssItems = [\n  ...extractRssItems('FetchHN', 'hackernews'),\n  ...extractRssItems('FetchHatena', 'hatena'),\n  ...extractRssItems('FetchZenn', 'zenn'),\n  ...extractRssItems('FetchLobsters', 'lobsters')\n];\n\nlet arxivItems;\ntry {\n  arxivItems = $('ParseArXiv').all().map(item => item.json);\n} catch { arxivItems = []; }\n\n// 重複排除\nconst seen = new Set();\nconst articles = [];\nfor (const item of rssItems) {\n  if (!item.url || !item.title) continue;\n  const norm = normalizeUrl(item.url);\n  if (seen.has(norm) || existingURLs.has(norm.toLowerCase())) continue;\n  seen.add(norm);\n  articles.push(item);\n}\n\nconst papers = [];\nfor (const item of arxivItems) {\n  if (!item.url || !item.title) continue;\n  const norm = normalizeUrl(item.url);\n  if (seen.has(norm) || existingURLs.has(norm.toLowerCase())) continue;\n  seen.add(norm);\n  papers.push(item);\n}\n\nreturn [{ json: { articles, papers, articleCount: articles.length, paperCount: papers.length } }];"
+        "jsCode": "// 全ソースの記事を集約し、URL正規化+既存排除+重複統合\n// WaitAllFeeds(Merge)経由で全フィード完了後に実行される\nconst existingData = $('FetchExistingURLs').first().json;\nconst existingURLs = new Set((existingData.data || []).map(u => u.toLowerCase()));\n\nfunction normalizeUrl(url) {\n  try {\n    const u = new URL(url);\n    let host = u.hostname.replace(/^www\\./, '');\n    const tracking = new Set(['utm_source','utm_medium','utm_campaign','utm_term','utm_content','ref','source','via','fbclid','gclid']);\n    const params = new URLSearchParams(u.search);\n    for (const key of [...params.keys()]) {\n      if (tracking.has(key.toLowerCase())) params.delete(key);\n    }\n    let path = u.pathname.replace(/\\/+$/, '') || '/';\n    const qs = params.toString();\n    return 'https://' + host + path + (qs ? '?' + qs : '');\n  } catch { return url; }\n}\n\nfunction extractRssItems(nodeName, sourceName) {\n  try {\n    const items = $(nodeName).all();\n    return items.map(item => {\n      const d = item.json;\n      return {\n        title: (d.title || '').substring(0, 200),\n        url: d.link || d.url || '',\n        description: (d.contentSnippet || d.description || '').replace(/<[^>]+>/g, '').substring(0, 200),\n        source: sourceName\n      };\n    });\n  } catch (e) {\n    return [];\n  }\n}\n\nconst rssItems = [\n  ...extractRssItems('FetchHN', 'hackernews'),\n  ...extractRssItems('FetchHatena', 'hatena'),\n  ...extractRssItems('FetchZenn', 'zenn'),\n  ...extractRssItems('FetchLobsters', 'lobsters')\n];\n\n// arXiv: ParseArXiv または ArXivFallback のどちらかから取得\nlet arxivItems = [];\ntry {\n  arxivItems = $('ParseArXiv').all().map(item => item.json);\n} catch {\n  try {\n    arxivItems = $('ArXivFallback').all().map(item => item.json);\n  } catch { arxivItems = []; }\n}\n\n// 重複排除\nconst seen = new Set();\nconst articles = [];\nfor (const item of rssItems) {\n  if (!item.url || !item.title) continue;\n  const norm = normalizeUrl(item.url);\n  if (seen.has(norm) || existingURLs.has(norm.toLowerCase())) continue;\n  seen.add(norm);\n  articles.push(item);\n}\n\nconst papers = [];\nfor (const item of arxivItems) {\n  if (!item.url || !item.title) continue;\n  const norm = normalizeUrl(item.url);\n  if (seen.has(norm) || existingURLs.has(norm.toLowerCase())) continue;\n  seen.add(norm);\n  papers.push(item);\n}\n\nreturn [{ json: { articles, papers, articleCount: articles.length, paperCount: papers.length } }];"
       },
       "id": "a1000002-0001-0001-0001-000000000011",
       "name": "DeduplicateArticles",
@@ -309,7 +334,10 @@
       ]]
     },
     "FetchArXiv": {
-      "main": [[{"node": "ParseArXiv", "type": "main", "index": 0}]]
+      "main": [
+        [{"node": "ParseArXiv", "type": "main", "index": 0}],
+        [{"node": "ArXivFallback", "type": "main", "index": 0}]
+      ]
     },
     "FetchExistingURLs": {
       "main": [[{"node": "WaitAllFeeds", "type": "main", "index": 0}]]
@@ -328,6 +356,12 @@
     },
     "ParseArXiv": {
       "main": [[{"node": "WaitAllFeeds", "type": "main", "index": 5}]]
+    },
+    "ArXivFallback": {
+      "main": [[
+        {"node": "WaitAllFeeds", "type": "main", "index": 5},
+        {"node": "DiscordArXivWarn", "type": "main", "index": 0}
+      ]]
     },
     "WaitAllFeeds": {
       "main": [[{"node": "DeduplicateArticles", "type": "main", "index": 0}]]
