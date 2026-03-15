@@ -1,4 +1,4 @@
-"""shirankedo-weekly.json を生成するスクリプト（Phase 3: Step 1, 4, 5）"""
+"""shirankedo-weekly.json を生成するスクリプト（Phase 3-4: Step 1, 2, 4, 5, 6）"""
 import json
 import uuid
 
@@ -553,10 +553,537 @@ add_node("DiscordNotifyComments", "n8n-nodes-base.httpRequest", 4.2, {
     "options": {}
 }, [5520, 700])
 
+# =========================================
+# Step 2: LLM価格取得
+# =========================================
+# AA APIからモデル情報（価格+ELOスコア）取得
+add_node("FetchAAModels", "n8n-nodes-base.httpRequest", 4.2, {
+    "method": "GET",
+    "url": "https://api.artificial-analysis.com/api/v2/data/text",
+    "options": {}
+}, [480, 1200])
+
+# 為替レート取得
+add_node("FetchExchangeRate", "n8n-nodes-base.httpRequest", 4.2, {
+    "method": "GET",
+    "url": "https://api.exchangerate-api.com/v4/latest/USD",
+    "options": {}
+}, [480, 1400])
+
+# ParseLLMData - gen_table.pyのフィルタロジックをJS移植
+add_node("ParseLLMData", "n8n-nodes-base.code", 2, {
+    "jsCode": """// AA APIデータからモデルをフィルタ・デデュプして56モデルに絞る
+const aaResp = $('FetchAAModels').first().json;
+const rateResp = $('FetchExchangeRate').first().json;
+const aaData = aaResp.data || [];
+const jpyRate = rateResp?.rates?.JPY || 150;
+
+// Provider mapping
+const PROVIDERS = {
+  'Anthropic': 'Anthropic', 'OpenAI': 'OpenAI', 'Google': 'Google',
+  'DeepSeek': 'DeepSeek', 'xAI': 'xAI', 'Meta': 'Meta',
+  'Mistral': 'Mistral', 'Alibaba': 'Alibaba', 'Kimi': 'Moonshot',
+  'MiniMax': 'MiniMax', 'Z AI': 'Zhipu AI', 'Xiaomi': 'Xiaomi',
+  'Amazon': 'Amazon', 'Microsoft': 'Microsoft',
+};
+
+// Step 1: Basic filter
+const filtered = [];
+for (const m of aaData) {
+  const name = m.name || '';
+  const creatorName = m.model_creator?.name || '';
+  let provider = null;
+  for (const [pname, display] of Object.entries(PROVIDERS)) {
+    if (creatorName.toLowerCase().includes(pname.toLowerCase())) {
+      provider = display; break;
+    }
+  }
+  if (!provider) continue;
+  const pricing = m.pricing || {};
+  const inp = pricing.price_1m_input_tokens;
+  const out = pricing.price_1m_output_tokens;
+  if (inp == null || out == null || (inp === 0 && out === 0)) continue;
+  if (name.toLowerCase().includes('codex')) continue;
+  const intel = m.evaluations?.artificial_analysis_intelligence_index;
+  if (intel == null) continue;
+  filtered.push({ name, provider, score: intel, inputPrice: inp, outputPrice: out });
+}
+
+// Step 2: Skip patterns
+function shouldSkip(name) {
+  const skipExact = ['Distill','Mixtral','Ministral','Pixtral','Devstral','gpt-oss','Gemma'];
+  if (skipExact.some(x => name.includes(x))) return true;
+  if (['GPT-3.5','Llama 2 ','Mistral 7B'].some(x => name.includes(x))) return true;
+  if (name === 'o1-preview' || name === 'o1-pro') return true;
+  if (name.includes('Llama')) {
+    if (!['Llama 4 Maverick','Llama 4 Scout','Llama 3.3'].some(a => name.includes(a))) return true;
+  }
+  if (['Mistral Small','Mistral Medium','Mistral Large'].includes(name)) return true;
+  if (['Claude 4 Opus','Claude 4.1 Opus'].some(x => name.includes(x))) return true;
+  if (name.includes('Magistral Small')) return true;
+  if (['Qwen3 VL','Qwen3.5 VL','Coder','Omni','QwQ','Qwen2','Qwen Chat'].some(x => name.includes(x))) return true;
+  if (/Qwen3\\.?5?\\s+[0-4](?:\\.\\d+)?B\\b/.test(name)) return true;
+  if (/^Qwen3 \\d+B/.test(name) && !name.includes('Qwen3 Max')) return true;
+  if (name.includes('Qwen3 Next')) return true;
+  if (name.includes('GLM') && (/V /.test(name) || /V\\(/.test(name))) return true;
+  if (name.includes('GLM-4.5-Air')) return true;
+  if (name.includes('Nova') && name.includes('Omni')) return true;
+  return false;
+}
+
+// Step 3: Family key dedup
+function familyKey(n) {
+  let c = n.replace(/\\s*\\(.*?\\)/g, '');
+  c = c.replace(/\\s*-\\s*\\d{4}-\\d{2}-\\d{2}$/, '');
+  c = c.replace(/\\s*(Preview|Exp|Terminus)\\b/g, '');
+  c = c.replace(/\\s+\\d{4}$/, '');
+  c = c.replace(/(Mistral (?:Small|Medium|Large|Magistral \\w+))\\s+[\\d.]+/g, '$1');
+  if (/^GPT-5(\\.\\d+)?$/.test(c)) c = 'GPT-5';
+  c = c.replace(/(DeepSeek V3)[\\d.]*/g, '$1');
+  c = c.replace(/(DeepSeek R1)[\\s\\d]*/g, '$1');
+  c = c.replace(/Grok [\\d.]+ Fast/g, 'Grok Fast');
+  c = c.replace(/Gemini 3\\.\\d+ Pro/g, 'Gemini 3 Pro');
+  c = c.replace(/Gemini (\\d+)\\.(\\d+) (Flash-Lite|Flash)$/g, 'Gemini $1 $3');
+  c = c.replace(/(Qwen3\\.5 \\d+B(?: A\\d+B)?)\\s+\\d{4}/g, '$1');
+  c = c.replace(/(Qwen3 \\d+B(?: A\\d+B)?)\\s+\\d{4}/g, '$1');
+  c = c.replace(/Qwen3 Max.*/g, 'Qwen3 Max');
+  c = c.replace(/Kimi K2\\.5.*/g, 'Kimi K2.5');
+  c = c.replace(/Kimi K2(?!\\.5).*/g, 'Kimi K2');
+  c = c.replace(/MiniMax-M2\\.\\d+/g, 'MiniMax-M2');
+  c = c.replace(/MiniMax M2/g, 'MiniMax-M2');
+  c = c.replace(/(GLM-\\d+(?:\\.\\d+)?)\\b.*/g, '$1');
+  c = c.replace(/(MiMo-V2-Flash).*/g, '$1');
+  c = c.replace(/(Nova \\d+\\.\\d+ (?:Pro|Lite|Omni)).*/g, '$1');
+  c = c.replace(/(Nova Premier).*/g, '$1');
+  return c.trim();
+}
+
+const families = {};
+for (const m of filtered) {
+  if (shouldSkip(m.name)) continue;
+  const fk = familyKey(m.name);
+  if (!families[fk] || m.score > families[fk].score) {
+    families[fk] = m;
+  }
+}
+
+// Step 4: Sort + cut below 15
+const models = Object.values(families)
+  .filter(m => m.score >= 15)
+  .sort((a, b) => b.score - a.score)
+  .map(m => {
+    const cleanName = m.name.replace(/\\s*\\(.*?\\)/g, '').trim();
+    return {
+      modelName: cleanName,
+      provider: m.provider,
+      score: m.score,
+      inputPrice: m.inputPrice,
+      outputPrice: m.outputPrice,
+      currency: 'USD',
+    };
+  });
+
+// 出力: [0] LLMモデル配列, [1] 為替レート
+return [
+  { json: {
+    requestBody: JSON.stringify(models),
+    count: models.length,
+    type: 'llm-models'
+  }},
+  { json: {
+    requestBody: JSON.stringify({ jpyPerUsd: jpyRate, updatedAt: new Date().toISOString() }),
+    type: 'exchange-rate'
+  }}
+];"""
+}, [960, 1300])
+
+# PostLLMModels - SplitInBatchesなしで一括POST（56件なので）
+add_node("PostLLMModels", "n8n-nodes-base.httpRequest", 4.2, {
+    "method": "POST",
+    "url": f"{API_BASE}/api/ingest/llm-models",
+    "authentication": "predefinedCredentialType",
+    "nodeCredentialType": "httpHeaderAuth",
+    "sendBody": True,
+    "specifyBody": "json",
+    "jsonBody": '={{ $json.requestBody }}',
+    "options": {}
+}, [1200, 1200], CRED_API, "continueErrorOutput")
+
+# PostExchangeRate
+add_node("PostExchangeRate", "n8n-nodes-base.httpRequest", 4.2, {
+    "method": "POST",
+    "url": f"{API_BASE}/api/ingest/exchange-rate",
+    "authentication": "predefinedCredentialType",
+    "nodeCredentialType": "httpHeaderAuth",
+    "sendBody": True,
+    "specifyBody": "json",
+    "jsonBody": '={{ $json.requestBody }}',
+    "options": {}
+}, [1200, 1400], CRED_API, "continueErrorOutput")
+
+# RouteLLMOutput - ParseLLMDataの出力を振り分け（type === llm-models → true, else → false）
+add_node("RouteLLMOutput", "n8n-nodes-base.if", 2.2, {
+    "conditions": {
+        "options": {"caseSensitive": True, "leftValue": "", "typeValidation": "strict"},
+        "conditions": [{
+            "id": uid(),
+            "leftValue": "={{ $json.type }}",
+            "rightValue": "llm-models",
+            "operator": {"type": "string", "operation": "equals"}
+        }],
+        "combinator": "and"
+    }
+}, [960, 1100])
+
+# PrepareDiscordLLM
+add_node("PrepareDiscordLLM", "n8n-nodes-base.code", 2, {
+    "jsCode": """const r = $input.first().json;
+const ok = r.ok !== undefined ? r.ok : false;
+const count = r.inserted || 0;
+const updated = r.updated || 0;
+const msg = ok
+  ? `✅ LLM価格更新完了: ${count}件追加, ${updated}件更新`
+  : '❌ LLM価格更新失敗: ' + JSON.stringify(r).substring(0, 200);
+return [{ json: { message: msg } }];"""
+}, [1440, 1200])
+
+# DiscordNotifyLLM
+add_node("DiscordNotifyLLM", "n8n-nodes-base.httpRequest", 4.2, {
+    "method": "POST",
+    "url": DISCORD_URL,
+    "sendBody": True,
+    "specifyBody": "json",
+    "jsonBody": '={{ JSON.stringify({ message: $json.message }) }}',
+    "options": {}
+}, [1680, 1200])
+
+# =========================================
+# Step 6: TrackingRepo更新（新規リポ発掘）
+# =========================================
+# FetchExistingRepos - 既存リポ一覧を取得（除外用）
+add_node("FetchExistingRepos", "n8n-nodes-base.httpRequest", 4.2, {
+    "method": "GET",
+    "url": f"{API_BASE}/api/ingest/tracking-repos",
+    "authentication": "predefinedCredentialType",
+    "nodeCredentialType": "httpHeaderAuth",
+    "options": {}
+}, [480, 1800], CRED_API)
+
+# BuildSearchQueries - 5ティアのGitHub Search URLを構築
+add_node("BuildSearchQueries", "n8n-nodes-base.code", 2, {
+    "jsCode": """// 5ティアのGitHub Search APIクエリを構築
+const now = new Date();
+const fmt = d => d.toISOString().slice(0, 10);
+const ago = days => { const d = new Date(now); d.setDate(d.getDate() - days); return fmt(d); };
+
+const tiers = [
+  { q: 'stars:>50000', label: 'Tier1: ★50k+' },
+  { q: `stars:10000..50000 pushed:>${ago(365)}`, label: 'Tier2: 1yr ★10k+' },
+  { q: `stars:5000..10000 pushed:>${ago(180)}`, label: 'Tier3: 6mo ★5k+' },
+  { q: `stars:2000..5000 pushed:>${ago(90)}`, label: 'Tier4: 3mo ★2k+' },
+  { q: `stars:1000..2000 pushed:>${ago(30)}`, label: 'Tier5: 1mo ★1k+' },
+];
+
+// 各ティアを2ページずつ（最大200件/ティア）
+const queries = [];
+for (const tier of tiers) {
+  for (let page = 1; page <= 2; page++) {
+    queries.push({
+      json: {
+        url: `https://api.github.com/search/repositories?q=${encodeURIComponent(tier.q)}&sort=stars&order=desc&per_page=100&page=${page}`,
+        label: tier.label,
+        page,
+      }
+    });
+  }
+}
+return queries;"""
+}, [720, 1800])
+
+# SplitSearchBatches
+add_node("SplitSearchBatches", "n8n-nodes-base.splitInBatches", 3, {
+    "batchSize": 1,
+    "options": {}
+}, [960, 1800])
+
+# WaitSearchRate - GitHub Search API: 10 req/min制限
+add_node("WaitSearchRate", "n8n-nodes-base.wait", 1.1, {
+    "amount": 3,
+    "unit": "seconds"
+}, [1200, 1700])
+
+# FetchGitHubSearch
+add_node("FetchGitHubSearch", "n8n-nodes-base.httpRequest", 4.2, {
+    "method": "GET",
+    "url": "={{ $json.url }}",
+    "authentication": "predefinedCredentialType",
+    "nodeCredentialType": "githubApi",
+    "options": {}
+}, [1440, 1800], CRED_GITHUB, "continueErrorOutput")
+
+# AccumulateSearchResults
+add_node("AccumulateSearchResults", "n8n-nodes-base.code", 2, {
+    "jsCode": """// 検索結果をstaticDataに蓄積
+const staticData = $getWorkflowStaticData('global');
+if (!staticData.searchRepos) staticData.searchRepos = [];
+const items = $input.first().json.items || [];
+for (const r of items) {
+  staticData.searchRepos.push({
+    repo: r.full_name,
+    name: r.name,
+    description: r.description || '',
+    language: r.language || '',
+    stars: r.stargazers_count,
+  });
+}
+return $input.all();"""
+}, [1680, 1800])
+
+# ParseSearchResults - staticDataから読み出し+フィルタ+既存除外
+add_node("ParseSearchResults", "n8n-nodes-base.code", 2, {
+    "jsCode": """// staticDataから検索結果を読み出し、フィルタ・既存除外
+const staticData = $getWorkflowStaticData('global');
+const allRepos = staticData.searchRepos || [];
+staticData.searchRepos = [];
+
+// 既存リポ一覧
+const existingRepos = $('FetchExistingRepos').first().json.data || [];
+const existingSet = new Set(existingRepos.map(r => r.repo.toLowerCase()));
+
+// ブロックリスト
+const blocklist = [
+  'awesome','interview','free-programming-books','build-your-own',
+  'public-apis','developer-roadmap','system-design','cheatsheet',
+  'learn-','tutorial','roadmap','study-plan','coding-guide',
+  'freeCodeCamp','computer-science','project-based-learning',
+  'the-art-of-command-line','the-book-of-secret-knowledge',
+];
+
+// デデュプ（repo名で）
+const seen = new Set();
+const deduped = [];
+for (const r of allRepos) {
+  const key = r.repo.toLowerCase();
+  if (seen.has(key)) continue;
+  seen.add(key);
+  deduped.push(r);
+}
+
+// フィルタ: 言語あり + ブロックリスト除外 + 既存除外
+const newRepos = deduped.filter(r => {
+  if (!r.language) return false;
+  const name = r.repo.toLowerCase();
+  if (blocklist.some(kw => name.includes(kw))) return false;
+  if (existingSet.has(name)) return false;
+  return true;
+});
+
+if (newRepos.length === 0) {
+  return [{ json: { hasNewRepos: false, count: 0 } }];
+}
+
+// Gemini翻訳用にバッチ化（20件ずつ）
+const batchSize = 20;
+const batches = [];
+for (let i = 0; i < newRepos.length; i += batchSize) {
+  batches.push(newRepos.slice(i, i + batchSize));
+}
+
+return [{ json: {
+  hasNewRepos: true,
+  count: newRepos.length,
+  batches: batches,
+  totalBatches: batches.length,
+} }];"""
+}, [1440, 1900])
+
+# HasNewRepos
+add_node("HasNewRepos", "n8n-nodes-base.if", 2.2, {
+    "conditions": {
+        "options": {"caseSensitive": True, "leftValue": "", "typeValidation": "strict"},
+        "conditions": [{
+            "id": uid(),
+            "leftValue": "={{ $json.hasNewRepos }}",
+            "rightValue": True,
+            "operator": {"type": "boolean", "operation": "true"}
+        }],
+        "combinator": "and"
+    }
+}, [1680, 1900])
+
+# PrepareTranslatePrompt - 新規リポのdescriptionをGemini翻訳
+add_node("PrepareTranslatePrompt", "n8n-nodes-base.code", 2, {
+    "jsCode": """// バッチごとにGemini翻訳プロンプトを構築
+const data = $input.first().json;
+const batches = data.batches || [];
+const results = [];
+
+for (const batch of batches) {
+  const lines = batch.map((r, i) =>
+    `${i+1}. ${r.repo}: ${r.description || 'No description'}`
+  ).join('\\n');
+
+  const prompt = `以下のGitHubリポジトリの説明文を日本語に翻訳してください。
+リポジトリ名は翻訳しないでください。
+各行を「番号. 翻訳文」の形式で返してください。説明がない場合は適切な説明を補ってください。
+
+${lines}`;
+
+  results.push({ json: { prompt, repos: batch, batchIndex: results.length } });
+}
+return results;"""
+}, [1920, 1800])
+
+# SplitTranslateBatches
+add_node("SplitTranslateBatches", "n8n-nodes-base.splitInBatches", 3, {
+    "batchSize": 1,
+    "options": {}
+}, [2160, 1800])
+
+# GeminiTranslateRepos
+add_node("GeminiTranslateRepos", "n8n-nodes-base.httpRequest", 4.2, {
+    "method": "POST",
+    "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+    "authentication": "predefinedCredentialType",
+    "nodeCredentialType": "googlePalmApi",
+    "sendBody": True,
+    "specifyBody": "json",
+    "jsonBody": '={{ JSON.stringify({ contents: [{ parts: [{ text: $json.prompt }] }], generationConfig: { temperature: 0.2 } }) }}',
+    "options": {}
+}, [2400, 1700], CRED_GEMINI)
+
+# AccumulateTranslations
+add_node("AccumulateTranslations", "n8n-nodes-base.code", 2, {
+    "jsCode": """// Gemini翻訳結果を解析してstaticDataに蓄積
+const staticData = $getWorkflowStaticData('global');
+if (!staticData.translations) staticData.translations = [];
+
+const resp = $input.first().json;
+const text = resp.candidates?.[0]?.content?.parts?.[0]?.text || '';
+const repos = $('SplitTranslateBatches').first().json.repos || [];
+
+// 翻訳結果をパース（番号. 翻訳文）
+const lines = text.split('\\n').filter(l => /^\\d+\\./.test(l.trim()));
+for (let i = 0; i < repos.length; i++) {
+  const r = repos[i];
+  const line = lines[i] || '';
+  const desc = line.replace(/^\\d+\\.\\s*/, '').trim() || r.description;
+  // displayName: リポ名の後半（owner/name → name）
+  const displayName = r.name || r.repo.split('/')[1] || r.repo;
+  staticData.translations.push({
+    repo: r.repo,
+    displayName,
+    description: desc,
+    language: r.language,
+  });
+}
+return $input.all();"""
+}, [2640, 1800])
+
+# ParseTranslations - staticDataから読み出してPOST用に整形
+add_node("ParseTranslations", "n8n-nodes-base.code", 2, {
+    "jsCode": """// staticDataから翻訳結果を読み出し
+const staticData = $getWorkflowStaticData('global');
+const repos = staticData.translations || [];
+staticData.translations = [];
+
+if (repos.length === 0) {
+  return [{ json: { requestBody: '[]', count: 0 } }];
+}
+
+// 50件チャンクに分割
+const chunks = [];
+for (let i = 0; i < repos.length; i += 50) {
+  chunks.push(repos.slice(i, i + 50));
+}
+
+return chunks.map((chunk, idx) => ({
+  json: {
+    requestBody: JSON.stringify(chunk),
+    count: chunk.length,
+    chunkIndex: idx,
+    totalRepos: repos.length,
+  }
+}));"""
+}, [2400, 1900])
+
+# SplitRepoChunks
+add_node("SplitRepoChunks", "n8n-nodes-base.splitInBatches", 3, {
+    "batchSize": 1,
+    "options": {}
+}, [2640, 1900])
+
+# PostTrackingRepos
+add_node("PostTrackingRepos", "n8n-nodes-base.httpRequest", 4.2, {
+    "method": "POST",
+    "url": f"{API_BASE}/api/ingest/tracking-repos",
+    "authentication": "predefinedCredentialType",
+    "nodeCredentialType": "httpHeaderAuth",
+    "sendBody": True,
+    "specifyBody": "json",
+    "jsonBody": '={{ $json.requestBody }}',
+    "options": {}
+}, [2880, 1800], CRED_API, "continueErrorOutput")
+
+# AccumulateRepoPostResults
+add_node("AccumulateRepoPostResults", "n8n-nodes-base.code", 2, {
+    "jsCode": """const staticData = $getWorkflowStaticData('global');
+if (!staticData.repoPostResults) staticData.repoPostResults = { total: 0, errors: 0 };
+const res = $input.first().json;
+if (res && res.ok) {
+  staticData.repoPostResults.total += (res.inserted || 0);
+} else {
+  staticData.repoPostResults.errors += 1;
+}
+return $input.all();"""
+}, [3120, 1900])
+
+# ParseRepoPostResults
+add_node("ParseRepoPostResults", "n8n-nodes-base.code", 2, {
+    "jsCode": """const staticData = $getWorkflowStaticData('global');
+const results = staticData.repoPostResults || { total: 0, errors: 0 };
+staticData.repoPostResults = null;
+return [{ json: results }];"""
+}, [2880, 2000])
+
+# EmptyRepoResult
+add_node("EmptyRepoResult", "n8n-nodes-base.code", 2, {
+    "jsCode": 'return [{ json: { message: "新規リポなし、スキップ" } }];'
+}, [1920, 2000])
+
+# MergeRepoPaths
+add_node("MergeRepoPaths", "n8n-nodes-base.merge", 3.1, {
+    "mode": "append",
+    "options": {}
+}, [3120, 2100])
+
+# PrepareDiscordRepos
+add_node("PrepareDiscordRepos", "n8n-nodes-base.code", 2, {
+    "jsCode": """const r = $input.first().json;
+if (r.message) return [{ json: { message: r.message } }];
+const msg = r.errors > 0
+  ? `❌ TrackingRepo更新一部失敗: ${r.total}件追加, ${r.errors}件エラー`
+  : `✅ TrackingRepo更新完了: ${r.total}件追加`;
+return [{ json: { message: msg } }];"""
+}, [3360, 2100])
+
+# DiscordNotifyRepos
+add_node("DiscordNotifyRepos", "n8n-nodes-base.httpRequest", 4.2, {
+    "method": "POST",
+    "url": DISCORD_URL,
+    "sendBody": True,
+    "specifyBody": "json",
+    "jsonBody": '={{ JSON.stringify({ message: $json.message }) }}',
+    "options": {}
+}, [3600, 2100])
+
 # ===== Connections =====
-# Schedule → parallel: Step 1 + Step 4
+# Schedule → parallel: Step 1 + Step 2 + Step 4 + Step 6
 connect("Schedule", "FetchTrackingRepos")
 connect("Schedule", "FetchRecentArticles")
+connect("Schedule", "FetchAAModels")
+connect("Schedule", "FetchExchangeRate")
+connect("Schedule", "FetchExistingRepos")
 
 # Step 1: Star取得
 connect("FetchTrackingRepos", "BuildStarBatches")
@@ -606,6 +1133,50 @@ connect("PostPageComments", "MergeCommentPaths", 1, 0)        # error
 connect("EmptyCommentResult", "MergeCommentPaths", 0, 1)
 connect("MergeCommentPaths", "PrepareDiscordComments")
 connect("PrepareDiscordComments", "DiscordNotifyComments")
+
+# Step 2: LLM価格取得
+connect("FetchAAModels", "ParseLLMData")
+connect("FetchExchangeRate", "ParseLLMData")
+connect("ParseLLMData", "RouteLLMOutput")
+# RouteLLMOutput: IF node — type=llm-models → true(PostLLMModels), else → false(PostExchangeRate)
+connect("RouteLLMOutput", "PostLLMModels", 0)      # true: llm-models
+connect("RouteLLMOutput", "PostExchangeRate", 1)    # false: exchange-rate
+connect("PostLLMModels", "PrepareDiscordLLM", 0)     # success
+connect("PostLLMModels", "PrepareDiscordLLM", 1)     # error
+connect("PostExchangeRate", "PrepareDiscordLLM", 0)  # success (ignored, LLM結果で通知)
+connect("PostExchangeRate", "PrepareDiscordLLM", 1)  # error
+connect("PrepareDiscordLLM", "DiscordNotifyLLM")
+
+# Step 6: TrackingRepo更新
+connect("FetchExistingRepos", "BuildSearchQueries")
+connect("BuildSearchQueries", "SplitSearchBatches")
+# SplitSearchBatches v3: output[0]=done, output[1]=loop
+connect("SplitSearchBatches", "ParseSearchResults", 0)        # done
+connect("SplitSearchBatches", "WaitSearchRate", 1)             # loop
+connect("WaitSearchRate", "FetchGitHubSearch")
+connect("FetchGitHubSearch", "AccumulateSearchResults", 0)     # success
+connect("FetchGitHubSearch", "AccumulateSearchResults", 1)     # error (continue)
+connect("AccumulateSearchResults", "SplitSearchBatches")       # loop back
+connect("ParseSearchResults", "HasNewRepos")
+connect("HasNewRepos", "PrepareTranslatePrompt", 0)            # true
+connect("HasNewRepos", "EmptyRepoResult", 1)                   # false
+connect("PrepareTranslatePrompt", "SplitTranslateBatches")
+# SplitTranslateBatches v3: output[0]=done, output[1]=loop
+connect("SplitTranslateBatches", "ParseTranslations", 0)       # done
+connect("SplitTranslateBatches", "GeminiTranslateRepos", 1)    # loop
+connect("GeminiTranslateRepos", "AccumulateTranslations")
+connect("AccumulateTranslations", "SplitTranslateBatches")     # loop back
+connect("ParseTranslations", "SplitRepoChunks")
+# SplitRepoChunks v3: output[0]=done, output[1]=loop
+connect("SplitRepoChunks", "ParseRepoPostResults", 0)          # done
+connect("SplitRepoChunks", "PostTrackingRepos", 1)             # loop
+connect("PostTrackingRepos", "AccumulateRepoPostResults", 0)   # success
+connect("PostTrackingRepos", "AccumulateRepoPostResults", 1)   # error
+connect("AccumulateRepoPostResults", "SplitRepoChunks")        # loop back
+connect("ParseRepoPostResults", "MergeRepoPaths", 0, 0)
+connect("EmptyRepoResult", "MergeRepoPaths", 0, 1)
+connect("MergeRepoPaths", "PrepareDiscordRepos")
+connect("PrepareDiscordRepos", "DiscordNotifyRepos")
 
 # Build workflow
 workflow = {
