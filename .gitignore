@@ -3,4 +3,15 @@
 *.pem
 n8n_data/
 
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+
+# Temporary files
+tmp_*.json
+tmp_*.py
+
+# IDE
 .serena/
