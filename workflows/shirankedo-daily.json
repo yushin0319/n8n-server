@@ -1,0 +1,359 @@
+{
+  "id": "LeUNzin0uEbk6co6",
+  "name": "shirankedo 日次Cron",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{"field": "days", "triggerAtHour": 15}]
+        }
+      },
+      "id": "a1000002-0001-0001-0001-000000000001",
+      "name": "Schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://shirankedo.y-fudo.workers.dev/api/ingest/articles/urls",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "a1000002-0001-0001-0001-000000000002",
+      "name": "FetchExistingURLs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [220, -400],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "CdkfLkdZEMFfnx8h",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://hnrss.org/newest?points=100"
+      },
+      "id": "a1000002-0001-0001-0001-000000000003",
+      "name": "FetchHN",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.1,
+      "position": [220, -200]
+    },
+    {
+      "parameters": {
+        "url": "https://b.hatena.ne.jp/hotentry/it.rss"
+      },
+      "id": "a1000002-0001-0001-0001-000000000004",
+      "name": "FetchHatena",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.1,
+      "position": [220, -50]
+    },
+    {
+      "parameters": {
+        "url": "https://zenn.dev/feed"
+      },
+      "id": "a1000002-0001-0001-0001-000000000005",
+      "name": "FetchZenn",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.1,
+      "position": [220, 100]
+    },
+    {
+      "parameters": {
+        "url": "https://lobste.rs/rss"
+      },
+      "id": "a1000002-0001-0001-0001-000000000006",
+      "name": "FetchLobsters",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.1,
+      "position": [220, 250]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "http://export.arxiv.org/api/query?search_query=cat:cs.*&sortBy=submittedDate&sortOrder=descending&max_results=30",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "id": "a1000002-0001-0001-0001-000000000007",
+      "name": "FetchArXiv",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [220, 450]
+    },
+    {
+      "parameters": {
+        "jsCode": "// arXiv Atom XML をパースして [{title, url, description, source}] に変換\nconst raw = $input.first().json.data || '';\nconst entries = [];\nconst entryRegex = /<entry>([\\s\\S]*?)<\\/entry>/g;\nlet match;\nwhile ((match = entryRegex.exec(raw)) !== null) {\n  const block = match[1];\n  const titleMatch = block.match(/<title[^>]*>([\\s\\S]*?)<\\/title>/);\n  const linkMatch = block.match(/<id>([\\s\\S]*?)<\\/id>/);\n  const summaryMatch = block.match(/<summary[^>]*>([\\s\\S]*?)<\\/summary>/);\n  const title = (titleMatch ? titleMatch[1] : '').replace(/\\s+/g, ' ').trim();\n  const url = (linkMatch ? linkMatch[1] : '').trim();\n  const desc = (summaryMatch ? summaryMatch[1] : '').replace(/<[^>]+>/g, '').replace(/\\s+/g, ' ').trim().substring(0, 200);\n  if (title && url) {\n    entries.push({ json: { title, url, description: desc, source: 'arxiv' } });\n  }\n  if (entries.length >= 30) break;\n}\nif (entries.length === 0) {\n  return [{ json: { title: 'arXiv empty', url: '', description: '', source: 'arxiv' } }];\n}\nreturn entries;"
+      },
+      "id": "a1000002-0001-0001-0001-000000000009",
+      "name": "ParseArXiv",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [500, 450]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 全ソースの記事を集約し、URL正規化+既存排除+重複統合\n// $() で各ノードの出力を直接参照\nconst existingData = $('FetchExistingURLs').first().json;\nconst existingURLs = new Set((existingData.data || []).map(u => u.toLowerCase()));\n\nfunction normalizeUrl(url) {\n  try {\n    const u = new URL(url);\n    let host = u.hostname.replace(/^www\\./, '');\n    const tracking = new Set(['utm_source','utm_medium','utm_campaign','utm_term','utm_content','ref','source','via','fbclid','gclid']);\n    const params = new URLSearchParams(u.search);\n    for (const key of [...params.keys()]) {\n      if (tracking.has(key.toLowerCase())) params.delete(key);\n    }\n    let path = u.pathname.replace(/\\/+$/, '') || '/';\n    const qs = params.toString();\n    return 'https://' + host + path + (qs ? '?' + qs : '');\n  } catch { return url; }\n}\n\nfunction extractRssItems(nodeName, sourceName) {\n  try {\n    return $( nodeName).all().map(item => {\n      const d = item.json;\n      return {\n        title: (d.title || '').substring(0, 200),\n        url: d.link || d.url || '',\n        description: (d.contentSnippet || d.description || '').replace(/<[^>]+>/g, '').substring(0, 200),\n        source: sourceName\n      };\n    });\n  } catch { return []; }\n}\n\nconst rssItems = [\n  ...extractRssItems('FetchHN', 'hackernews'),\n  ...extractRssItems('FetchHatena', 'hatena'),\n  ...extractRssItems('FetchZenn', 'zenn'),\n  ...extractRssItems('FetchLobsters', 'lobsters')\n];\n\nlet arxivItems;\ntry {\n  arxivItems = $('ParseArXiv').all().map(item => item.json);\n} catch { arxivItems = []; }\n\n// 重複排除\nconst seen = new Set();\nconst articles = [];\nfor (const item of rssItems) {\n  if (!item.url || !item.title) continue;\n  const norm = normalizeUrl(item.url);\n  if (seen.has(norm) || existingURLs.has(norm.toLowerCase())) continue;\n  seen.add(norm);\n  articles.push(item);\n}\n\nconst papers = [];\nfor (const item of arxivItems) {\n  if (!item.url || !item.title) continue;\n  const norm = normalizeUrl(item.url);\n  if (seen.has(norm) || existingURLs.has(norm.toLowerCase())) continue;\n  seen.add(norm);\n  papers.push(item);\n}\n\nreturn [{ json: { articles, papers, articleCount: articles.length, paperCount: papers.length } }];"
+      },
+      "id": "a1000002-0001-0001-0001-000000000011",
+      "name": "DeduplicateArticles",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [720, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\nconst articles = data.articles || [];\nconst papers = data.papers || [];\n\nconst articleLines = articles.map((a, i) =>\n  `${i + 1}. [${a.source}] ${a.title}${a.description ? '\\n   ' + a.description.substring(0, 100) : ''}`\n).join('\\n');\n\nconst paperLines = papers.map((p, i) =>\n  `${i + 1}. ${p.title}${p.description ? '\\n   ' + p.description.substring(0, 100) : ''}`\n).join('\\n');\n\nconst prompt = `あなたはテック系キュレーターです。以下の記事候補から、今日のトップ6件と注目論文1件を選んでください。\\n\\n## 選定ルール\\n\\n### Step 1: 重複統合\\n同じトピックの記事が複数ソースにある場合、1つに統合してください。\\n\\n### Step 2: テーマ別クラスタリング\\n記事を内容でクラスタ分けしてください。偏りがある場合はそれがトレンドの信号です。\\n\\n### Step 3: 2軸で選定\\n- 軸1（テーマ）: 最低5つの異なるテーマから選ぶ\\n- 軸2（読者への作用）: 以下の4種から最低3種を含める\\n  - 「すぐ動く」: 脆弱性、破壊的変更、重要リリース（1-2件）\\n  - 「知見が増える」: やってみた、実践記、チュートリアル（1-2件）\\n  - 「視点が変わる」: 議論提起、意外な事実、逆張り（1-2件）\\n  - 「触りたくなる」: 新ツール、ゲーム、デモ（1-2件）\\n\\n### インパクトスコア基準\\n- 10: 業界全体が動く（主要FWのRCE、GPT-5リリース）\\n- 8-9: 多くの開発者に影響\\n- 6-7: 対応必要 or 注目イベント\\n- 4-5: 特定分野の人に重要\\n- 1-3: 面白いが行動不要\\n\\n## 記事候補（${articles.length}件）\\n${articleLines}\\n\\n## 論文候補（${papers.length}件）\\n${paperLines}\\n\\n## 出力形式（JSON）\\n{\"clusters\":[{\"theme\":\"テーマ名\",\"count\":1}],\"articles\":[{\"index\":1,\"title\":\"タイトル\",\"source\":\"ソース\",\"impact\":5,\"effect\":\"すぐ動く\",\"reason\":\"選定理由\"}],\"paper\":{\"index\":1,\"title\":\"タイトル\",\"impact\":5,\"reason\":\"選定理由\"}}\\nJSONのみ出力してください。`;\n\nconst geminiBody = JSON.stringify({\n  contents: [{ parts: [{ text: prompt }] }],\n  generationConfig: { temperature: 0.3, responseMimeType: 'application/json' }\n});\n\nreturn [{ json: { geminiBody, articles, papers } }];"
+      },
+      "id": "a1000002-0001-0001-0001-000000000012",
+      "name": "PrepareSelectionPrompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [940, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.geminiBody }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "a1000002-0001-0001-0001-000000000013",
+      "name": "GeminiSelect",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1160, 0],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "rlflsmwVLnPi2SAN",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const geminiResponse = $input.first().json;\nconst originalData = $('PrepareSelectionPrompt').first().json;\nconst articles = originalData.articles;\nconst papers = originalData.papers;\n\nlet selection;\ntry {\n  const responseText = geminiResponse.candidates?.[0]?.content?.parts?.[0]?.text || '';\n  selection = JSON.parse(responseText);\n} catch (e) {\n  throw new Error('ParseSelection: Gemini選定結果のパースに失敗: ' + e.message);\n}\n\nconst results = [];\nfor (const a of (selection.articles || []).slice(0, 6)) {\n  const idx = (a.index || 1) - 1;\n  const original = articles[idx];\n  if (!original) continue;\n  results.push({ json: {\n    url: original.url, title: a.title || original.title,\n    source: original.source, impact: a.impact || 5, isPaper: 0\n  }});\n}\n\nconst paper = selection.paper;\nif (paper && papers.length > 0) {\n  const pidx = (paper.index || 1) - 1;\n  const original = papers[pidx] || papers[0];\n  results.push({ json: {\n    url: original.url, title: paper.title || original.title,\n    source: 'arxiv', impact: paper.impact || 5, isPaper: 1\n  }});\n}\n\nif (results.length === 0) throw new Error('ParseSelection: 選定結果が0件');\nreturn results;"
+      },
+      "id": "a1000002-0001-0001-0001-000000000014",
+      "name": "ParseSelection",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1380, 0]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          },
+          "timeout": 10000
+        }
+      },
+      "id": "a1000002-0001-0001-0001-000000000015",
+      "name": "FetchFullTexts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1600, 0],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// HTML本文から<p>タグ内容を抽出し、元データとマージして1件に集約\nconst fetchResults = $input.all();\nconst originals = $('ParseSelection').all();\n\nconst combined = [];\nfor (let i = 0; i < originals.length; i++) {\n  const orig = originals[i].json;\n  const fetched = fetchResults[i]?.json || {};\n  let fulltext = '';\n  const rawHtml = fetched.data || '';\n  if (rawHtml && typeof rawHtml === 'string') {\n    const paragraphs = rawHtml.match(/<p[^>]*>[\\s\\S]*?<\\/p>/gi) || [];\n    fulltext = paragraphs\n      .map(p => p.replace(/<[^>]+>/g, '').trim())\n      .filter(t => t.length > 20)\n      .join('\\n')\n      .substring(0, 3000);\n  }\n  if (!fulltext) fulltext = '(本文取得失敗)';\n  combined.push({\n    url: orig.url, title: orig.title, source: orig.source,\n    impact: orig.impact, isPaper: orig.isPaper, fulltext\n  });\n}\nreturn [{ json: { items: combined } }];"
+      },
+      "id": "a1000002-0001-0001-0001-000000000016",
+      "name": "ExtractTexts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1820, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\nconst items = data.items || [];\n\nconst itemsText = items.map((a, i) =>\n  `=== 記事${i + 1}: ${a.title} (impact: ${a.impact}) ===\\n${(a.fulltext || '(本文なし)').substring(0, 2000)}`\n).join('\\n\\n');\n\nconst prompt = `以下の${items.length}件のテック記事それぞれに対して、3つの情報を生成してください。\\n\\n## 生成ルール\\n1. **tags**: 記事のカテゴリタグ。以下の固定リストから1-2個選択:\\n   [\"AI\", \"セキュリティ\", \"フロントエンド\", \"インフラ\", \"OSS\", \"言語・ランタイム\", \"データ\", \"キャリア\"]\\n\\n2. **summary**: 検索用の1行要約（40字以内、普通の日本語）\\n\\n3. **comment**: ギャル解説（200字以内）\\n   - 口調: 「〜じゃん」「〜っしょ」「マジで」「ガチで」「〜なんよね」\\n   - 内容: 技術的に正確に、でも噛み砕いて。比喩OK\\n   - 禁止: 「〜だわ」「あたし」、絵文字、敬語\\n\\n## 記事\\n${itemsText}\\n\\n## 出力形式（JSON配列）\\n[{\"article_index\":1,\"tags\":[\"AI\"],\"summary\":\"1行要約\",\"comment\":\"ギャル解説テキスト\"}]\\nJSONのみ出力してください。`;\n\nconst geminiBody = JSON.stringify({\n  contents: [{ parts: [{ text: prompt }] }],\n  generationConfig: { temperature: 0.7, responseMimeType: 'application/json' }\n});\n\nreturn [{ json: { geminiBody, items } }];"
+      },
+      "id": "a1000002-0001-0001-0001-000000000017",
+      "name": "PrepareSummaryPrompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2040, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.geminiBody }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "a1000002-0001-0001-0001-000000000018",
+      "name": "GeminiSummarize",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2260, 0],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "rlflsmwVLnPi2SAN",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const geminiResponse = $input.first().json;\nconst originalItems = $('PrepareSummaryPrompt').first().json.items;\n\nlet summaries;\ntry {\n  const responseText = geminiResponse.candidates?.[0]?.content?.parts?.[0]?.text || '';\n  summaries = JSON.parse(responseText);\n} catch (e) {\n  throw new Error('FormatArticles: Gemini要約結果のパースに失敗: ' + e.message);\n}\n\nconst apiBody = [];\nfor (const s of summaries) {\n  const idx = (s.article_index || 1) - 1;\n  const orig = originalItems[idx];\n  if (!orig) continue;\n  apiBody.push({\n    url: orig.url, title: orig.title, source: orig.source,\n    summary: s.summary || '', comment: s.comment || '',\n    tags: s.tags || [], impact: orig.impact || 5,\n    isPaper: orig.isPaper || 0,\n    publishedAt: new Date().toISOString().substring(0, 10)\n  });\n}\n\nif (apiBody.length === 0) throw new Error('FormatArticles: 整形後の記事が0件');\nreturn [{ json: { requestBody: JSON.stringify(apiBody), articleCount: apiBody.length } }];"
+      },
+      "id": "a1000002-0001-0001-0001-000000000019",
+      "name": "FormatArticles",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2480, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://shirankedo.y-fudo.workers.dev/api/ingest/articles",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.requestBody }}",
+        "options": {}
+      },
+      "id": "a1000002-0001-0001-0001-000000000020",
+      "name": "PostArticles",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2700, 0],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "CdkfLkdZEMFfnx8h",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const result = $input.first().json;\nconst count = $('FormatArticles').first().json.articleCount || 0;\nconst msg = result.ok\n  ? '✅ shirankedo 記事更新完了: ' + count + '件追加'\n  : '❌ shirankedo 記事投入失敗: ' + (result.error || 'unknown');\nreturn [{ json: { message: msg } }];"
+      },
+      "id": "a1000002-0001-0001-0001-000000000021",
+      "name": "PrepareDiscordArticles",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2920, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://yushin-n8n.duckdns.org/webhook/discord-notify",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ message: $json.message }) }}",
+        "options": {}
+      },
+      "id": "a1000002-0001-0001-0001-000000000022",
+      "name": "DiscordNotifyArticles",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [3140, 0]
+    }
+  ],
+  "connections": {
+    "Schedule": {
+      "main": [[
+        {"node": "FetchExistingURLs", "type": "main", "index": 0},
+        {"node": "FetchHN", "type": "main", "index": 0},
+        {"node": "FetchHatena", "type": "main", "index": 0},
+        {"node": "FetchZenn", "type": "main", "index": 0},
+        {"node": "FetchLobsters", "type": "main", "index": 0},
+        {"node": "FetchArXiv", "type": "main", "index": 0}
+      ]]
+    },
+    "FetchArXiv": {
+      "main": [[{"node": "ParseArXiv", "type": "main", "index": 0}]]
+    },
+    "FetchExistingURLs": {
+      "main": [[{"node": "DeduplicateArticles", "type": "main", "index": 0}]]
+    },
+    "FetchHN": {
+      "main": [[{"node": "DeduplicateArticles", "type": "main", "index": 0}]]
+    },
+    "FetchHatena": {
+      "main": [[{"node": "DeduplicateArticles", "type": "main", "index": 0}]]
+    },
+    "FetchZenn": {
+      "main": [[{"node": "DeduplicateArticles", "type": "main", "index": 0}]]
+    },
+    "FetchLobsters": {
+      "main": [[{"node": "DeduplicateArticles", "type": "main", "index": 0}]]
+    },
+    "ParseArXiv": {
+      "main": [[{"node": "DeduplicateArticles", "type": "main", "index": 0}]]
+    },
+    "DeduplicateArticles": {
+      "main": [[{"node": "PrepareSelectionPrompt", "type": "main", "index": 0}]]
+    },
+    "PrepareSelectionPrompt": {
+      "main": [[{"node": "GeminiSelect", "type": "main", "index": 0}]]
+    },
+    "GeminiSelect": {
+      "main": [[{"node": "ParseSelection", "type": "main", "index": 0}]]
+    },
+    "ParseSelection": {
+      "main": [[{"node": "FetchFullTexts", "type": "main", "index": 0}]]
+    },
+    "FetchFullTexts": {
+      "main": [[{"node": "ExtractTexts", "type": "main", "index": 0}]]
+    },
+    "ExtractTexts": {
+      "main": [[{"node": "PrepareSummaryPrompt", "type": "main", "index": 0}]]
+    },
+    "PrepareSummaryPrompt": {
+      "main": [[{"node": "GeminiSummarize", "type": "main", "index": 0}]]
+    },
+    "GeminiSummarize": {
+      "main": [[{"node": "FormatArticles", "type": "main", "index": 0}]]
+    },
+    "FormatArticles": {
+      "main": [[{"node": "PostArticles", "type": "main", "index": 0}]]
+    },
+    "PostArticles": {
+      "main": [[{"node": "PrepareDiscordArticles", "type": "main", "index": 0}]]
+    },
+    "PrepareDiscordArticles": {
+      "main": [[{"node": "DiscordNotifyArticles", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "aHM9O6mSwMNPTwdI"
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": null
+}
