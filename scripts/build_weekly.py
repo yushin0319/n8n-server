@@ -557,11 +557,14 @@ add_node("DiscordNotifyComments", "n8n-nodes-base.httpRequest", 4.2, {
 # Step 2: LLM価格取得
 # =========================================
 # AA APIからモデル情報（価格+ELOスコア）取得
+CRED_AA = {"httpHeaderAuth": {"id": "4p2w1eRfbdSRVCJe", "name": "artificial-analysis-api-key"}}
 add_node("FetchAAModels", "n8n-nodes-base.httpRequest", 4.2, {
     "method": "GET",
-    "url": "https://api.artificial-analysis.com/api/v2/data/text",
+    "url": "https://artificialanalysis.ai/api/v2/data/llms/models",
+    "authentication": "predefinedCredentialType",
+    "nodeCredentialType": "httpHeaderAuth",
     "options": {}
-}, [480, 1200])
+}, [480, 1200], CRED_AA)
 
 # 為替レート取得
 add_node("FetchExchangeRate", "n8n-nodes-base.httpRequest", 4.2, {
