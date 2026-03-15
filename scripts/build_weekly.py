@@ -1077,13 +1077,28 @@ add_node("DiscordNotifyRepos", "n8n-nodes-base.httpRequest", 4.2, {
     "options": {}
 }, [3600, 2100])
 
+# =========================================
+# Step 3: サブスクリマインダー
+# =========================================
+add_node("DiscordSubReminder", "n8n-nodes-base.httpRequest", 4.2, {
+    "method": "POST",
+    "url": DISCORD_URL,
+    "sendBody": True,
+    "specifyBody": "json",
+    "jsonBody": json.dumps({
+        "message": "📋 週次サブスクチェック: ChatGPT Pro / Claude Pro / Gemini Advanced 等の料金変更がないか確認してください\nhttps://shirankedo.y-fudo.workers.dev/ai"
+    }, ensure_ascii=False),
+    "options": {}
+}, [480, 2600])
+
 # ===== Connections =====
-# Schedule → parallel: Step 1 + Step 2 + Step 4 + Step 6
+# Schedule → parallel: Step 1 + Step 2 + Step 3 + Step 4 + Step 6
 connect("Schedule", "FetchTrackingRepos")
 connect("Schedule", "FetchRecentArticles")
 connect("Schedule", "FetchAAModels")
 connect("Schedule", "FetchExchangeRate")
 connect("Schedule", "FetchExistingRepos")
+connect("Schedule", "DiscordSubReminder")
 
 # Step 1: Star取得
 connect("FetchTrackingRepos", "BuildStarBatches")
