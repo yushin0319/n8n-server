@@ -409,7 +409,7 @@
       "typeVersion": 4.2,
       "position": [
         220,
-        1200
+        1100
       ],
       "retryOnFail": true,
       "maxTries": 3,
@@ -417,14 +417,51 @@
     },
     {
       "parameters": {
-        "jsCode": "// NVD APIレスポンスをパース（CVSS >= 7.0 フィルタ）\nconst response = $input.first().json;\nconst vulns = response.vulnerabilities || [];\nconst results = [];\nfor (const v of vulns) {\n  const cve = v.cve || {};\n  const cveId = cve.id || '';\n  const descriptions = cve.descriptions || [];\n  const enDesc = descriptions.find(d => d.lang === 'en');\n  const description = enDesc ? enDesc.value : '';\n  const metrics = cve.metrics || {};\n  let cvssScore = null;\n  if (metrics.cvssMetricV31 && metrics.cvssMetricV31.length > 0) {\n    cvssScore = metrics.cvssMetricV31[0].cvssData?.baseScore;\n  } else if (metrics.cvssMetricV30 && metrics.cvssMetricV30.length > 0) {\n    cvssScore = metrics.cvssMetricV30[0].cvssData?.baseScore;\n  }\n  if (cvssScore === null || cvssScore < 7.0) continue;\n  const publishedAt = cve.published ? cve.published.substring(0, 10) : '';\n  if (cveId && description) {\n    results.push({ cve_id: cveId, description: description.substring(0, 500), cvss_score: cvssScore, published_at: publishedAt });\n  }\n}\nreturn [{ json: { vulnerabilities: results, count: results.length } }];"
+        "method": "GET",
+        "url": "https://shirankedo.y-fudo.workers.dev/api/ingest/vulnerabilities/cve-ids",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "a1000002-0001-0001-0001-000000000077",
+      "name": "FetchExistingCVEs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        1300
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "CdkfLkdZEMFfnx8h",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "append",
+        "numberOfInputs": 2
+      },
+      "id": "a1000002-0001-0001-0001-000000000078",
+      "name": "WaitNVDData",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [
+        500,
+        1200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// NVD APIレスポンスをパース（CVSS >= 8.0 フィルタ + 既存CVE除外）\nconst nvdData = $('FetchNVD').first().json;\nconst existingData = $('FetchExistingCVEs').first().json;\nconst existingIds = new Set(existingData.data || []);\nconst vulns = nvdData.vulnerabilities || [];\nconst results = [];\nfor (const v of vulns) {\n  const cve = v.cve || {};\n  const cveId = cve.id || '';\n  if (existingIds.has(cveId)) continue;\n  const descriptions = cve.descriptions || [];\n  const enDesc = descriptions.find(d => d.lang === 'en');\n  const description = enDesc ? enDesc.value : '';\n  const metrics = cve.metrics || {};\n  let cvssScore = null;\n  if (metrics.cvssMetricV31 && metrics.cvssMetricV31.length > 0) {\n    cvssScore = metrics.cvssMetricV31[0].cvssData?.baseScore;\n  } else if (metrics.cvssMetricV30 && metrics.cvssMetricV30.length > 0) {\n    cvssScore = metrics.cvssMetricV30[0].cvssData?.baseScore;\n  }\n  if (cvssScore === null || cvssScore < 8.0) continue;\n  const publishedAt = cve.published ? cve.published.substring(0, 10) : '';\n  if (cveId && description) {\n    results.push({ cve_id: cveId, description: description.substring(0, 500), cvss_score: cvssScore, published_at: publishedAt });\n  }\n}\nreturn [{ json: { vulnerabilities: results, count: results.length } }];"
       },
       "id": "a1000002-0001-0001-0001-000000000041",
       "name": "ParseNVD",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        500,
+        760,
         1200
       ]
     },
@@ -437,7 +474,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        760,
+        1000,
         1200
       ]
     },
@@ -468,7 +505,7 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        980,
+        1240,
         1200
       ]
     },
@@ -490,7 +527,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1200,
+        1460,
         1100
       ],
       "credentials": {
@@ -509,7 +546,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1420,
+        1680,
         1100
       ]
     },
@@ -522,7 +559,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1200,
+        1460,
         1300
       ]
     },
@@ -536,7 +573,7 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.1,
       "position": [
-        1640,
+        1900,
         1200
       ]
     },
@@ -556,7 +593,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1860,
+        2120,
         1200
       ],
       "credentials": {
@@ -576,7 +613,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2100,
+        2360,
         1200
       ]
     },
@@ -594,7 +631,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2320,
+        2580,
         1200
       ]
     },
@@ -975,6 +1012,11 @@
             "index": 0
           },
           {
+            "node": "FetchExistingCVEs",
+            "type": "main",
+            "index": 0
+          },
+          {
             "node": "FetchTrackingRepos",
             "type": "main",
             "index": 0
@@ -1215,6 +1257,28 @@
       ]
     },
     "FetchNVD": {
+      "main": [
+        [
+          {
+            "node": "WaitNVDData",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FetchExistingCVEs": {
+      "main": [
+        [
+          {
+            "node": "WaitNVDData",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "WaitNVDData": {
       "main": [
         [
           {
