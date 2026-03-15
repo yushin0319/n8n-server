@@ -120,7 +120,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://yushin-n8n.duckdns.org/webhook/discord-notify",
+        "url": "http://localhost:5678/webhook/discord-notify",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "{\"message\":\"⚠ shirankedo: arXiv API エラー（3回リトライ後も失敗、論文取得スキップ）\"}",
@@ -309,7 +309,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://yushin-n8n.duckdns.org/webhook/discord-notify",
+        "url": "http://localhost:5678/webhook/discord-notify",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ message: $json.message }) }}",
