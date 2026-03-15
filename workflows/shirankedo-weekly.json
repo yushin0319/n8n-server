@@ -17,7 +17,7 @@
           ]
         }
       },
-      "id": "78977b4a-6cba-49a3-b8a8-b0e291e8fa95",
+      "id": "7b92545d-d6f8-4d3b-973b-9b889347f05f",
       "name": "Schedule",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
@@ -34,7 +34,7 @@
         "nodeCredentialType": "httpHeaderAuth",
         "options": {}
       },
-      "id": "68bd4c71-319c-4f25-9749-7b5a4cea5ee8",
+      "id": "8a048594-66c9-44f4-9059-8b82af8f84ac",
       "name": "FetchTrackingRepos",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -53,7 +53,7 @@
       "parameters": {
         "jsCode": "// tracking-reposからstar取得用GraphQLバッチを構築（50リポ/バッチ）\nconst repos = $input.first().json.data || [];\nif (!repos.length) return [{ json: { batches: [], count: 0 } }];\n\nconst batchSize = 50;\nconst batches = [];\nfor (let i = 0; i < repos.length; i += batchSize) {\n  const batch = repos.slice(i, i + batchSize);\n  const parts = batch.map((r, idx) => {\n    const [owner, name] = r.repo.split('/');\n    return `r${i+idx}: repository(owner: \"${owner}\", name: \"${name}\") { nameWithOwner stargazerCount }`;\n  });\n  batches.push({ json: { query: `{${parts.join(' ')}}`, batchIndex: batches.length } });\n}\nreturn batches;"
       },
-      "id": "bbf3ee16-2576-44fb-a6eb-930acdb8c6c2",
+      "id": "989d8133-24ff-4bd6-945b-27e2499671e4",
       "name": "BuildStarBatches",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -67,7 +67,7 @@
         "batchSize": 1,
         "options": {}
       },
-      "id": "9ecadb9a-f984-4b5b-9057-a6a79311ee79",
+      "id": "4816f41f-d282-469b-857b-e55eb85ff83d",
       "name": "SplitStarBatches",
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
@@ -87,7 +87,7 @@
         "jsonBody": "={{ JSON.stringify({ query: $json.query }) }}",
         "options": {}
       },
-      "id": "906ff966-46c7-482b-9495-279cfcc6e0bb",
+      "id": "36a3fbd8-0b2b-4c42-82db-37d64d7b21b7",
       "name": "FetchStarBatch",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -106,7 +106,7 @@
       "parameters": {
         "jsCode": "// 各バッチのGraphQL結果からstar数をstaticDataに蓄積\nconst staticData = $getWorkflowStaticData('global');\nif (!staticData.stars) staticData.stars = [];\nconst data = $input.first().json.data || $input.first().json || {};\nfor (const key of Object.keys(data)) {\n  const repo = data[key];\n  if (!repo || !repo.nameWithOwner) continue;\n  staticData.stars.push({ repo: repo.nameWithOwner, stars: repo.stargazerCount });\n}\nreturn $input.all();"
       },
-      "id": "75f79992-05ce-4a93-bb3a-70517f2b6e1f",
+      "id": "e70b027a-68f8-41a9-91d7-9b6aa0cd0b6d",
       "name": "AccumulateStars",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -119,7 +119,7 @@
       "parameters": {
         "jsCode": "// staticDataからstar結果を取り出してPOST用に整形\nconst staticData = $getWorkflowStaticData('global');\nconst stars = staticData.stars || [];\nstaticData.stars = [];\n\n// 50件チャンクに分割\nconst chunks = [];\nfor (let i = 0; i < stars.length; i += 50) {\n  chunks.push(stars.slice(i, i + 50));\n}\nif (chunks.length === 0) chunks.push([]);\n\nreturn chunks.map((chunk, idx) => ({\n  json: {\n    requestBody: JSON.stringify(chunk),\n    count: chunk.length,\n    chunkIndex: idx,\n    totalChunks: chunks.length,\n    totalStars: stars.length,\n  }\n}));"
       },
-      "id": "369affe2-71e6-438f-abd7-693cb7d1e6f7",
+      "id": "3fb68af3-c9fc-4e80-afa4-59816940d7d9",
       "name": "ParseStars",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -133,7 +133,7 @@
         "batchSize": 1,
         "options": {}
       },
-      "id": "0b69eb4f-ce3c-42fe-9b5c-ef1adcb63e74",
+      "id": "13fd3d08-e521-4deb-8fd5-dd5768f3c0b3",
       "name": "SplitStarChunks",
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
@@ -153,7 +153,7 @@
         "jsonBody": "={{ $json.requestBody }}",
         "options": {}
       },
-      "id": "f5c5ccbf-d6bb-4bce-aa6a-ac1c07f27a94",
+      "id": "7ddb25db-2ab1-473d-a495-c20a12b80480",
       "name": "PostRepoStats",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -173,7 +173,7 @@
       "parameters": {
         "jsCode": "// POST結果をstaticDataに蓄積\nconst staticData = $getWorkflowStaticData('global');\nif (!staticData.postResults) staticData.postResults = { total: 0, errors: 0 };\nconst res = $input.first().json;\nif (res && res.ok) {\n  staticData.postResults.total += (res.inserted || 0);\n} else {\n  staticData.postResults.errors += 1;\n}\nreturn $input.all();"
       },
-      "id": "4c789478-e042-4894-a781-6a51ad4afcd4",
+      "id": "2008f593-5c94-42fa-affc-0dfa5c97273c",
       "name": "AccumulatePostResults",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -186,7 +186,7 @@
       "parameters": {
         "jsCode": "// staticDataからPOST結果を読み出し\nconst staticData = $getWorkflowStaticData('global');\nconst results = staticData.postResults || { total: 0, errors: 0 };\nstaticData.postResults = null;\nreturn [{ json: results }];"
       },
-      "id": "2735a73e-e4aa-4a48-a6fe-fc2ee5787301",
+      "id": "4e82f509-bbdb-4c73-89e1-2711c5911b54",
       "name": "ParsePostResults",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -199,7 +199,7 @@
       "parameters": {
         "jsCode": "const r = $input.first().json;\nconst msg = r.errors > 0\n  ? `❌ Star取得一部失敗: ${r.total}件成功, ${r.errors}件エラー`\n  : `✅ Star取得完了: ${r.total}件`;\nreturn [{ json: { message: msg } }];"
       },
-      "id": "acf72207-1ee4-4cb4-be3a-82489ea88fc5",
+      "id": "599ad414-589c-42b4-bbac-2dc7079152d7",
       "name": "PrepareDiscordStars",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -217,7 +217,7 @@
         "jsonBody": "={{ JSON.stringify({ message: $json.message }) }}",
         "options": {}
       },
-      "id": "2a42829b-f105-4998-838f-d80d4c95fdfb",
+      "id": "dedab67d-95c4-444c-a042-1d6e12120bc6",
       "name": "DiscordNotifyStars",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -234,7 +234,7 @@
         "nodeCredentialType": "httpHeaderAuth",
         "options": {}
       },
-      "id": "4cb2ad10-66db-4da5-8483-7a6de846756c",
+      "id": "503576da-8817-4eb1-959b-02bc5ec7cb0a",
       "name": "FetchRecentArticles",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -253,7 +253,7 @@
       "parameters": {
         "jsCode": "// 直近7日の記事からGemini週次レポート用プロンプトを構築\nconst articles = $input.first().json.data || [];\nif (!articles.length) {\n  return [{ json: { prompt: '', hasArticles: false, count: 0 } }];\n}\n\nconst articleList = articles.map((a, i) =>\n  `${i+1}. [${a.source}] ${a.title}\\n   要約: ${a.summary}\\n   タグ: ${a.tags}`\n).join('\\n\\n');\n\nconst prompt = `以下の今週の記事一覧を分析し、週次サマリーを作成せよ。\nこのサマリーはページコメント生成AIへの入力として使われる内部資料である。\n\n## 出力フォーマット\n- 箇条書きで簡潔に（装飾・挨拶・口調の工夫は不要）\n- 今週の主要トピックを3〜5個に分類し、各トピックに関連記事を紐づける\n- 各トピックは「何が起きたか」「なぜ重要か」を1〜2文で記述\n- AI/LLM関連、セキュリティ関連、開発ツール関連の話題は必ず拾うこと\n\n## 今週の記事（${articles.length}件）\n${articleList}`;\n\nreturn [{ json: { prompt, hasArticles: true, count: articles.length } }];"
       },
-      "id": "6fe4b729-c041-4208-9bac-e3ba182b9f90",
+      "id": "8332fc5f-441b-47f8-9b04-5e265b3adc3b",
       "name": "PrepareWeeklyPrompt",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -272,7 +272,7 @@
           },
           "conditions": [
             {
-              "id": "a46b41b9-5cc9-423c-82a1-b17807be2fa6",
+              "id": "d003231c-e714-48be-8c3f-776aa69d08f3",
               "leftValue": "={{ $json.hasArticles }}",
               "rightValue": true,
               "operator": {
@@ -284,7 +284,7 @@
           "combinator": "and"
         }
       },
-      "id": "cda4c60f-1274-4440-b70d-f07da38a39cf",
+      "id": "801f413f-d72c-49a7-9034-0357fd819c12",
       "name": "HasArticlesForReport",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -304,7 +304,7 @@
         "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: $json.prompt }] }], generationConfig: { temperature: 0.3 } }) }}",
         "options": {}
       },
-      "id": "9f962f23-f520-457a-b0f6-469bdc63d01c",
+      "id": "1a519a0e-9929-46a4-8d06-41e5862b9c13",
       "name": "GeminiWeeklyReport",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -323,7 +323,7 @@
       "parameters": {
         "jsCode": "// Geminiレスポンスからレポートテキストを抽出\nconst resp = $input.first().json;\nconst reportContent = resp.candidates?.[0]?.content?.parts?.[0]?.text || '';\nif (!reportContent) {\n  return [{ json: { requestBody: JSON.stringify({ content: '生成失敗' }), reportContent: '' } }];\n}\nreturn [{ json: {\n  requestBody: JSON.stringify({ content: reportContent }),\n  reportContent\n} }];"
       },
-      "id": "4efaee69-fa47-40e7-9b40-a1ee5c021196",
+      "id": "58e11eab-ba31-4cdb-a19e-56fb089c6b6a",
       "name": "FormatWeeklyReport",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -343,7 +343,7 @@
         "jsonBody": "={{ $json.requestBody }}",
         "options": {}
       },
-      "id": "cfe97e9f-8365-4514-889a-8902ebee92d1",
+      "id": "8bd0d162-0419-435d-9219-e80e51769373",
       "name": "PostWeeklySummary",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -363,7 +363,7 @@
       "parameters": {
         "jsCode": "return [{ json: { message: \"記事なし、週次レポートスキップ\" } }];"
       },
-      "id": "54260ebd-e9b3-4252-a925-e4594870dabe",
+      "id": "253b9cc2-eb58-4673-9a95-5983846af665",
       "name": "EmptyWeeklyResult",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -377,7 +377,7 @@
         "mode": "append",
         "options": {}
       },
-      "id": "b26aa124-cee6-4306-8f02-9fbfa82751c0",
+      "id": "18f80879-0681-4ad5-acfa-59fe5561b3a6",
       "name": "MergeWeeklyPaths",
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.1,
@@ -390,7 +390,7 @@
       "parameters": {
         "jsCode": "const r = $input.first().json;\nconst ok = r.ok !== undefined ? r.ok : false;\nconst msg = ok\n  ? '✅ 週次レポート生成完了'\n  : r.message || '❌ 週次レポート生成失敗: ' + JSON.stringify(r).substring(0, 200);\nreturn [{ json: { message: msg } }];"
       },
-      "id": "61d67c5e-3316-4a4a-ba49-b0de9e2bd02a",
+      "id": "6b004447-0ed6-478a-b362-114598d9be70",
       "name": "PrepareDiscordWeekly",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -408,7 +408,7 @@
         "jsonBody": "={{ JSON.stringify({ message: $json.message }) }}",
         "options": {}
       },
-      "id": "b8fea7f2-6900-4e41-91eb-91cb9faa27ad",
+      "id": "e8a30864-acdc-4170-9686-6a201b1b510d",
       "name": "DiscordNotifyWeekly",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -425,7 +425,7 @@
         "nodeCredentialType": "httpHeaderAuth",
         "options": {}
       },
-      "id": "8308d0d2-5b3b-46b5-80ce-3950dfbde1af",
+      "id": "eb2f1d91-743b-473f-9d4c-5b52f14493d7",
       "name": "FetchRecentSummaries",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -444,7 +444,7 @@
       "parameters": {
         "jsCode": "// 直近4週の週次サマリーからページコメント3件分のプロンプトを構築\nconst summaries = $input.first().json.data || [];\nconst summaryText = summaries.map((s, i) =>\n  `【${i+1}週前】\\n${s.content || s.reportContent || ''}`\n).join('\\n\\n---\\n\\n');\n\nif (!summaryText.trim()) {\n  return [{ json: { hasSummaries: false } }];\n}\n\nconst toneRules = `## 口調ルール\n「ギャルっぽい記号を貼り付けた文章」ではなく「ギャルが実際に喋りそうな文章」を書け。\n- 一人称「うち」。語尾「〜じゃん」「〜っしょ」「〜くない？」「〜じゃね？」「〜だし」\n- 強調「マジで」「ガチで」「超」「鬼」。感嘆「やば」「えぐ」「つよ」（体言止め）\n- テンションに緩急をつけろ。常時MAXはウソくさい。重い話は静かにしんどがれ\n- 絵文字は0〜1個。使わなくていい。効かせる時だけ\n- 「おけまる」「わかりみが深い」「あーし」は古い。使うな\n- 同じ語彙の連打禁止。「マジ？」「ヤバすぎ！」を毎回使うな\n- 1文目の入り方を毎回変えろ。同じパターンで始めるな\n- 「知らんけど」は毎回入れない。くどくなる`;\n\nconst formatRules = `## フォーマット\n- 150〜300文字で書くこと。短すぎも長すぎもダメ\n- 「何が起きたか」だけでなく「それに対してどう感じるか」を必ず含めること\n- 事実の羅列は禁止。読んだ人が「ふーん」で終わるコメントは失敗\n- 最後まで書ききること。文の途中で終わるな`;\n\nconst trendPrompt = `あなたはテック系トレンドページの総評コメントを書くライターです。\n\n${toneRules}\n\n${formatRules}\n\n## このコメントの役割\nテック業界全体のトレンドページに表示される総評。\n以下の週次レポートを参考にしつつ、今のテック業界で何が熱いか・どこに向かってるかを語れ。\n具体的なプロジェクト名やツール名を挙げて、抽象論で逃げるな。\n\n## 直近の週次レポート\n${summaryText}`;\n\nconst aiApiPrompt = `あなたはAI API・LLMの比較ページの総評コメントを書くライターです。\n\n${toneRules}\n\n${formatRules}\n\n## このコメントの役割\nAI APIの料金・性能比較ページに表示される総評。\n以下の週次レポートからAI・LLM関連の話題を拾い、最近のモデル動向・API機能・価格の変化について語れ。\n月額目安（独自算出値）には言及しないこと。\n具体的なモデル名やサービス名を挙げて語れ。\n\n## 直近の週次レポート\n${summaryText}`;\n\nconst aiSubPrompt = `あなたはAIサブスクリプション比較ページの総評コメントを書くライターです。\n\n${toneRules}\n\n${formatRules}\n\n## このコメントの役割\nChatGPT / Claude / Gemini 等のサブスクプラン比較ページに表示される総評。\n以下の週次レポートを参考に、最近のAIサブスク事情（料金変更、新プラン、使い分け戦略）について語れ。\n開発者・ユーザー目線で「結局どれ使えばいいの？」に答える方向性で。\n\n## 直近の週次レポート\n${summaryText}`;\n\nreturn [{ json: {\n  hasSummaries: true,\n  trendPrompt,\n  aiApiPrompt,\n  aiSubPrompt\n} }];"
       },
-      "id": "df8caebf-618a-4b25-a461-3a0407155585",
+      "id": "a4d757d4-8755-4f9e-bfaa-e269f184680e",
       "name": "PreparePageCommentPrompts",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -463,7 +463,7 @@
           },
           "conditions": [
             {
-              "id": "2330bc8b-9352-4774-843e-cffbd06b359e",
+              "id": "e6b39aee-54a0-4ecf-bcd8-09939592c87c",
               "leftValue": "={{ $json.hasSummaries }}",
               "rightValue": true,
               "operator": {
@@ -475,7 +475,7 @@
           "combinator": "and"
         }
       },
-      "id": "0005526e-1093-4b8a-a481-1cbc52f27d2a",
+      "id": "ca0b7706-7565-4eee-bc0a-2ae1e3d59296",
       "name": "HasSummariesForComments",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -495,7 +495,7 @@
         "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: $json.trendPrompt }] }], generationConfig: { temperature: 0.8 } }) }}",
         "options": {}
       },
-      "id": "decec97a-3862-4514-8d9f-9017c39b326c",
+      "id": "7c32c5d9-d50f-4c13-9551-ce4e0541874b",
       "name": "GeminiTrendComment",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -514,7 +514,7 @@
       "parameters": {
         "jsCode": "const resp = $input.first().json;\nconst trendText = resp.candidates?.[0]?.content?.parts?.[0]?.text || '生成失敗';\n// 前ノードのプロンプト情報を引き継ぐ\nconst prev = $('HasSummariesForComments').first().json;\nreturn [{ json: {\n  trendComment: trendText,\n  aiApiPrompt: prev.aiApiPrompt,\n  aiSubPrompt: prev.aiSubPrompt\n} }];"
       },
-      "id": "17818a97-6a8b-45fc-a95e-5946733fa881",
+      "id": "48063620-91bf-4092-bb33-f1dda633ecdb",
       "name": "FormatTrendComment",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -534,7 +534,7 @@
         "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: $json.aiApiPrompt }] }], generationConfig: { temperature: 0.8 } }) }}",
         "options": {}
       },
-      "id": "dda2fd3b-dd9b-4434-86f4-c97653f477a8",
+      "id": "a9bcc4db-eb11-47da-b084-a890bf1877c1",
       "name": "GeminiAIApiComment",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -553,7 +553,7 @@
       "parameters": {
         "jsCode": "const resp = $input.first().json;\nconst aiApiText = resp.candidates?.[0]?.content?.parts?.[0]?.text || '生成失敗';\nconst prev = $('FormatTrendComment').first().json;\nreturn [{ json: {\n  trendComment: prev.trendComment,\n  aiApiComment: aiApiText,\n  aiSubPrompt: prev.aiSubPrompt\n} }];"
       },
-      "id": "7d284238-0380-46e9-84a0-e12697e7fb29",
+      "id": "aacddaf6-61d3-43b8-a2c0-fcb26ad532ac",
       "name": "FormatAIApiComment",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -573,7 +573,7 @@
         "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: $json.aiSubPrompt }] }], generationConfig: { temperature: 0.8 } }) }}",
         "options": {}
       },
-      "id": "97e77f66-8dd5-401d-84d5-5c0dc98942d5",
+      "id": "551e4f80-b522-40aa-a75d-a4752fad9f44",
       "name": "GeminiAISubComment",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -592,7 +592,7 @@
       "parameters": {
         "jsCode": "const resp = $input.first().json;\nconst aiSubText = resp.candidates?.[0]?.content?.parts?.[0]?.text || '生成失敗';\nconst prev = $('FormatAIApiComment').first().json;\n\nconst comments = [\n  { type: 'trend', content: prev.trendComment },\n  { type: 'ai_api', content: prev.aiApiComment },\n  { type: 'ai_sub', content: aiSubText },\n];\n\nreturn [{ json: {\n  requestBody: JSON.stringify(comments),\n  count: comments.length\n} }];"
       },
-      "id": "6d184070-acf5-4e56-99d0-6acab5267bc2",
+      "id": "91c55820-ec99-4ca7-a74d-3fd8006a1f69",
       "name": "FormatPageComments",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -612,7 +612,7 @@
         "jsonBody": "={{ $json.requestBody }}",
         "options": {}
       },
-      "id": "ccf1c2c6-15df-4f4e-a6ab-ec3fbcaeed0d",
+      "id": "1026e3cc-e96a-4c7d-bc0c-147f1efea2ac",
       "name": "PostPageComments",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -632,7 +632,7 @@
       "parameters": {
         "jsCode": "return [{ json: { message: \"サマリーなし、ページコメントスキップ\" } }];"
       },
-      "id": "38e09982-d9a9-409d-a21b-3d82f84b35f3",
+      "id": "f8828754-875f-4e4b-a869-3af8be5007e7",
       "name": "EmptyCommentResult",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -646,7 +646,7 @@
         "mode": "append",
         "options": {}
       },
-      "id": "9dcd3050-47eb-4797-9d2c-077bce148f19",
+      "id": "137c98c3-18f7-43c1-826d-d6536f7dd953",
       "name": "MergeCommentPaths",
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.1,
@@ -659,7 +659,7 @@
       "parameters": {
         "jsCode": "const r = $input.first().json;\nconst ok = r.ok !== undefined ? r.ok : false;\nconst msg = ok\n  ? '✅ ページコメント生成完了: 3件'\n  : r.message || '❌ ページコメント生成失敗: ' + JSON.stringify(r).substring(0, 200);\nreturn [{ json: { message: msg } }];"
       },
-      "id": "323884e3-6fed-4b67-b7aa-e354401a78c7",
+      "id": "b4924bb7-b0ca-4753-ab68-5b86edbba3db",
       "name": "PrepareDiscordComments",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -677,7 +677,7 @@
         "jsonBody": "={{ JSON.stringify({ message: $json.message }) }}",
         "options": {}
       },
-      "id": "25cececf-f4fd-4516-a253-1b38fc8a4833",
+      "id": "1c1318c9-9235-463a-b546-0374b958ed57",
       "name": "DiscordNotifyComments",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -692,7 +692,7 @@
         "url": "https://api.artificial-analysis.com/api/v2/data/text",
         "options": {}
       },
-      "id": "8193cc0e-84e1-4fe3-90a6-b78bd4f04ee7",
+      "id": "581cdd6a-ee6a-4756-84e3-2afd593ca3b6",
       "name": "FetchAAModels",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -707,7 +707,7 @@
         "url": "https://api.exchangerate-api.com/v4/latest/USD",
         "options": {}
       },
-      "id": "1f2c8bec-dab5-42b5-9726-e0099ab35db7",
+      "id": "98a7472f-92c1-421f-9683-940f56ea608f",
       "name": "FetchExchangeRate",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -720,7 +720,7 @@
       "parameters": {
         "jsCode": "// AA APIデータからモデルをフィルタ・デデュプして56モデルに絞る\nconst aaResp = $('FetchAAModels').first().json;\nconst rateResp = $('FetchExchangeRate').first().json;\nconst aaData = aaResp.data || [];\nconst jpyRate = rateResp?.rates?.JPY || 150;\n\n// Provider mapping\nconst PROVIDERS = {\n  'Anthropic': 'Anthropic', 'OpenAI': 'OpenAI', 'Google': 'Google',\n  'DeepSeek': 'DeepSeek', 'xAI': 'xAI', 'Meta': 'Meta',\n  'Mistral': 'Mistral', 'Alibaba': 'Alibaba', 'Kimi': 'Moonshot',\n  'MiniMax': 'MiniMax', 'Z AI': 'Zhipu AI', 'Xiaomi': 'Xiaomi',\n  'Amazon': 'Amazon', 'Microsoft': 'Microsoft',\n};\n\n// Step 1: Basic filter\nconst filtered = [];\nfor (const m of aaData) {\n  const name = m.name || '';\n  const creatorName = m.model_creator?.name || '';\n  let provider = null;\n  for (const [pname, display] of Object.entries(PROVIDERS)) {\n    if (creatorName.toLowerCase().includes(pname.toLowerCase())) {\n      provider = display; break;\n    }\n  }\n  if (!provider) continue;\n  const pricing = m.pricing || {};\n  const inp = pricing.price_1m_input_tokens;\n  const out = pricing.price_1m_output_tokens;\n  if (inp == null || out == null || (inp === 0 && out === 0)) continue;\n  if (name.toLowerCase().includes('codex')) continue;\n  const intel = m.evaluations?.artificial_analysis_intelligence_index;\n  if (intel == null) continue;\n  filtered.push({ name, provider, score: intel, inputPrice: inp, outputPrice: out });\n}\n\n// Step 2: Skip patterns\nfunction shouldSkip(name) {\n  const skipExact = ['Distill','Mixtral','Ministral','Pixtral','Devstral','gpt-oss','Gemma'];\n  if (skipExact.some(x => name.includes(x))) return true;\n  if (['GPT-3.5','Llama 2 ','Mistral 7B'].some(x => name.includes(x))) return true;\n  if (name === 'o1-preview' || name === 'o1-pro') return true;\n  if (name.includes('Llama')) {\n    if (!['Llama 4 Maverick','Llama 4 Scout','Llama 3.3'].some(a => name.includes(a))) return true;\n  }\n  if (['Mistral Small','Mistral Medium','Mistral Large'].includes(name)) return true;\n  if (['Claude 4 Opus','Claude 4.1 Opus'].some(x => name.includes(x))) return true;\n  if (name.includes('Magistral Small')) return true;\n  if (['Qwen3 VL','Qwen3.5 VL','Coder','Omni','QwQ','Qwen2','Qwen Chat'].some(x => name.includes(x))) return true;\n  if (/Qwen3\\.?5?\\s+[0-4](?:\\.\\d+)?B\\b/.test(name)) return true;\n  if (/^Qwen3 \\d+B/.test(name) && !name.includes('Qwen3 Max')) return true;\n  if (name.includes('Qwen3 Next')) return true;\n  if (name.includes('GLM') && (/V /.test(name) || /V\\(/.test(name))) return true;\n  if (name.includes('GLM-4.5-Air')) return true;\n  if (name.includes('Nova') && name.includes('Omni')) return true;\n  return false;\n}\n\n// Step 3: Family key dedup\nfunction familyKey(n) {\n  let c = n.replace(/\\s*\\(.*?\\)/g, '');\n  c = c.replace(/\\s*-\\s*\\d{4}-\\d{2}-\\d{2}$/, '');\n  c = c.replace(/\\s*(Preview|Exp|Terminus)\\b/g, '');\n  c = c.replace(/\\s+\\d{4}$/, '');\n  c = c.replace(/(Mistral (?:Small|Medium|Large|Magistral \\w+))\\s+[\\d.]+/g, '$1');\n  if (/^GPT-5(\\.\\d+)?$/.test(c)) c = 'GPT-5';\n  c = c.replace(/(DeepSeek V3)[\\d.]*/g, '$1');\n  c = c.replace(/(DeepSeek R1)[\\s\\d]*/g, '$1');\n  c = c.replace(/Grok [\\d.]+ Fast/g, 'Grok Fast');\n  c = c.replace(/Gemini 3\\.\\d+ Pro/g, 'Gemini 3 Pro');\n  c = c.replace(/Gemini (\\d+)\\.(\\d+) (Flash-Lite|Flash)$/g, 'Gemini $1 $3');\n  c = c.replace(/(Qwen3\\.5 \\d+B(?: A\\d+B)?)\\s+\\d{4}/g, '$1');\n  c = c.replace(/(Qwen3 \\d+B(?: A\\d+B)?)\\s+\\d{4}/g, '$1');\n  c = c.replace(/Qwen3 Max.*/g, 'Qwen3 Max');\n  c = c.replace(/Kimi K2\\.5.*/g, 'Kimi K2.5');\n  c = c.replace(/Kimi K2(?!\\.5).*/g, 'Kimi K2');\n  c = c.replace(/MiniMax-M2\\.\\d+/g, 'MiniMax-M2');\n  c = c.replace(/MiniMax M2/g, 'MiniMax-M2');\n  c = c.replace(/(GLM-\\d+(?:\\.\\d+)?)\\b.*/g, '$1');\n  c = c.replace(/(MiMo-V2-Flash).*/g, '$1');\n  c = c.replace(/(Nova \\d+\\.\\d+ (?:Pro|Lite|Omni)).*/g, '$1');\n  c = c.replace(/(Nova Premier).*/g, '$1');\n  return c.trim();\n}\n\nconst families = {};\nfor (const m of filtered) {\n  if (shouldSkip(m.name)) continue;\n  const fk = familyKey(m.name);\n  if (!families[fk] || m.score > families[fk].score) {\n    families[fk] = m;\n  }\n}\n\n// Step 4: Sort + cut below 15\nconst models = Object.values(families)\n  .filter(m => m.score >= 15)\n  .sort((a, b) => b.score - a.score)\n  .map(m => {\n    const cleanName = m.name.replace(/\\s*\\(.*?\\)/g, '').trim();\n    return {\n      modelName: cleanName,\n      provider: m.provider,\n      score: m.score,\n      inputPrice: m.inputPrice,\n      outputPrice: m.outputPrice,\n      currency: 'USD',\n    };\n  });\n\n// 出力: [0] LLMモデル配列, [1] 為替レート\nreturn [\n  { json: {\n    requestBody: JSON.stringify(models),\n    count: models.length,\n    type: 'llm-models'\n  }},\n  { json: {\n    requestBody: JSON.stringify({ jpyPerUsd: jpyRate, updatedAt: new Date().toISOString() }),\n    type: 'exchange-rate'\n  }}\n];"
       },
-      "id": "914628ba-0e43-462e-9601-91eeb47ae88d",
+      "id": "81649a8f-8187-41fe-a81e-500e283be4c9",
       "name": "ParseLLMData",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -740,7 +740,7 @@
         "jsonBody": "={{ $json.requestBody }}",
         "options": {}
       },
-      "id": "8aabf082-b1da-4ff4-bc9d-20c39fd95101",
+      "id": "a8d7a846-35b6-49ea-9abf-27417355e94b",
       "name": "PostLLMModels",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -767,7 +767,7 @@
         "jsonBody": "={{ $json.requestBody }}",
         "options": {}
       },
-      "id": "3910787c-4c1b-48a0-8713-2edcfe6e0f45",
+      "id": "3ac8e08d-72dc-4d1c-9131-4291193f0e99",
       "name": "PostExchangeRate",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -793,7 +793,7 @@
           },
           "conditions": [
             {
-              "id": "d22f7c63-e259-4389-893b-c318f93ca0cc",
+              "id": "0db67f87-6c96-4c51-84b8-8c829ff111ef",
               "leftValue": "={{ $json.type }}",
               "rightValue": "llm-models",
               "operator": {
@@ -805,7 +805,7 @@
           "combinator": "and"
         }
       },
-      "id": "915ce1c7-3659-4a6c-8710-914725700c01",
+      "id": "eaf78b8b-6427-4228-b443-9d4194635ddc",
       "name": "RouteLLMOutput",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -818,7 +818,7 @@
       "parameters": {
         "jsCode": "const r = $input.first().json;\nconst ok = r.ok !== undefined ? r.ok : false;\nconst count = r.inserted || 0;\nconst updated = r.updated || 0;\nconst msg = ok\n  ? `✅ LLM価格更新完了: ${count}件追加, ${updated}件更新`\n  : '❌ LLM価格更新失敗: ' + JSON.stringify(r).substring(0, 200);\nreturn [{ json: { message: msg } }];"
       },
-      "id": "85225fcd-7268-4b51-86ef-fcd8fd8713b5",
+      "id": "34546db7-7d85-4eb4-bc6f-6b989b2adcbd",
       "name": "PrepareDiscordLLM",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -836,7 +836,7 @@
         "jsonBody": "={{ JSON.stringify({ message: $json.message }) }}",
         "options": {}
       },
-      "id": "80ad55a0-1032-4f8a-9ca1-1dfbeff9c4f3",
+      "id": "3143200d-d8f5-4778-a273-3383988cdcea",
       "name": "DiscordNotifyLLM",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -853,7 +853,7 @@
         "nodeCredentialType": "httpHeaderAuth",
         "options": {}
       },
-      "id": "58af5724-9894-4705-a9d4-e469d0b57956",
+      "id": "93df9257-c747-46ed-a26b-f6940cdecb99",
       "name": "FetchExistingRepos",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -872,7 +872,7 @@
       "parameters": {
         "jsCode": "// 5ティアのGitHub Search APIクエリを構築\nconst now = new Date();\nconst fmt = d => d.toISOString().slice(0, 10);\nconst ago = days => { const d = new Date(now); d.setDate(d.getDate() - days); return fmt(d); };\n\nconst tiers = [\n  { q: 'stars:>50000', label: 'Tier1: ★50k+' },\n  { q: `stars:10000..50000 pushed:>${ago(365)}`, label: 'Tier2: 1yr ★10k+' },\n  { q: `stars:5000..10000 pushed:>${ago(180)}`, label: 'Tier3: 6mo ★5k+' },\n  { q: `stars:2000..5000 pushed:>${ago(90)}`, label: 'Tier4: 3mo ★2k+' },\n  { q: `stars:1000..2000 pushed:>${ago(30)}`, label: 'Tier5: 1mo ★1k+' },\n];\n\n// 各ティアを2ページずつ（最大200件/ティア）\nconst queries = [];\nfor (const tier of tiers) {\n  for (let page = 1; page <= 2; page++) {\n    queries.push({\n      json: {\n        url: `https://api.github.com/search/repositories?q=${encodeURIComponent(tier.q)}&sort=stars&order=desc&per_page=100&page=${page}`,\n        label: tier.label,\n        page,\n      }\n    });\n  }\n}\nreturn queries;"
       },
-      "id": "a547b87b-f756-47af-be98-920db81c65d6",
+      "id": "e71d372c-7de3-432c-89d1-4900571f2429",
       "name": "BuildSearchQueries",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -886,7 +886,7 @@
         "batchSize": 1,
         "options": {}
       },
-      "id": "12450e31-8927-4b31-90a4-05134ad8ae21",
+      "id": "f5f862de-2fa8-4df9-b520-6531c665e4c1",
       "name": "SplitSearchBatches",
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
@@ -900,7 +900,7 @@
         "amount": 3,
         "unit": "seconds"
       },
-      "id": "257cf0a8-6265-4dcf-ae66-504103379fbe",
+      "id": "e86f883a-aae1-449a-87eb-ee9643ff2ca7",
       "name": "WaitSearchRate",
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
@@ -917,7 +917,7 @@
         "nodeCredentialType": "githubApi",
         "options": {}
       },
-      "id": "06980c4a-abdb-4360-acc9-697e47065467",
+      "id": "243ef8e0-cbd4-4c00-8fbb-c07dff99ff75",
       "name": "FetchGitHubSearch",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -937,7 +937,7 @@
       "parameters": {
         "jsCode": "// 検索結果をstaticDataに蓄積\nconst staticData = $getWorkflowStaticData('global');\nif (!staticData.searchRepos) staticData.searchRepos = [];\nconst items = $input.first().json.items || [];\nfor (const r of items) {\n  staticData.searchRepos.push({\n    repo: r.full_name,\n    name: r.name,\n    description: r.description || '',\n    language: r.language || '',\n    stars: r.stargazers_count,\n  });\n}\nreturn $input.all();"
       },
-      "id": "84b02a5d-6e11-4fce-8df5-5aa2450e97f4",
+      "id": "ff9bf1d6-1733-4b9c-b3a5-89bb6602e4db",
       "name": "AccumulateSearchResults",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -950,7 +950,7 @@
       "parameters": {
         "jsCode": "// staticDataから検索結果を読み出し、フィルタ・既存除外\nconst staticData = $getWorkflowStaticData('global');\nconst allRepos = staticData.searchRepos || [];\nstaticData.searchRepos = [];\n\n// 既存リポ一覧\nconst existingRepos = $('FetchExistingRepos').first().json.data || [];\nconst existingSet = new Set(existingRepos.map(r => r.repo.toLowerCase()));\n\n// ブロックリスト\nconst blocklist = [\n  'awesome','interview','free-programming-books','build-your-own',\n  'public-apis','developer-roadmap','system-design','cheatsheet',\n  'learn-','tutorial','roadmap','study-plan','coding-guide',\n  'freeCodeCamp','computer-science','project-based-learning',\n  'the-art-of-command-line','the-book-of-secret-knowledge',\n];\n\n// デデュプ（repo名で）\nconst seen = new Set();\nconst deduped = [];\nfor (const r of allRepos) {\n  const key = r.repo.toLowerCase();\n  if (seen.has(key)) continue;\n  seen.add(key);\n  deduped.push(r);\n}\n\n// フィルタ: 言語あり + ブロックリスト除外 + 既存除外\nconst newRepos = deduped.filter(r => {\n  if (!r.language) return false;\n  const name = r.repo.toLowerCase();\n  if (blocklist.some(kw => name.includes(kw))) return false;\n  if (existingSet.has(name)) return false;\n  return true;\n});\n\nif (newRepos.length === 0) {\n  return [{ json: { hasNewRepos: false, count: 0 } }];\n}\n\n// Gemini翻訳用にバッチ化（20件ずつ）\nconst batchSize = 20;\nconst batches = [];\nfor (let i = 0; i < newRepos.length; i += batchSize) {\n  batches.push(newRepos.slice(i, i + batchSize));\n}\n\nreturn [{ json: {\n  hasNewRepos: true,\n  count: newRepos.length,\n  batches: batches,\n  totalBatches: batches.length,\n} }];"
       },
-      "id": "8915a5c4-309f-4119-96ae-dcb393bc1d7c",
+      "id": "dd53d1fc-19f4-4b78-a596-566462c7a5c9",
       "name": "ParseSearchResults",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -969,7 +969,7 @@
           },
           "conditions": [
             {
-              "id": "8de9d09b-b66a-4861-919a-d8270a6126b1",
+              "id": "2210491a-e839-4aa2-ad4f-6c0b74c98cd6",
               "leftValue": "={{ $json.hasNewRepos }}",
               "rightValue": true,
               "operator": {
@@ -981,7 +981,7 @@
           "combinator": "and"
         }
       },
-      "id": "fcf77483-39cf-4dae-89a7-8373f8603026",
+      "id": "9244bab6-f8b5-4ed1-9658-4db3f16a09f6",
       "name": "HasNewRepos",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -994,7 +994,7 @@
       "parameters": {
         "jsCode": "// バッチごとにGemini翻訳プロンプトを構築\nconst data = $input.first().json;\nconst batches = data.batches || [];\nconst results = [];\n\nfor (const batch of batches) {\n  const lines = batch.map((r, i) =>\n    `${i+1}. ${r.repo}: ${r.description || 'No description'}`\n  ).join('\\n');\n\n  const prompt = `以下のGitHubリポジトリの説明文を日本語に翻訳してください。\nリポジトリ名は翻訳しないでください。\n各行を「番号. 翻訳文」の形式で返してください。説明がない場合は適切な説明を補ってください。\n\n${lines}`;\n\n  results.push({ json: { prompt, repos: batch, batchIndex: results.length } });\n}\nreturn results;"
       },
-      "id": "32915ec8-8b40-492c-87d8-2a8c1d906ab6",
+      "id": "56119cea-4cfd-41ba-aee4-b639e8f6b197",
       "name": "PrepareTranslatePrompt",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1008,7 +1008,7 @@
         "batchSize": 1,
         "options": {}
       },
-      "id": "ce5a62f3-b056-4075-a2f0-71bd8c1802ee",
+      "id": "7f867952-fc17-4ec6-af30-bad53edbc017",
       "name": "SplitTranslateBatches",
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
@@ -1028,7 +1028,7 @@
         "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: $json.prompt }] }], generationConfig: { temperature: 0.2 } }) }}",
         "options": {}
       },
-      "id": "c55bf64f-f9a5-449e-8074-2af562e336a3",
+      "id": "76c2a2ee-7c0c-414d-af35-79fe85d79d6f",
       "name": "GeminiTranslateRepos",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -1047,7 +1047,7 @@
       "parameters": {
         "jsCode": "// Gemini翻訳結果を解析してstaticDataに蓄積\nconst staticData = $getWorkflowStaticData('global');\nif (!staticData.translations) staticData.translations = [];\n\nconst resp = $input.first().json;\nconst text = resp.candidates?.[0]?.content?.parts?.[0]?.text || '';\nconst repos = $('SplitTranslateBatches').first().json.repos || [];\n\n// 翻訳結果をパース（番号. 翻訳文）\nconst lines = text.split('\\n').filter(l => /^\\d+\\./.test(l.trim()));\nfor (let i = 0; i < repos.length; i++) {\n  const r = repos[i];\n  const line = lines[i] || '';\n  const desc = line.replace(/^\\d+\\.\\s*/, '').trim() || r.description;\n  // displayName: リポ名の後半（owner/name → name）\n  const displayName = r.name || r.repo.split('/')[1] || r.repo;\n  staticData.translations.push({\n    repo: r.repo,\n    displayName,\n    description: desc,\n    language: r.language,\n  });\n}\nreturn $input.all();"
       },
-      "id": "73196888-1e3a-438f-b1b5-4d5f7ac9637b",
+      "id": "fd389f81-ed0c-4749-b601-a124a3db5f1a",
       "name": "AccumulateTranslations",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1060,7 +1060,7 @@
       "parameters": {
         "jsCode": "// staticDataから翻訳結果を読み出し\nconst staticData = $getWorkflowStaticData('global');\nconst repos = staticData.translations || [];\nstaticData.translations = [];\n\nif (repos.length === 0) {\n  return [{ json: { requestBody: '[]', count: 0 } }];\n}\n\n// 50件チャンクに分割\nconst chunks = [];\nfor (let i = 0; i < repos.length; i += 50) {\n  chunks.push(repos.slice(i, i + 50));\n}\n\nreturn chunks.map((chunk, idx) => ({\n  json: {\n    requestBody: JSON.stringify(chunk),\n    count: chunk.length,\n    chunkIndex: idx,\n    totalRepos: repos.length,\n  }\n}));"
       },
-      "id": "d3c01009-316b-4c16-bdd9-f10c641a1d6b",
+      "id": "0f0ed346-ed2a-45bd-97b7-ad9839c0d477",
       "name": "ParseTranslations",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1074,7 +1074,7 @@
         "batchSize": 1,
         "options": {}
       },
-      "id": "01e91113-5639-47aa-98a0-dfb98cac6803",
+      "id": "34816bf1-9a08-4213-88a9-f21e71ba3f11",
       "name": "SplitRepoChunks",
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
@@ -1094,7 +1094,7 @@
         "jsonBody": "={{ $json.requestBody }}",
         "options": {}
       },
-      "id": "a0ab9c5b-2be9-4921-8a14-e2b0a41000d3",
+      "id": "010e5568-0a98-48fd-9d13-b5b7e0680033",
       "name": "PostTrackingRepos",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -1114,7 +1114,7 @@
       "parameters": {
         "jsCode": "const staticData = $getWorkflowStaticData('global');\nif (!staticData.repoPostResults) staticData.repoPostResults = { total: 0, errors: 0 };\nconst res = $input.first().json;\nif (res && res.ok) {\n  staticData.repoPostResults.total += (res.inserted || 0);\n} else {\n  staticData.repoPostResults.errors += 1;\n}\nreturn $input.all();"
       },
-      "id": "4cfe7d61-167a-4cef-8291-b90071d007ce",
+      "id": "404ebddc-0a44-47a2-bf84-4b9fbc9719cb",
       "name": "AccumulateRepoPostResults",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1127,7 +1127,7 @@
       "parameters": {
         "jsCode": "const staticData = $getWorkflowStaticData('global');\nconst results = staticData.repoPostResults || { total: 0, errors: 0 };\nstaticData.repoPostResults = null;\nreturn [{ json: results }];"
       },
-      "id": "93cca266-1795-4386-85d2-f5fbb86948f4",
+      "id": "e50d75cc-a7e3-4b3c-a176-f09da241635b",
       "name": "ParseRepoPostResults",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1140,7 +1140,7 @@
       "parameters": {
         "jsCode": "return [{ json: { message: \"新規リポなし、スキップ\" } }];"
       },
-      "id": "0bf8712e-3c74-48f5-acc1-d94862d49940",
+      "id": "e14f56f5-6dc9-45c4-bdd9-f72837940ea8",
       "name": "EmptyRepoResult",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1154,7 +1154,7 @@
         "mode": "append",
         "options": {}
       },
-      "id": "54617e44-3c7e-48db-ad5e-bacb499d55b7",
+      "id": "618a0f18-e576-49fd-b121-14cff226ed6f",
       "name": "MergeRepoPaths",
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.1,
@@ -1167,7 +1167,7 @@
       "parameters": {
         "jsCode": "const r = $input.first().json;\nif (r.message) return [{ json: { message: r.message } }];\nconst msg = r.errors > 0\n  ? `❌ TrackingRepo更新一部失敗: ${r.total}件追加, ${r.errors}件エラー`\n  : `✅ TrackingRepo更新完了: ${r.total}件追加`;\nreturn [{ json: { message: msg } }];"
       },
-      "id": "42bfb91e-fd9e-4697-aba0-9088be14b896",
+      "id": "e210b699-e764-441b-b340-b2780d5079c5",
       "name": "PrepareDiscordRepos",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1185,13 +1185,31 @@
         "jsonBody": "={{ JSON.stringify({ message: $json.message }) }}",
         "options": {}
       },
-      "id": "4654ed04-ae13-4063-b55d-1add7a4dbf81",
+      "id": "6718bc61-179c-4076-9880-9803c8d02511",
       "name": "DiscordNotifyRepos",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
         3600,
         2100
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:5678/webhook/discord-notify",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"message\": \"📋 週次サブスクチェック: ChatGPT Pro / Claude Pro / Gemini Advanced 等の料金変更がないか確認してください\\nhttps://shirankedo.y-fudo.workers.dev/ai\"}",
+        "options": {}
+      },
+      "id": "1ede10fe-ce52-492e-bc1d-aa28bb48cb85",
+      "name": "DiscordSubReminder",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        2600
       ]
     }
   ],
@@ -1221,6 +1239,11 @@
           },
           {
             "node": "FetchExistingRepos",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DiscordSubReminder",
             "type": "main",
             "index": 0
           }
