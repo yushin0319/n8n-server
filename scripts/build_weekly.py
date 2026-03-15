@@ -227,15 +227,14 @@ const articleList = articles.map((a, i) =>
   `${i+1}. [${a.source}] ${a.title}\\n   要約: ${a.summary}\\n   タグ: ${a.tags}`
 ).join('\\n\\n');
 
-const prompt = `あなたはテック系ニュースの週次レポートライターです。ギャル口調（～じゃん、～っしょ、マジで、ガチで等）で書いてください。
+const prompt = `以下の今週の記事一覧を分析し、週次サマリーを作成せよ。
+このサマリーはページコメント生成AIへの入力として使われる内部資料である。
 
-以下の今週の記事一覧から、週次レポートを作成してください。
-
-## フォーマット
-- 500〜800文字程度
-- 今週の大きなトレンドや注目ポイントを3〜5個にまとめる
-- 各トレンドに関連する記事を引用
-- 最後に一言まとめ
+## 出力フォーマット
+- 箇条書きで簡潔に（装飾・挨拶・口調の工夫は不要）
+- 今週の主要トピックを3〜5個に分類し、各トピックに関連記事を紐づける
+- 各トピックは「何が起きたか」「なぜ重要か」を1〜2文で記述
+- AI/LLM関連、セキュリティ関連、開発ツール関連の話題は必ず拾うこと
 
 ## 今週の記事（${articles.length}件）
 ${articleList}`;
@@ -265,7 +264,7 @@ add_node("GeminiWeeklyReport", "n8n-nodes-base.httpRequest", 4.2, {
     "nodeCredentialType": "googlePalmApi",
     "sendBody": True,
     "specifyBody": "json",
-    "jsonBody": '={{ JSON.stringify({ contents: [{ parts: [{ text: $json.prompt }] }], generationConfig: { temperature: 0.7, maxOutputTokens: 2048 } }) }}',
+    "jsonBody": '={{ JSON.stringify({ contents: [{ parts: [{ text: $json.prompt }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 2048, thinkingConfig: { thinkingBudget: 0 } } }) }}',
     "options": {}
 }, [1200, 700], CRED_GEMINI)
 
@@ -350,27 +349,64 @@ if (!summaryText.trim()) {
   return [{ json: { hasSummaries: false } }];
 }
 
-const baseInstruction = 'ギャル口調（～じゃん、～っしょ、マジで、ガチで等）で150〜300文字で書いてください。';
+const toneRules = `## 口調ルール
+「ギャルっぽい記号を貼り付けた文章」ではなく「ギャルが実際に喋りそうな文章」を書け。
+- 一人称「うち」。語尾「〜じゃん」「〜っしょ」「〜くない？」「〜じゃね？」「〜だし」
+- 強調「マジで」「ガチで」「超」「鬼」。感嘆「やば」「えぐ」「つよ」（体言止め）
+- テンションに緩急をつけろ。常時MAXはウソくさい。重い話は静かにしんどがれ
+- 絵文字は0〜1個。使わなくていい。効かせる時だけ
+- 「おけまる」「わかりみが深い」「あーし」は古い。使うな
+- 同じ語彙の連打禁止。「マジ？」「ヤバすぎ！」を毎回使うな
+- 1文目の入り方を毎回変えろ。同じパターンで始めるな
+- 「知らんけど」は毎回入れない。くどくなる`;
 
-const trendPrompt = `あなたはテック系トレンド評論家です。${baseInstruction}
+const formatRules = `## フォーマット
+- 150〜300文字で書くこと。短すぎも長すぎもダメ
+- 「何が起きたか」だけでなく「それに対してどう感じるか」を必ず含めること
+- 事実の羅列は禁止。読んだ人が「ふーん」で終わるコメントは失敗
+- 最後まで書ききること。文の途中で終わるな`;
 
-以下の直近の週次レポートを参考に、今のテック業界全体のトレンドについて総評コメントを書いてください。
-注目すべき技術動向、業界の変化、開発者への影響などをまとめてください。
+const trendPrompt = `あなたはテック系トレンドページの総評コメントを書くライターです。
 
+${toneRules}
+
+${formatRules}
+
+## このコメントの役割
+テック業界全体のトレンドページに表示される総評。
+以下の週次レポートを参考にしつつ、今のテック業界で何が熱いか・どこに向かってるかを語れ。
+具体的なプロジェクト名やツール名を挙げて、抽象論で逃げるな。
+
+## 直近の週次レポート
 ${summaryText}`;
 
-const aiApiPrompt = `あなたはAI API・LLM分野の専門家です。${baseInstruction}
+const aiApiPrompt = `あなたはAI API・LLMの比較ページの総評コメントを書くライターです。
 
-以下の直近の週次レポートを参考に、AI API・LLM関連の最新動向について総評コメントを書いてください。
-新モデル、価格変動、API機能の変化、開発者ツールの進化などをまとめてください。
+${toneRules}
 
+${formatRules}
+
+## このコメントの役割
+AI APIの料金・性能比較ページに表示される総評。
+以下の週次レポートからAI・LLM関連の話題を拾い、最近のモデル動向・API機能・価格の変化について語れ。
+月額目安（独自算出値）には言及しないこと。
+具体的なモデル名やサービス名を挙げて語れ。
+
+## 直近の週次レポート
 ${summaryText}`;
 
-const aiSubPrompt = `あなたはAIサブスクリプション・料金プランの専門家です。${baseInstruction}
+const aiSubPrompt = `あなたはAIサブスクリプション比較ページの総評コメントを書くライターです。
 
-以下の直近の週次レポートを参考に、AIサービスのサブスクリプション・料金プランについて総評コメントを書いてください。
-ChatGPT、Claude、Gemini等の料金変更、新プラン、コスパの変化などをまとめてください。
+${toneRules}
 
+${formatRules}
+
+## このコメントの役割
+ChatGPT / Claude / Gemini 等のサブスクプラン比較ページに表示される総評。
+以下の週次レポートを参考に、最近のAIサブスク事情（料金変更、新プラン、使い分け戦略）について語れ。
+開発者・ユーザー目線で「結局どれ使えばいいの？」に答える方向性で。
+
+## 直近の週次レポート
 ${summaryText}`;
 
 return [{ json: {
