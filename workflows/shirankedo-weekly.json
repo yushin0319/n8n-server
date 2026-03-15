@@ -1,0 +1,1136 @@
+{
+  "id": "VhYZCXeMg7PyDHCQ",
+  "name": "shirankedo 週次Cron",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                1
+              ],
+              "triggerAtHour": 18
+            }
+          ]
+        }
+      },
+      "id": "f496bb47-a15c-458f-87fb-d292e7720ae2",
+      "name": "Schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        200,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://shirankedo.y-fudo.workers.dev/api/ingest/tracking-repos",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "11ec03ea-11e3-4e9c-8ef8-d16dd88eb4fe",
+      "name": "FetchTrackingRepos",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        400
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "CdkfLkdZEMFfnx8h",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// tracking-reposからstar取得用GraphQLバッチを構築（200リポ/バッチ）\nconst repos = $input.first().json.data || [];\nif (!repos.length) return [{ json: { batches: [], count: 0 } }];\n\nconst batchSize = 200;\nconst batches = [];\nfor (let i = 0; i < repos.length; i += batchSize) {\n  const batch = repos.slice(i, i + batchSize);\n  const parts = batch.map((r, idx) => {\n    const [owner, name] = r.repo.split('/');\n    return `r${i+idx}: repository(owner: \"${owner}\", name: \"${name}\") { nameWithOwner stargazerCount }`;\n  });\n  batches.push({ json: { query: `{${parts.join(' ')}}`, batchIndex: batches.length } });\n}\nreturn batches;"
+      },
+      "id": "5d6b0d9f-fb1c-49c3-aa4f-d444b7762838",
+      "name": "BuildStarBatches",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "292c8ca7-4669-4eb4-8043-acb0f4d6d340",
+      "name": "SplitStarBatches",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        960,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.github.com/graphql",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ query: $json.query }) }}",
+        "options": {}
+      },
+      "id": "26d0f6e1-7571-49f2-9dc6-12f65bb16b5d",
+      "name": "FetchStarBatch",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        300
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "GMg4fnokNoF4q4MU",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 各バッチのGraphQL結果からstar数をstaticDataに蓄積\nconst staticData = $getWorkflowStaticData('global');\nif (!staticData.stars) staticData.stars = [];\nconst data = $input.first().json.data || $input.first().json || {};\nfor (const key of Object.keys(data)) {\n  const repo = data[key];\n  if (!repo || !repo.nameWithOwner) continue;\n  staticData.stars.push({ repo: repo.nameWithOwner, stars: repo.stargazerCount });\n}\nreturn $input.all();"
+      },
+      "id": "9f715955-3f20-463b-8d83-ff6fedc7066c",
+      "name": "AccumulateStars",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// staticDataからstar結果を取り出してPOST用に整形\nconst staticData = $getWorkflowStaticData('global');\nconst stars = staticData.stars || [];\nstaticData.stars = [];\n\n// 50件チャンクに分割\nconst chunks = [];\nfor (let i = 0; i < stars.length; i += 50) {\n  chunks.push(stars.slice(i, i + 50));\n}\nif (chunks.length === 0) chunks.push([]);\n\nreturn chunks.map((chunk, idx) => ({\n  json: {\n    requestBody: JSON.stringify(chunk),\n    count: chunk.length,\n    chunkIndex: idx,\n    totalChunks: chunks.length,\n    totalStars: stars.length,\n  }\n}));"
+      },
+      "id": "ea7d718d-79b5-4341-a276-8c18f2f16c6f",
+      "name": "ParseStars",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "b4488b84-3bae-4ca0-940d-a8662b674efa",
+      "name": "SplitStarChunks",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1440,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://shirankedo.y-fudo.workers.dev/api/ingest/repo-stats",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.requestBody }}",
+        "options": {}
+      },
+      "id": "c49f9152-06a4-46ab-ba3f-c8b2481ee20a",
+      "name": "PostRepoStats",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1680,
+        400
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "CdkfLkdZEMFfnx8h",
+          "name": "Header Auth account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// POST結果をstaticDataに蓄積\nconst staticData = $getWorkflowStaticData('global');\nif (!staticData.postResults) staticData.postResults = { total: 0, errors: 0 };\nconst res = $input.first().json;\nif (res && res.ok) {\n  staticData.postResults.total += (res.upserted || 0);\n} else {\n  staticData.postResults.errors += 1;\n}\nreturn $input.all();"
+      },
+      "id": "92748118-fd74-46ee-82d8-f8270ad8ba1c",
+      "name": "AccumulatePostResults",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1920,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// staticDataからPOST結果を読み出し\nconst staticData = $getWorkflowStaticData('global');\nconst results = staticData.postResults || { total: 0, errors: 0 };\nstaticData.postResults = null;\nreturn [{ json: results }];"
+      },
+      "id": "afee432c-83a1-49f3-90d4-a79f771be775",
+      "name": "ParsePostResults",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const r = $input.first().json;\nconst msg = r.errors > 0\n  ? `❌ Star取得一部失敗: ${r.total}件成功, ${r.errors}件エラー`\n  : `✅ Star取得完了: ${r.total}件`;\nreturn [{ json: { message: msg } }];"
+      },
+      "id": "d0b7d21b-bd5e-49b6-a4da-7160864c32a2",
+      "name": "PrepareDiscordStars",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1920,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:5678/webhook/discord-notify",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ message: $json.message }) }}",
+        "options": {}
+      },
+      "id": "8dbb1933-dd2b-41f8-8713-26d620fca80c",
+      "name": "DiscordNotifyStars",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2160,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://shirankedo.y-fudo.workers.dev/api/ingest/articles/recent?days=7",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "91e7e74b-c7a0-4b06-b7fe-11b8cf9c2c38",
+      "name": "FetchRecentArticles",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        800
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "CdkfLkdZEMFfnx8h",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 直近7日の記事からGemini週次レポート用プロンプトを構築\nconst articles = $input.first().json.data || [];\nif (!articles.length) {\n  return [{ json: { prompt: '', hasArticles: false, count: 0 } }];\n}\n\nconst articleList = articles.map((a, i) =>\n  `${i+1}. [${a.source}] ${a.title}\\n   要約: ${a.summary}\\n   タグ: ${a.tags}`\n).join('\\n\\n');\n\nconst prompt = `あなたはテック系ニュースの週次レポートライターです。ギャル口調（～じゃん、～っしょ、マジで、ガチで等）で書いてください。\n\n以下の今週の記事一覧から、週次レポートを作成してください。\n\n## フォーマット\n- 500〜800文字程度\n- 今週の大きなトレンドや注目ポイントを3〜5個にまとめる\n- 各トレンドに関連する記事を引用\n- 最後に一言まとめ\n\n## 今週の記事（${articles.length}件）\n${articleList}`;\n\nreturn [{ json: { prompt, hasArticles: true, count: articles.length } }];"
+      },
+      "id": "e42d0850-dd49-4beb-8c82-1406fc6052e3",
+      "name": "PrepareWeeklyPrompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        800
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "bc14da2d-5e8a-4309-acf3-f96626af53b8",
+              "leftValue": "={{ $json.hasArticles }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "89ab94f2-3c49-46da-9502-2001623bd56a",
+      "name": "HasArticlesForReport",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        960,
+        800
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: $json.prompt }] }], generationConfig: { temperature: 0.7, maxOutputTokens: 2048 } }) }}",
+        "options": {}
+      },
+      "id": "ec82512b-c896-45a4-b942-497633037919",
+      "name": "GeminiWeeklyReport",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        700
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "rlflsmwVLnPi2SAN",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Geminiレスポンスからレポートテキストを抽出\nconst resp = $input.first().json;\nconst reportContent = resp.candidates?.[0]?.content?.parts?.[0]?.text || '';\nif (!reportContent) {\n  return [{ json: { requestBody: JSON.stringify({ content: '生成失敗' }), reportContent: '' } }];\n}\nreturn [{ json: {\n  requestBody: JSON.stringify({ content: reportContent }),\n  reportContent\n} }];"
+      },
+      "id": "e909c97d-5a86-42ea-aac7-fcc2671e8bbb",
+      "name": "FormatWeeklyReport",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        700
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://shirankedo.y-fudo.workers.dev/api/ingest/weekly-summaries",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.requestBody }}",
+        "options": {}
+      },
+      "id": "36eeee68-061c-487f-aebb-09a28329746e",
+      "name": "PostWeeklySummary",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1680,
+        700
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "CdkfLkdZEMFfnx8h",
+          "name": "Header Auth account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { message: \"記事なし、週次レポートスキップ\" } }];"
+      },
+      "id": "72698af2-5dbd-4dd4-983d-d8d89d8e4fd9",
+      "name": "EmptyWeeklyResult",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        900
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "append",
+        "options": {}
+      },
+      "id": "aba7fafb-ee94-47a4-81a9-4bc4f6c4effe",
+      "name": "MergeWeeklyPaths",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [
+        1920,
+        800
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const r = $input.first().json;\nconst ok = r.ok !== undefined ? r.ok : false;\nconst msg = ok\n  ? '✅ 週次レポート生成完了'\n  : r.message || '❌ 週次レポート生成失敗: ' + JSON.stringify(r).substring(0, 200);\nreturn [{ json: { message: msg } }];"
+      },
+      "id": "94da6dee-ec6f-4157-84a2-9d4fd1f20047",
+      "name": "PrepareDiscordWeekly",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2160,
+        800
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:5678/webhook/discord-notify",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ message: $json.message }) }}",
+        "options": {}
+      },
+      "id": "12e0df13-12ac-4557-a7be-49a8fb46c789",
+      "name": "DiscordNotifyWeekly",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2400,
+        800
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://shirankedo.y-fudo.workers.dev/api/ingest/weekly-summaries/recent?limit=4",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "b3271d3f-4fd2-4107-bde1-d4c65f7606e9",
+      "name": "FetchRecentSummaries",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2640,
+        700
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "CdkfLkdZEMFfnx8h",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 直近4週の週次サマリーからページコメント3件分のプロンプトを構築\nconst summaries = $input.first().json.data || [];\nconst summaryText = summaries.map((s, i) =>\n  `【${i+1}週前】\\n${s.content || s.reportContent || ''}`\n).join('\\n\\n---\\n\\n');\n\nif (!summaryText.trim()) {\n  return [{ json: { hasSummaries: false } }];\n}\n\nconst baseInstruction = 'ギャル口調（～じゃん、～っしょ、マジで、ガチで等）で150〜300文字で書いてください。';\n\nconst trendPrompt = `あなたはテック系トレンド評論家です。${baseInstruction}\n\n以下の直近の週次レポートを参考に、今のテック業界全体のトレンドについて総評コメントを書いてください。\n注目すべき技術動向、業界の変化、開発者への影響などをまとめてください。\n\n${summaryText}`;\n\nconst aiApiPrompt = `あなたはAI API・LLM分野の専門家です。${baseInstruction}\n\n以下の直近の週次レポートを参考に、AI API・LLM関連の最新動向について総評コメントを書いてください。\n新モデル、価格変動、API機能の変化、開発者ツールの進化などをまとめてください。\n\n${summaryText}`;\n\nconst aiSubPrompt = `あなたはAIサブスクリプション・料金プランの専門家です。${baseInstruction}\n\n以下の直近の週次レポートを参考に、AIサービスのサブスクリプション・料金プランについて総評コメントを書いてください。\nChatGPT、Claude、Gemini等の料金変更、新プラン、コスパの変化などをまとめてください。\n\n${summaryText}`;\n\nreturn [{ json: {\n  hasSummaries: true,\n  trendPrompt,\n  aiApiPrompt,\n  aiSubPrompt\n} }];"
+      },
+      "id": "229dd21d-78a8-47b8-a74b-408768c8e41b",
+      "name": "PreparePageCommentPrompts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2880,
+        700
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "b394cd82-f2ce-4949-a538-4ef57e0585da",
+              "leftValue": "={{ $json.hasSummaries }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "a9a0bda4-38f2-474f-a236-058de14307d3",
+      "name": "HasSummariesForComments",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3120,
+        700
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: $json.trendPrompt }] }], generationConfig: { temperature: 0.8, maxOutputTokens: 1024 } }) }}",
+        "options": {}
+      },
+      "id": "9af2f912-e028-4559-b76c-609dcb35c6e3",
+      "name": "GeminiTrendComment",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3360,
+        600
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "rlflsmwVLnPi2SAN",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const resp = $input.first().json;\nconst trendText = resp.candidates?.[0]?.content?.parts?.[0]?.text || '生成失敗';\n// 前ノードのプロンプト情報を引き継ぐ\nconst prev = $('HasSummariesForComments').first().json;\nreturn [{ json: {\n  trendComment: trendText,\n  aiApiPrompt: prev.aiApiPrompt,\n  aiSubPrompt: prev.aiSubPrompt\n} }];"
+      },
+      "id": "080ac5f1-0a6b-4c02-97e1-c38d72b7dcb9",
+      "name": "FormatTrendComment",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3600,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: $json.aiApiPrompt }] }], generationConfig: { temperature: 0.8, maxOutputTokens: 1024 } }) }}",
+        "options": {}
+      },
+      "id": "08393a09-fdd7-4c2c-984b-7e7ae9320faf",
+      "name": "GeminiAIApiComment",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3840,
+        600
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "rlflsmwVLnPi2SAN",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const resp = $input.first().json;\nconst aiApiText = resp.candidates?.[0]?.content?.parts?.[0]?.text || '生成失敗';\nconst prev = $('FormatTrendComment').first().json;\nreturn [{ json: {\n  trendComment: prev.trendComment,\n  aiApiComment: aiApiText,\n  aiSubPrompt: prev.aiSubPrompt\n} }];"
+      },
+      "id": "52d9dee3-0e6d-4415-99e8-0988e61f664c",
+      "name": "FormatAIApiComment",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4080,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: $json.aiSubPrompt }] }], generationConfig: { temperature: 0.8, maxOutputTokens: 1024 } }) }}",
+        "options": {}
+      },
+      "id": "dc415933-0177-455a-808e-fa8e07cfa272",
+      "name": "GeminiAISubComment",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4320,
+        600
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "rlflsmwVLnPi2SAN",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const resp = $input.first().json;\nconst aiSubText = resp.candidates?.[0]?.content?.parts?.[0]?.text || '生成失敗';\nconst prev = $('FormatAIApiComment').first().json;\n\nconst comments = [\n  { type: 'trend', content: prev.trendComment },\n  { type: 'ai_api', content: prev.aiApiComment },\n  { type: 'ai_sub', content: aiSubText },\n];\n\nreturn [{ json: {\n  requestBody: JSON.stringify(comments),\n  count: comments.length\n} }];"
+      },
+      "id": "9274e5a4-915c-486a-8a29-f5afd23b924d",
+      "name": "FormatPageComments",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4560,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://shirankedo.y-fudo.workers.dev/api/ingest/page-comments",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.requestBody }}",
+        "options": {}
+      },
+      "id": "56d6df9c-cb0e-4177-80c9-442ce189ed18",
+      "name": "PostPageComments",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4800,
+        600
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "CdkfLkdZEMFfnx8h",
+          "name": "Header Auth account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { message: \"サマリーなし、ページコメントスキップ\" } }];"
+      },
+      "id": "8e6e6371-8c9a-4250-9ed5-12e16a3c683c",
+      "name": "EmptyCommentResult",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3360,
+        800
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "append",
+        "options": {}
+      },
+      "id": "155dbb38-f32f-4fe6-9ccc-ce69d8643868",
+      "name": "MergeCommentPaths",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [
+        5040,
+        700
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const r = $input.first().json;\nconst ok = r.ok !== undefined ? r.ok : false;\nconst msg = ok\n  ? '✅ ページコメント生成完了: 3件'\n  : r.message || '❌ ページコメント生成失敗: ' + JSON.stringify(r).substring(0, 200);\nreturn [{ json: { message: msg } }];"
+      },
+      "id": "f8dcd36c-6d4c-4cee-b561-4b10cabc6248",
+      "name": "PrepareDiscordComments",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5280,
+        700
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:5678/webhook/discord-notify",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ message: $json.message }) }}",
+        "options": {}
+      },
+      "id": "c2149674-a206-4eff-87a7-bd593dba7deb",
+      "name": "DiscordNotifyComments",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        5520,
+        700
+      ]
+    }
+  ],
+  "connections": {
+    "Schedule": {
+      "main": [
+        [
+          {
+            "node": "FetchTrackingRepos",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "FetchRecentArticles",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FetchTrackingRepos": {
+      "main": [
+        [
+          {
+            "node": "BuildStarBatches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "BuildStarBatches": {
+      "main": [
+        [
+          {
+            "node": "SplitStarBatches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SplitStarBatches": {
+      "main": [
+        [
+          {
+            "node": "ParseStars",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "FetchStarBatch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FetchStarBatch": {
+      "main": [
+        [
+          {
+            "node": "AccumulateStars",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AccumulateStars": {
+      "main": [
+        [
+          {
+            "node": "SplitStarBatches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ParseStars": {
+      "main": [
+        [
+          {
+            "node": "SplitStarChunks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SplitStarChunks": {
+      "main": [
+        [
+          {
+            "node": "ParsePostResults",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PostRepoStats",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PostRepoStats": {
+      "main": [
+        [
+          {
+            "node": "AccumulatePostResults",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AccumulatePostResults",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AccumulatePostResults": {
+      "main": [
+        [
+          {
+            "node": "SplitStarChunks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ParsePostResults": {
+      "main": [
+        [
+          {
+            "node": "PrepareDiscordStars",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepareDiscordStars": {
+      "main": [
+        [
+          {
+            "node": "DiscordNotifyStars",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FetchRecentArticles": {
+      "main": [
+        [
+          {
+            "node": "PrepareWeeklyPrompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepareWeeklyPrompt": {
+      "main": [
+        [
+          {
+            "node": "HasArticlesForReport",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HasArticlesForReport": {
+      "main": [
+        [
+          {
+            "node": "GeminiWeeklyReport",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "EmptyWeeklyResult",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GeminiWeeklyReport": {
+      "main": [
+        [
+          {
+            "node": "FormatWeeklyReport",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FormatWeeklyReport": {
+      "main": [
+        [
+          {
+            "node": "PostWeeklySummary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PostWeeklySummary": {
+      "main": [
+        [
+          {
+            "node": "MergeWeeklyPaths",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "MergeWeeklyPaths",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "EmptyWeeklyResult": {
+      "main": [
+        [
+          {
+            "node": "MergeWeeklyPaths",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "MergeWeeklyPaths": {
+      "main": [
+        [
+          {
+            "node": "PrepareDiscordWeekly",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepareDiscordWeekly": {
+      "main": [
+        [
+          {
+            "node": "DiscordNotifyWeekly",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DiscordNotifyWeekly": {
+      "main": [
+        [
+          {
+            "node": "FetchRecentSummaries",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FetchRecentSummaries": {
+      "main": [
+        [
+          {
+            "node": "PreparePageCommentPrompts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PreparePageCommentPrompts": {
+      "main": [
+        [
+          {
+            "node": "HasSummariesForComments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HasSummariesForComments": {
+      "main": [
+        [
+          {
+            "node": "GeminiTrendComment",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "EmptyCommentResult",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GeminiTrendComment": {
+      "main": [
+        [
+          {
+            "node": "FormatTrendComment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FormatTrendComment": {
+      "main": [
+        [
+          {
+            "node": "GeminiAIApiComment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GeminiAIApiComment": {
+      "main": [
+        [
+          {
+            "node": "FormatAIApiComment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FormatAIApiComment": {
+      "main": [
+        [
+          {
+            "node": "GeminiAISubComment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GeminiAISubComment": {
+      "main": [
+        [
+          {
+            "node": "FormatPageComments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FormatPageComments": {
+      "main": [
+        [
+          {
+            "node": "PostPageComments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PostPageComments": {
+      "main": [
+        [
+          {
+            "node": "MergeCommentPaths",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "MergeCommentPaths",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "EmptyCommentResult": {
+      "main": [
+        [
+          {
+            "node": "MergeCommentPaths",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "MergeCommentPaths": {
+      "main": [
+        [
+          {
+            "node": "PrepareDiscordComments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepareDiscordComments": {
+      "main": [
+        [
+          {
+            "node": "DiscordNotifyComments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "aHM9O6mSwMNPTwdI"
+  }
+}
