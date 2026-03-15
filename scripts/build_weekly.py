@@ -573,6 +573,13 @@ add_node("FetchExchangeRate", "n8n-nodes-base.httpRequest", 4.2, {
     "options": {}
 }, [480, 1400])
 
+# MergeLLMInputs - FetchAAModels と FetchExchangeRate の両方完了を待つ
+add_node("MergeLLMInputs", "n8n-nodes-base.merge", 3, {
+    "mode": "combine",
+    "combineBy": "combineAll",
+    "options": {}
+}, [720, 1300])
+
 # ParseLLMData - gen_table.pyのフィルタロジックをJS移植
 add_node("ParseLLMData", "n8n-nodes-base.code", 2, {
     "jsCode": """// AA APIデータからモデルをフィルタ・デデュプして56モデルに絞る
@@ -1153,8 +1160,9 @@ connect("MergeCommentPaths", "PrepareDiscordComments")
 connect("PrepareDiscordComments", "DiscordNotifyComments")
 
 # Step 2: LLM価格取得
-connect("FetchAAModels", "ParseLLMData")
-connect("FetchExchangeRate", "ParseLLMData")
+connect("FetchAAModels", "MergeLLMInputs", 0, 0)
+connect("FetchExchangeRate", "MergeLLMInputs", 0, 1)
+connect("MergeLLMInputs", "ParseLLMData")
 connect("ParseLLMData", "RouteLLMOutput")
 # RouteLLMOutput: IF node — type=llm-models → true(PostLLMModels), else → false(PostExchangeRate)
 connect("RouteLLMOutput", "PostLLMModels", 0)      # true: llm-models
