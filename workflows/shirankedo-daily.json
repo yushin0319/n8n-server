@@ -710,7 +710,7 @@
       "id": "a1000002-0001-0001-0001-000000000058",
       "name": "SplitReleaseBatches",
       "type": "n8n-nodes-base.splitInBatches",
-      "typeVersion": 1,
+      "typeVersion": 3,
       "position": [
         940,
         2100
@@ -1459,14 +1459,14 @@
       "main": [
         [
           {
-            "node": "FetchReleaseBatch",
+            "node": "ParseReleases",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "ParseReleases",
+            "node": "FetchReleaseBatch",
             "type": "main",
             "index": 0
           }
