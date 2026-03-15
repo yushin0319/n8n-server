@@ -1068,7 +1068,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Gemini翻訳結果を解析してstaticDataに蓄積\nconst staticData = $getWorkflowStaticData('global');\nif (!staticData.translations) staticData.translations = [];\n\nconst resp = $input.first().json;\nconst text = resp.candidates?.[0]?.content?.parts?.[0]?.text || '';\nconst repos = $('SplitTranslateBatches').first().json.repos || [];\n\n// 翻訳結果をパース（番号. 翻訳文）\nconst lines = text.split('\\n').filter(l => /^\\d+\\./.test(l.trim()));\nfor (let i = 0; i < repos.length; i++) {\n  const r = repos[i];\n  const line = lines[i] || '';\n  const desc = line.replace(/^\\d+\\.\\s*/, '').trim() || r.description;\n  // displayName: リポ名の後半（owner/name → name）\n  const displayName = r.name || r.repo.split('/')[1] || r.repo;\n  staticData.translations.push({\n    repo: r.repo,\n    displayName,\n    description: desc,\n    language: r.language,\n  });\n}\nreturn $input.all();"
+        "jsCode": "// Gemini翻訳結果を解析してstaticDataに蓄積（stars含む）\nconst staticData = $getWorkflowStaticData('global');\nif (!staticData.translations) staticData.translations = [];\n\nconst resp = $input.first().json;\nconst text = resp.candidates?.[0]?.content?.parts?.[0]?.text || '';\nconst repos = $('SplitTranslateBatches').first().json.repos || [];\n\n// 翻訳結果をパース（番号. 翻訳文）\nconst lines = text.split('\\n').filter(l => /^\\d+\\./.test(l.trim()));\nfor (let i = 0; i < repos.length; i++) {\n  const r = repos[i];\n  const line = lines[i] || '';\n  const desc = line.replace(/^\\d+\\.\\s*/, '').trim() || r.description;\n  // displayName: リポ名の後半（owner/name → name）\n  const displayName = r.name || r.repo.split('/')[1] || r.repo;\n  staticData.translations.push({\n    repo: r.repo,\n    displayName,\n    description: desc,\n    language: r.language,\n    stars: r.stars || 0,\n  });\n}\nreturn $input.all();"
       },
       "id": "1eeee0cc-51aa-493d-bfb0-364772566bdf",
       "name": "AccumulateTranslations",
@@ -1081,7 +1081,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// staticDataから翻訳結果を読み出し\nconst staticData = $getWorkflowStaticData('global');\nconst repos = staticData.translations || [];\nstaticData.translations = [];\n\nif (repos.length === 0) {\n  return [{ json: { requestBody: '[]', count: 0 } }];\n}\n\n// 50件チャンクに分割\nconst chunks = [];\nfor (let i = 0; i < repos.length; i += 50) {\n  chunks.push(repos.slice(i, i + 50));\n}\n\nreturn chunks.map((chunk, idx) => ({\n  json: {\n    requestBody: JSON.stringify(chunk),\n    count: chunk.length,\n    chunkIndex: idx,\n    totalRepos: repos.length,\n  }\n}));"
+        "jsCode": "// staticDataから翻訳結果を読み出し、star情報も保持\nconst staticData = $getWorkflowStaticData('global');\nconst repos = staticData.translations || [];\nstaticData.translations = [];\n\nif (repos.length === 0) {\n  return [{ json: { requestBody: '[]', count: 0 } }];\n}\n\n// 新規リポのstar情報をstaticDataに保存（後でrepo-statsにPOST）\nstaticData.newRepoStars = repos.map(r => ({ repo: r.repo, stars: r.stars || 0 }));\n\n// 50件チャンクに分割\nconst chunks = [];\nfor (let i = 0; i < repos.length; i += 50) {\n  chunks.push(repos.slice(i, i + 50));\n}\n\nreturn chunks.map((chunk, idx) => ({\n  json: {\n    requestBody: JSON.stringify(chunk),\n    count: chunk.length,\n    chunkIndex: idx,\n    totalRepos: repos.length,\n  }\n}));"
       },
       "id": "83bedec4-fa73-41a5-a756-b031bdf6ae45",
       "name": "ParseTranslations",
@@ -1148,7 +1148,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const staticData = $getWorkflowStaticData('global');\nconst results = staticData.repoPostResults || { total: 0, errors: 0 };\nstaticData.repoPostResults = null;\nreturn [{ json: results }];"
+        "jsCode": "const staticData = $getWorkflowStaticData('global');\nconst results = staticData.repoPostResults || { total: 0, errors: 0 };\nstaticData.repoPostResults = null;\n// 新規リポのstar情報を取り出してrepo-stats POST用に整形\nconst newStars = staticData.newRepoStars || [];\nstaticData.newRepoStars = null;\nreturn [{ json: { ...results, starRequestBody: JSON.stringify(newStars), starCount: newStars.length } }];"
       },
       "id": "93e45a75-6901-4441-bc83-a9d481f6bc4c",
       "name": "ParseRepoPostResults",
@@ -1234,6 +1234,32 @@
         480,
         2600
       ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://shirankedo.y-fudo.workers.dev/api/ingest/repo-stats",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.starRequestBody }}",
+        "options": {}
+      },
+      "id": "e1a2b3c4-d5e6-4f78-9012-abcdef123456",
+      "name": "PostNewRepoStats",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3120,
+        2000
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "CdkfLkdZEMFfnx8h",
+          "name": "Header Auth account"
+        }
+      }
     }
   ],
   "connections": {
@@ -2028,6 +2054,11 @@
         [
           {
             "node": "MergeRepoPaths",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "PostNewRepoStats",
             "type": "main",
             "index": 0
           }
