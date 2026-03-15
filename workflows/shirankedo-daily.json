@@ -710,7 +710,7 @@
       "id": "a1000002-0001-0001-0001-000000000058",
       "name": "SplitReleaseBatches",
       "type": "n8n-nodes-base.splitInBatches",
-      "typeVersion": 3,
+      "typeVersion": 1,
       "position": [
         940,
         2100
