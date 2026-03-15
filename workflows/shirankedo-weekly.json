@@ -17,7 +17,7 @@
           ]
         }
       },
-      "id": "03ed7d88-1448-4d6a-bbb2-df8fd0e19659",
+      "id": "878bbff2-e909-4c9c-a97b-edea0c75d6ef",
       "name": "Schedule",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
@@ -34,7 +34,7 @@
         "nodeCredentialType": "httpHeaderAuth",
         "options": {}
       },
-      "id": "ace6131d-a77d-4378-b104-35d4ac9051ef",
+      "id": "7cdba67a-bd28-45c5-adf9-5cb6d2f96fde",
       "name": "FetchTrackingRepos",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -51,9 +51,9 @@
     },
     {
       "parameters": {
-        "jsCode": "// tracking-reposからstar取得用GraphQLバッチを構築（200リポ/バッチ）\nconst repos = $input.first().json.data || [];\nif (!repos.length) return [{ json: { batches: [], count: 0 } }];\n\nconst batchSize = 200;\nconst batches = [];\nfor (let i = 0; i < repos.length; i += batchSize) {\n  const batch = repos.slice(i, i + batchSize);\n  const parts = batch.map((r, idx) => {\n    const [owner, name] = r.repo.split('/');\n    return `r${i+idx}: repository(owner: \"${owner}\", name: \"${name}\") { nameWithOwner stargazerCount }`;\n  });\n  batches.push({ json: { query: `{${parts.join(' ')}}`, batchIndex: batches.length } });\n}\nreturn batches;"
+        "jsCode": "// tracking-reposからstar取得用GraphQLバッチを構築（50リポ/バッチ）\nconst repos = $input.first().json.data || [];\nif (!repos.length) return [{ json: { batches: [], count: 0 } }];\n\nconst batchSize = 50;\nconst batches = [];\nfor (let i = 0; i < repos.length; i += batchSize) {\n  const batch = repos.slice(i, i + batchSize);\n  const parts = batch.map((r, idx) => {\n    const [owner, name] = r.repo.split('/');\n    return `r${i+idx}: repository(owner: \"${owner}\", name: \"${name}\") { nameWithOwner stargazerCount }`;\n  });\n  batches.push({ json: { query: `{${parts.join(' ')}}`, batchIndex: batches.length } });\n}\nreturn batches;"
       },
-      "id": "698b3ddd-ce2a-4938-9b61-afad11333197",
+      "id": "9b8c0173-ff13-40a3-97ae-2db1fa8b4524",
       "name": "BuildStarBatches",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -67,7 +67,7 @@
         "batchSize": 1,
         "options": {}
       },
-      "id": "ce359f7f-f90a-4190-a8a4-67a1c618fa42",
+      "id": "6c1a57fe-f407-49e0-b96d-8d92baf114ec",
       "name": "SplitStarBatches",
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
@@ -87,7 +87,7 @@
         "jsonBody": "={{ JSON.stringify({ query: $json.query }) }}",
         "options": {}
       },
-      "id": "afd738a1-dcd0-4911-98ba-388af2daec3c",
+      "id": "e475f0f1-2e88-40a1-bce6-caf8fdd658e1",
       "name": "FetchStarBatch",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -106,7 +106,7 @@
       "parameters": {
         "jsCode": "// 各バッチのGraphQL結果からstar数をstaticDataに蓄積\nconst staticData = $getWorkflowStaticData('global');\nif (!staticData.stars) staticData.stars = [];\nconst data = $input.first().json.data || $input.first().json || {};\nfor (const key of Object.keys(data)) {\n  const repo = data[key];\n  if (!repo || !repo.nameWithOwner) continue;\n  staticData.stars.push({ repo: repo.nameWithOwner, stars: repo.stargazerCount });\n}\nreturn $input.all();"
       },
-      "id": "8269db71-3c8c-4fc8-aee3-f04980257ae3",
+      "id": "aca190cb-9b7c-4f81-bc91-4382319bc726",
       "name": "AccumulateStars",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -119,7 +119,7 @@
       "parameters": {
         "jsCode": "// staticDataからstar結果を取り出してPOST用に整形\nconst staticData = $getWorkflowStaticData('global');\nconst stars = staticData.stars || [];\nstaticData.stars = [];\n\n// 50件チャンクに分割\nconst chunks = [];\nfor (let i = 0; i < stars.length; i += 50) {\n  chunks.push(stars.slice(i, i + 50));\n}\nif (chunks.length === 0) chunks.push([]);\n\nreturn chunks.map((chunk, idx) => ({\n  json: {\n    requestBody: JSON.stringify(chunk),\n    count: chunk.length,\n    chunkIndex: idx,\n    totalChunks: chunks.length,\n    totalStars: stars.length,\n  }\n}));"
       },
-      "id": "30f72978-20f4-4f04-bb16-4c4dc68605ef",
+      "id": "db02da97-7566-4e48-a7a2-b9cb0de27fd4",
       "name": "ParseStars",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -133,7 +133,7 @@
         "batchSize": 1,
         "options": {}
       },
-      "id": "a2ce23f2-2f88-43e8-9cbb-0a4ff40ba93e",
+      "id": "7f5cf396-508d-4ae7-879d-e6cf04e92cda",
       "name": "SplitStarChunks",
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
@@ -153,7 +153,7 @@
         "jsonBody": "={{ $json.requestBody }}",
         "options": {}
       },
-      "id": "1c39771c-d3c3-444f-992b-960b23ada569",
+      "id": "11c0cc75-3862-4ae1-8354-153a5d34303d",
       "name": "PostRepoStats",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -173,7 +173,7 @@
       "parameters": {
         "jsCode": "// POST結果をstaticDataに蓄積\nconst staticData = $getWorkflowStaticData('global');\nif (!staticData.postResults) staticData.postResults = { total: 0, errors: 0 };\nconst res = $input.first().json;\nif (res && res.ok) {\n  staticData.postResults.total += (res.inserted || 0);\n} else {\n  staticData.postResults.errors += 1;\n}\nreturn $input.all();"
       },
-      "id": "88218014-70d3-4a7a-99dd-032e65e13352",
+      "id": "8eb71949-5a8a-4772-9893-85453190b358",
       "name": "AccumulatePostResults",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -186,7 +186,7 @@
       "parameters": {
         "jsCode": "// staticDataからPOST結果を読み出し\nconst staticData = $getWorkflowStaticData('global');\nconst results = staticData.postResults || { total: 0, errors: 0 };\nstaticData.postResults = null;\nreturn [{ json: results }];"
       },
-      "id": "1888fd4e-32e5-41b9-b9fc-35a54c6d2bd4",
+      "id": "065a6cf3-5380-4ef6-a241-d9e81f3f1b44",
       "name": "ParsePostResults",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -199,7 +199,7 @@
       "parameters": {
         "jsCode": "const r = $input.first().json;\nconst msg = r.errors > 0\n  ? `❌ Star取得一部失敗: ${r.total}件成功, ${r.errors}件エラー`\n  : `✅ Star取得完了: ${r.total}件`;\nreturn [{ json: { message: msg } }];"
       },
-      "id": "ab273341-8ea3-452b-b88e-a0b151b2cd4f",
+      "id": "1dbd8397-bb18-4899-ba49-c30875782ca0",
       "name": "PrepareDiscordStars",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -217,7 +217,7 @@
         "jsonBody": "={{ JSON.stringify({ message: $json.message }) }}",
         "options": {}
       },
-      "id": "00b59426-7fc6-4f62-9ca9-f0b8ea49af38",
+      "id": "ce98e04c-e70a-49bc-a9d9-b9f858fc0f20",
       "name": "DiscordNotifyStars",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -234,7 +234,7 @@
         "nodeCredentialType": "httpHeaderAuth",
         "options": {}
       },
-      "id": "16c3c490-53dc-40e3-9cbe-3c76d6e5ebab",
+      "id": "56fd3d62-18a3-45c6-8f84-538a4d7f9480",
       "name": "FetchRecentArticles",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -253,7 +253,7 @@
       "parameters": {
         "jsCode": "// 直近7日の記事からGemini週次レポート用プロンプトを構築\nconst articles = $input.first().json.data || [];\nif (!articles.length) {\n  return [{ json: { prompt: '', hasArticles: false, count: 0 } }];\n}\n\nconst articleList = articles.map((a, i) =>\n  `${i+1}. [${a.source}] ${a.title}\\n   要約: ${a.summary}\\n   タグ: ${a.tags}`\n).join('\\n\\n');\n\nconst prompt = `あなたはテック系ニュースの週次レポートライターです。ギャル口調（～じゃん、～っしょ、マジで、ガチで等）で書いてください。\n\n以下の今週の記事一覧から、週次レポートを作成してください。\n\n## フォーマット\n- 500〜800文字程度\n- 今週の大きなトレンドや注目ポイントを3〜5個にまとめる\n- 各トレンドに関連する記事を引用\n- 最後に一言まとめ\n\n## 今週の記事（${articles.length}件）\n${articleList}`;\n\nreturn [{ json: { prompt, hasArticles: true, count: articles.length } }];"
       },
-      "id": "0e74e822-d62a-4c27-9420-1c1fdbbd58bd",
+      "id": "cdb1838a-be13-448a-8ca6-d47ddb8d0a54",
       "name": "PrepareWeeklyPrompt",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -272,7 +272,7 @@
           },
           "conditions": [
             {
-              "id": "fae2679d-7af2-4850-9d57-0d5054a07dc6",
+              "id": "b52e511d-b501-41c1-9785-8033c08adfc6",
               "leftValue": "={{ $json.hasArticles }}",
               "rightValue": true,
               "operator": {
@@ -284,7 +284,7 @@
           "combinator": "and"
         }
       },
-      "id": "1c90c445-3119-4a68-bcce-b10aba03daf0",
+      "id": "7a990ed8-2595-4121-b604-910943e8fee4",
       "name": "HasArticlesForReport",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -304,7 +304,7 @@
         "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: $json.prompt }] }], generationConfig: { temperature: 0.7, maxOutputTokens: 2048 } }) }}",
         "options": {}
       },
-      "id": "a62459c5-8274-47d1-a5ce-b6a6a3375419",
+      "id": "9fff5f90-f2ee-41eb-9794-a242a0ba95fc",
       "name": "GeminiWeeklyReport",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -323,7 +323,7 @@
       "parameters": {
         "jsCode": "// Geminiレスポンスからレポートテキストを抽出\nconst resp = $input.first().json;\nconst reportContent = resp.candidates?.[0]?.content?.parts?.[0]?.text || '';\nif (!reportContent) {\n  return [{ json: { requestBody: JSON.stringify({ content: '生成失敗' }), reportContent: '' } }];\n}\nreturn [{ json: {\n  requestBody: JSON.stringify({ content: reportContent }),\n  reportContent\n} }];"
       },
-      "id": "5e9463c4-0331-452b-a521-4f5097f16ebc",
+      "id": "8d2f310d-719f-4606-bb0b-2ea1c6dd703a",
       "name": "FormatWeeklyReport",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -343,7 +343,7 @@
         "jsonBody": "={{ $json.requestBody }}",
         "options": {}
       },
-      "id": "1b5c0684-86fd-4bc5-8e60-04d415b6ee21",
+      "id": "880356c3-cc6a-4dd0-ba88-e7e6e0dfd960",
       "name": "PostWeeklySummary",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -363,7 +363,7 @@
       "parameters": {
         "jsCode": "return [{ json: { message: \"記事なし、週次レポートスキップ\" } }];"
       },
-      "id": "f09eca00-3a08-4723-b914-dd9cc131eb5d",
+      "id": "c2ff947d-d416-4bdc-a0bf-9cf61d2e583c",
       "name": "EmptyWeeklyResult",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -377,7 +377,7 @@
         "mode": "append",
         "options": {}
       },
-      "id": "7d504b40-8775-409d-90e5-4be479c53c81",
+      "id": "fdc9095e-6a1c-469f-9077-172396752056",
       "name": "MergeWeeklyPaths",
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.1,
@@ -390,7 +390,7 @@
       "parameters": {
         "jsCode": "const r = $input.first().json;\nconst ok = r.ok !== undefined ? r.ok : false;\nconst msg = ok\n  ? '✅ 週次レポート生成完了'\n  : r.message || '❌ 週次レポート生成失敗: ' + JSON.stringify(r).substring(0, 200);\nreturn [{ json: { message: msg } }];"
       },
-      "id": "3afb5890-ad47-43a7-9c3a-5c3c5c1fb40e",
+      "id": "25b4343a-d6ce-476a-8f44-0eaeb8382361",
       "name": "PrepareDiscordWeekly",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -408,7 +408,7 @@
         "jsonBody": "={{ JSON.stringify({ message: $json.message }) }}",
         "options": {}
       },
-      "id": "95970e6c-eabb-43b3-9196-f18c0442e980",
+      "id": "cf4c841f-8b0c-41ce-9612-c5c862eb0396",
       "name": "DiscordNotifyWeekly",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -425,7 +425,7 @@
         "nodeCredentialType": "httpHeaderAuth",
         "options": {}
       },
-      "id": "5055f14d-b569-436f-9c1c-9948d132b2f9",
+      "id": "87f0eab1-6c74-4eb4-8a49-6421e60170d9",
       "name": "FetchRecentSummaries",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -444,7 +444,7 @@
       "parameters": {
         "jsCode": "// 直近4週の週次サマリーからページコメント3件分のプロンプトを構築\nconst summaries = $input.first().json.data || [];\nconst summaryText = summaries.map((s, i) =>\n  `【${i+1}週前】\\n${s.content || s.reportContent || ''}`\n).join('\\n\\n---\\n\\n');\n\nif (!summaryText.trim()) {\n  return [{ json: { hasSummaries: false } }];\n}\n\nconst baseInstruction = 'ギャル口調（～じゃん、～っしょ、マジで、ガチで等）で150〜300文字で書いてください。';\n\nconst trendPrompt = `あなたはテック系トレンド評論家です。${baseInstruction}\n\n以下の直近の週次レポートを参考に、今のテック業界全体のトレンドについて総評コメントを書いてください。\n注目すべき技術動向、業界の変化、開発者への影響などをまとめてください。\n\n${summaryText}`;\n\nconst aiApiPrompt = `あなたはAI API・LLM分野の専門家です。${baseInstruction}\n\n以下の直近の週次レポートを参考に、AI API・LLM関連の最新動向について総評コメントを書いてください。\n新モデル、価格変動、API機能の変化、開発者ツールの進化などをまとめてください。\n\n${summaryText}`;\n\nconst aiSubPrompt = `あなたはAIサブスクリプション・料金プランの専門家です。${baseInstruction}\n\n以下の直近の週次レポートを参考に、AIサービスのサブスクリプション・料金プランについて総評コメントを書いてください。\nChatGPT、Claude、Gemini等の料金変更、新プラン、コスパの変化などをまとめてください。\n\n${summaryText}`;\n\nreturn [{ json: {\n  hasSummaries: true,\n  trendPrompt,\n  aiApiPrompt,\n  aiSubPrompt\n} }];"
       },
-      "id": "c5e86578-29d1-4834-ab06-f3bee2762bbb",
+      "id": "3b5aa4fc-280f-4601-b9b8-4ba0c7cb1560",
       "name": "PreparePageCommentPrompts",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -463,7 +463,7 @@
           },
           "conditions": [
             {
-              "id": "e1498c33-8273-4385-9357-c1b527bd1873",
+              "id": "3c5dcabd-f777-4a2a-8641-11be3fad38f1",
               "leftValue": "={{ $json.hasSummaries }}",
               "rightValue": true,
               "operator": {
@@ -475,7 +475,7 @@
           "combinator": "and"
         }
       },
-      "id": "2314ff1d-759e-48c2-a927-a6e5a0dd5d0f",
+      "id": "50d5fe3a-3e0c-417a-9350-58dcaa3c9b66",
       "name": "HasSummariesForComments",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -495,7 +495,7 @@
         "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: $json.trendPrompt }] }], generationConfig: { temperature: 0.8, maxOutputTokens: 1024 } }) }}",
         "options": {}
       },
-      "id": "a7c0acb1-4263-4137-98ca-d89b3523ec55",
+      "id": "2814ef50-f1df-417e-adcc-04bebecd4de8",
       "name": "GeminiTrendComment",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -514,7 +514,7 @@
       "parameters": {
         "jsCode": "const resp = $input.first().json;\nconst trendText = resp.candidates?.[0]?.content?.parts?.[0]?.text || '生成失敗';\n// 前ノードのプロンプト情報を引き継ぐ\nconst prev = $('HasSummariesForComments').first().json;\nreturn [{ json: {\n  trendComment: trendText,\n  aiApiPrompt: prev.aiApiPrompt,\n  aiSubPrompt: prev.aiSubPrompt\n} }];"
       },
-      "id": "1f4c91d5-bd0a-4303-b02e-18f63871a37e",
+      "id": "55e664ad-a4d9-4245-9440-4816b6fc000b",
       "name": "FormatTrendComment",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -534,7 +534,7 @@
         "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: $json.aiApiPrompt }] }], generationConfig: { temperature: 0.8, maxOutputTokens: 1024 } }) }}",
         "options": {}
       },
-      "id": "8590bd08-0b1f-4d21-a9c1-2ddbdbe7e8dc",
+      "id": "7c3924ca-533a-456e-b042-94457618664a",
       "name": "GeminiAIApiComment",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -553,7 +553,7 @@
       "parameters": {
         "jsCode": "const resp = $input.first().json;\nconst aiApiText = resp.candidates?.[0]?.content?.parts?.[0]?.text || '生成失敗';\nconst prev = $('FormatTrendComment').first().json;\nreturn [{ json: {\n  trendComment: prev.trendComment,\n  aiApiComment: aiApiText,\n  aiSubPrompt: prev.aiSubPrompt\n} }];"
       },
-      "id": "716d68b5-3ae2-4a99-a1ea-4ebd1593b89a",
+      "id": "aeb1be07-6018-4be4-88c8-69492fb70b5b",
       "name": "FormatAIApiComment",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -573,7 +573,7 @@
         "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: $json.aiSubPrompt }] }], generationConfig: { temperature: 0.8, maxOutputTokens: 1024 } }) }}",
         "options": {}
       },
-      "id": "623fb25d-4483-43de-a97a-2cb44435223a",
+      "id": "b41b16bc-8ed3-483a-8c68-7824841835d7",
       "name": "GeminiAISubComment",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -592,7 +592,7 @@
       "parameters": {
         "jsCode": "const resp = $input.first().json;\nconst aiSubText = resp.candidates?.[0]?.content?.parts?.[0]?.text || '生成失敗';\nconst prev = $('FormatAIApiComment').first().json;\n\nconst comments = [\n  { type: 'trend', content: prev.trendComment },\n  { type: 'ai_api', content: prev.aiApiComment },\n  { type: 'ai_sub', content: aiSubText },\n];\n\nreturn [{ json: {\n  requestBody: JSON.stringify(comments),\n  count: comments.length\n} }];"
       },
-      "id": "f5375a30-8c36-433b-a668-38b70ff957d8",
+      "id": "21576385-e1ef-4429-aef9-3f9789bd0885",
       "name": "FormatPageComments",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -612,7 +612,7 @@
         "jsonBody": "={{ $json.requestBody }}",
         "options": {}
       },
-      "id": "0ee3c1eb-df9e-4371-a955-70a7b4738e54",
+      "id": "a9af257f-c23d-4744-8f3e-3c181c83eb59",
       "name": "PostPageComments",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -632,7 +632,7 @@
       "parameters": {
         "jsCode": "return [{ json: { message: \"サマリーなし、ページコメントスキップ\" } }];"
       },
-      "id": "52d1be3f-1048-423d-b098-d9fa84fd3051",
+      "id": "885bdb6d-8c29-4c4e-b28b-1ca46ccf5794",
       "name": "EmptyCommentResult",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -646,7 +646,7 @@
         "mode": "append",
         "options": {}
       },
-      "id": "2f77372e-1dad-4f9a-8279-288271c2c959",
+      "id": "015cea1e-a80a-4fbc-9dac-1a39a7c8d50e",
       "name": "MergeCommentPaths",
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.1,
@@ -659,7 +659,7 @@
       "parameters": {
         "jsCode": "const r = $input.first().json;\nconst ok = r.ok !== undefined ? r.ok : false;\nconst msg = ok\n  ? '✅ ページコメント生成完了: 3件'\n  : r.message || '❌ ページコメント生成失敗: ' + JSON.stringify(r).substring(0, 200);\nreturn [{ json: { message: msg } }];"
       },
-      "id": "9b78c0b4-c158-49d1-9347-cf276f5252e5",
+      "id": "2c309955-a691-460d-8248-65e4f61cd0bf",
       "name": "PrepareDiscordComments",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -677,7 +677,7 @@
         "jsonBody": "={{ JSON.stringify({ message: $json.message }) }}",
         "options": {}
       },
-      "id": "60ac1eb1-924e-4e31-8bfa-31f3326bef60",
+      "id": "45842295-010d-4e38-8be0-5cc7097e7410",
       "name": "DiscordNotifyComments",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,

@@ -67,13 +67,13 @@ add_node("FetchTrackingRepos", "n8n-nodes-base.httpRequest", 4.2, {
     "options": {}
 }, [480, 400], CRED_API)
 
-# BuildStarBatches - 200リポ/バッチでGraphQLクエリ構築
+# BuildStarBatches - 50リポ/バッチでGraphQLクエリ構築（200だとGitHub Resource Limit超過）
 add_node("BuildStarBatches", "n8n-nodes-base.code", 2, {
-    "jsCode": """// tracking-reposからstar取得用GraphQLバッチを構築（200リポ/バッチ）
+    "jsCode": """// tracking-reposからstar取得用GraphQLバッチを構築（50リポ/バッチ）
 const repos = $input.first().json.data || [];
 if (!repos.length) return [{ json: { batches: [], count: 0 } }];
 
-const batchSize = 200;
+const batchSize = 50;
 const batches = [];
 for (let i = 0; i < repos.length; i += batchSize) {
   const batch = repos.slice(i, i + batchSize);
