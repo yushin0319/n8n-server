@@ -168,7 +168,7 @@ const staticData = $getWorkflowStaticData('global');
 if (!staticData.postResults) staticData.postResults = { total: 0, errors: 0 };
 const res = $input.first().json;
 if (res && res.ok) {
-  staticData.postResults.total += (res.upserted || 0);
+  staticData.postResults.total += (res.inserted || 0);
 } else {
   staticData.postResults.errors += 1;
 }
@@ -398,7 +398,7 @@ add_node("HasSummariesForComments", "n8n-nodes-base.if", 2.2, {
 # GeminiTrendComment
 add_node("GeminiTrendComment", "n8n-nodes-base.httpRequest", 4.2, {
     "method": "POST",
-    "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent",
+    "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent",
     "authentication": "predefinedCredentialType",
     "nodeCredentialType": "googlePalmApi",
     "sendBody": True,
@@ -423,7 +423,7 @@ return [{ json: {
 # GeminiAIApiComment
 add_node("GeminiAIApiComment", "n8n-nodes-base.httpRequest", 4.2, {
     "method": "POST",
-    "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent",
+    "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent",
     "authentication": "predefinedCredentialType",
     "nodeCredentialType": "googlePalmApi",
     "sendBody": True,
@@ -447,7 +447,7 @@ return [{ json: {
 # GeminiAISubComment
 add_node("GeminiAISubComment", "n8n-nodes-base.httpRequest", 4.2, {
     "method": "POST",
-    "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent",
+    "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent",
     "authentication": "predefinedCredentialType",
     "nodeCredentialType": "googlePalmApi",
     "sendBody": True,
