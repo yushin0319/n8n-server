@@ -1,7 +1,7 @@
 {
   "id": "LeUNzin0uEbk6co6",
   "name": "shirankedo 日次Cron",
-  "active": false,
+  "active": true,
   "nodes": [
     {
       "parameters": {
