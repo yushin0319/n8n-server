@@ -19,6 +19,7 @@ call_api() {
   curl -s -w "\n%{http_code}" -X "$method" "$url" \
     -H "Content-Type: application/json" \
     -H "X-N8N-API-KEY: ${N8N_API_KEY}" \
+    --connect-timeout 10 --max-time 30 \
     --data-binary "@${bodyfile}"
 }
 
@@ -58,6 +59,7 @@ deploy_workflow() {
   # 既存ワークフローの存在確認 → PUT(更新) or POST(新規)
   local check_code
   check_code=$(curl -s -o /dev/null -w "%{http_code}" \
+    --connect-timeout 10 --max-time 15 \
     "${N8N_API_URL}/workflows/${wf_id}" \
     -H "X-N8N-API-KEY: ${N8N_API_KEY}")
 
@@ -112,8 +114,10 @@ deploy_workflow() {
   toggle=$([ "$wf_active" = "true" ] && echo "activate" || echo "deactivate")
   local toggle_code
   toggle_code=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+    --connect-timeout 10 --max-time 15 \
     "${N8N_API_URL}/workflows/${wf_id}/${toggle}" \
     -H "X-N8N-API-KEY: ${N8N_API_KEY}")
+  sleep 1  # レートリミット対策
   echo "  ${toggle^}: HTTP $toggle_code"
 
   SUCCESS=$((SUCCESS + 1))
