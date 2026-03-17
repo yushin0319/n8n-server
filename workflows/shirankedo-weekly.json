@@ -2815,11 +2815,6 @@
             "node": "IfSkipDiscordSubReminder",
             "type": "main",
             "index": 0
-          },
-          {
-            "node": "TestResponse",
-            "type": "main",
-            "index": 0
           }
         ]
       ]
@@ -3000,7 +2995,13 @@
     },
     "IfSkipDiscordNotifyStars": {
       "main": [
-        [],
+        [
+          {
+            "node": "TestResponse",
+            "type": "main",
+            "index": 0
+          }
+        ],
         [
           {
             "node": "DiscordNotifyStars",
@@ -3066,7 +3067,13 @@
     },
     "IfSkipDiscordNotifyComments": {
       "main": [
-        [],
+        [
+          {
+            "node": "TestResponse",
+            "type": "main",
+            "index": 0
+          }
+        ],
         [
           {
             "node": "DiscordNotifyComments",
@@ -3114,7 +3121,13 @@
     },
     "IfSkipDiscordNotifyLLM": {
       "main": [
-        [],
+        [
+          {
+            "node": "TestResponse",
+            "type": "main",
+            "index": 0
+          }
+        ],
         [
           {
             "node": "DiscordNotifyLLM",
@@ -3144,7 +3157,13 @@
     },
     "IfSkipDiscordNotifyRepos": {
       "main": [
-        [],
+        [
+          {
+            "node": "TestResponse",
+            "type": "main",
+            "index": 0
+          }
+        ],
         [
           {
             "node": "DiscordNotifyRepos",
@@ -3156,7 +3175,13 @@
     },
     "IfSkipDiscordSubReminder": {
       "main": [
-        [],
+        [
+          {
+            "node": "TestResponse",
+            "type": "main",
+            "index": 0
+          }
+        ],
         [
           {
             "node": "DiscordSubReminder",
@@ -3168,7 +3193,13 @@
     },
     "IfSkipPostNewRepoStats": {
       "main": [
-        [],
+        [
+          {
+            "node": "TestResponse",
+            "type": "main",
+            "index": 0
+          }
+        ],
         [
           {
             "node": "PostNewRepoStats",
