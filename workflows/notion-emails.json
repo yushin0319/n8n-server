@@ -104,7 +104,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const input = $input.first().json.body || $input.first().json;\nconst pageId = input.page_id;\nif (!pageId) throw new Error('page_id is required');\nconst body = { properties: {} };\nif (input.importance !== undefined) {\n  body.properties['重要度'] = { select: { name: input.importance } };\n}\nif (input.reason !== undefined) {\n  body.properties['理由'] = { rich_text: [{ text: { content: input.reason } }] };\n}\nif (input.status !== undefined) {\n  body.properties['ステータス'] = { select: { name: input.status } };\n}\nreturn [{ json: { pageId, requestBody: JSON.stringify(body) } }];"
+        "jsCode": "// @external notion-emails/PrepareUpdate.ts"
       },
       "id": "b6",
       "name": "PrepareUpdate",
@@ -142,7 +142,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const d = $input.first().json;\nreturn [{ json: { success: true, page_id: d.id } }];",
+        "jsCode": "// @external notion-emails/FormatUpdate.ts",
         "options": {}
       },
       "id": "b-format-update",
@@ -171,7 +171,7 @@
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "const input = $input.first().json.body || $input.first().json;\nconst filters = [];\nif (input.importance) {\n  filters.push({ property: '重要度', select: { equals: input.importance } });\n}\nif (input.status) {\n  filters.push({ property: 'ステータス', select: { equals: input.status } });\n}\nif (input.query) {\n  filters.push({ property: '件名', title: { contains: input.query } });\n}\nif (input.from) {\n  filters.push({ property: '差出人', rich_text: { contains: input.from } });\n}\nif (input.date_from) {\n  filters.push({ property: '日時', date: { on_or_after: input.date_from } });\n}\nif (input.date_to) {\n  filters.push({ property: '日時', date: { on_or_before: input.date_to } });\n}\nconst body = {};\nif (filters.length > 0) {\n  body.filter = filters.length === 1 ? filters[0] : { and: filters };\n}\nbody.sorts = [{ property: '日時', direction: 'descending' }];\nif (input.limit) {\n  body.page_size = Math.min(input.limit, 100);\n}\nreturn [{ json: { requestBody: JSON.stringify(body) } }];"
+        "jsCode": "// @external notion-emails/PrepSearch.ts"
       },
       "id": "b-prep-search",
       "name": "PrepSearch",
@@ -210,7 +210,7 @@
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "const results = $input.first().json.results || [];\nconst emails = results.map(page => {\n  const subject = (page.properties['件名']?.title || []).map(t => t.plain_text).join('') || '(無題)';\n  const from = (page.properties['差出人']?.rich_text || []).map(t => t.plain_text).join('') || '';\n  const date = page.properties['日時']?.date?.start || '';\n  const importance = page.properties['重要度']?.select?.name || '未設定';\n  const snippet = (page.properties['スニペット']?.rich_text || []).map(t => t.plain_text).join('') || '';\n  const status = page.properties['ステータス']?.select?.name || '未設定';\n  const reason = (page.properties['理由']?.rich_text || []).map(t => t.plain_text).join('') || '';\n  return { id: page.id, subject, from, date, importance, snippet, status, reason, url: page.url };\n});\nreturn [{ json: { action: 'search', count: emails.length, emails } }];"
+        "jsCode": "// @external notion-emails/FormatSearch.ts"
       },
       "id": "b-format-search",
       "name": "FormatSearch",
@@ -237,7 +237,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const queryBody = JSON.stringify({ filter: { property: 'ステータス', select: { equals: '未読' } }, sorts: [{ property: '日時', direction: 'descending' }] });\nreturn [{ json: { queryBody } }];"
+        "jsCode": "// @external notion-emails/BuildBriefingQuery.ts"
       },
       "id": "c1",
       "name": "BuildBriefingQuery",
@@ -275,7 +275,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const results = $input.first().json.results || [];\nconst importantEmails = [];\nconst unclassifiedEmails = [];\nconst allPageIds = [];\nfor (const page of results) {\n  const subject = (page.properties['件名']?.title || []).map(t => t.plain_text).join('') || '(無題)';\n  const from = (page.properties['差出人']?.rich_text || []).map(t => t.plain_text).join('') || '';\n  const date = page.properties['日時']?.date?.start || '';\n  const importance = page.properties['重要度']?.select?.name || '未設定';\n  const snippet = (page.properties['スニペット']?.rich_text || []).map(t => t.plain_text).join('') || '';\n  const reason = (page.properties['理由']?.rich_text || []).map(t => t.plain_text).join('') || '';\n  const emailData = { id: page.id, subject, from, date, importance, snippet, reason, url: page.url };\n  if (importance === '重要') {\n    importantEmails.push(emailData);\n  } else if (importance === '確認') {\n    unclassifiedEmails.push(emailData);\n  }\n  allPageIds.push(page.id);\n}\nconst briefingResponse = { action: 'briefing', important: { count: importantEmails.length, emails: importantEmails }, unclassified: { count: unclassifiedEmails.length, emails: unclassifiedEmails }, marked_read_count: allPageIds.length };\nreturn [{ json: { briefingResponse, allPageIds } }];"
+        "jsCode": "// @external notion-emails/ProcessBriefing.ts"
       },
       "id": "c3",
       "name": "ProcessBriefing",
@@ -302,7 +302,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const ids = $input.first().json.allPageIds || [];\nif (ids.length === 0) return [];\nconst updateBody = JSON.stringify({ properties: { 'ステータス': { select: { name: '既読' } } } });\nreturn ids.map(pageId => ({ json: { pageId, requestBody: updateBody } }));"
+        "jsCode": "// @external notion-emails/PrepareMarkRead.ts"
       },
       "id": "c5",
       "name": "PrepareMarkRead",
@@ -350,7 +350,10 @@
       "name": "RespondFallback",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [440, 500]
+      "position": [
+        440,
+        500
+      ]
     }
   ],
   "connections": {

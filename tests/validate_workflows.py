@@ -17,6 +17,7 @@ import os
 import re
 import sys
 
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 sys.stdout.reconfigure(encoding="utf-8")
 sys.stderr.reconfigure(encoding="utf-8")
 
@@ -47,8 +48,13 @@ ERROR_HANDLER_TRIGGER = "n8n-nodes-base.errorTrigger"
 
 
 def load_workflow(path):
+    """WF JSONを読み込み、外部化されたCode Nodeを解決して返す."""
+    from scripts.embed_code import embed_workflow
+
     with open(path, encoding="utf-8") as f:
-        return json.load(f)
+        wf = json.load(f)
+    embed_workflow(wf)
+    return wf
 
 
 def check_reserved_variable_names(wf, errors):

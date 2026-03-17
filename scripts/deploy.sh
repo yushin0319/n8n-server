@@ -46,11 +46,14 @@ deploy_workflow() {
   echo "  Name: $wf_name"
   echo "  Active: $wf_active"
 
-  # PUT用のbodyをフィルタリング（許可フィールドのみ）
+  # 外部化されたCode Nodeを埋め戻してからフィルタリング
   # NOTE: jqの出力をファイル経由でcurlに渡す（-d "$var" だと $ がbashに解釈される）
-  local bodyfile
+  local bodyfile embedded_file
   bodyfile=$(mktemp)
-  jq "$BODY_FILTER" "$file" > "$bodyfile"
+  embedded_file=$(mktemp)
+  python3 "$(dirname "$0")/embed_code.py" "$file" > "$embedded_file"
+  jq "$BODY_FILTER" "$embedded_file" > "$bodyfile"
+  rm -f "$embedded_file"
 
   # 既存ワークフローの存在確認 → PUT(更新) or POST(新規)
   local check_code

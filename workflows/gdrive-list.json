@@ -1,4 +1,5 @@
 {
+  "id": "xUEes8CKUMYTBPHN",
   "name": "Google Drive - List",
   "active": true,
   "nodes": [
@@ -21,7 +22,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// [共通パターン] Webhook認証チェック - 全n8nワークフロー共通\n// WEBHOOK_SECRET 環境変数で認証キーを管理（n8n設定 > Environment Variables）\nconst secret = $input.first().json.headers['x-webhook-secret'];\nif (secret !== $env.WEBHOOK_SECRET) {\n  throw new Error('Forbidden: Invalid webhook secret');\n}\nreturn $input.all();"
+        "jsCode": "// @external gdrive-list/AuthCheck.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -34,7 +35,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const body = $json.body;\nconst folderId = body.folder_id || 'root';\nconst pageSize = body.page_size || 20;\nconst pageToken = body.page_token || '';\nlet q = `'${folderId}' in parents and trashed = false`;\nconst fields = 'nextPageToken,files(id,name,mimeType,size,modifiedTime,webViewLink)';\nreturn [{ json: { q, pageSize, fields, pageToken } }];"
+        "jsCode": "// @external gdrive-list/PrepList.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -84,14 +85,14 @@
       "name": "ListRequest",
       "credentials": {
         "googleDriveOAuth2Api": {
-          "id": "PLACEHOLDER",
+          "id": "AeFJzyeByGcfTH8r",
           "name": "Google Drive account"
         }
       }
     },
     {
       "parameters": {
-        "jsCode": "const data = $json;\nconst files = (data.files || []).map(f => ({\n  id: f.id,\n  name: f.name,\n  type: f.mimeType,\n  size: f.size ? parseInt(f.size) : null,\n  modified: f.modifiedTime,\n  url: f.webViewLink\n}));\nreturn [{ json: { action: 'list', count: files.length, next_page_token: data.nextPageToken || null, files } }];"
+        "jsCode": "// @external gdrive-list/FormatList.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
