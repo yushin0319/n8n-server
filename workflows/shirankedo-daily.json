@@ -983,6 +983,532 @@
         3880,
         1700
       ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "test-shirankedo-daily",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        200
+      ],
+      "name": "WebhookTest",
+      "id": "sd-0010-4000-8000-000000000010",
+      "webhookId": "sd-0010-4000-8000-000000000010"
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external shirankedo-daily/CheckTestMode.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -110,
+        100
+      ],
+      "name": "CheckTestMode",
+      "id": "sd-0011-4000-8000-000000000011"
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external shirankedo-daily/TestResponse.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -110,
+        300
+      ],
+      "name": "TestResponse",
+      "id": "sd-0012-4000-8000-000000000012"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        110,
+        300
+      ],
+      "name": "RespondTest",
+      "id": "sd-0013-4000-8000-000000000013"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "sd-cond-skip-gemini-select",
+              "leftValue": "={{ $execution.customData.get('isTest') }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1090,
+        0
+      ],
+      "name": "IfSkipGeminiSelect",
+      "id": "sd-0020-4000-8000-000000000020"
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external shirankedo-daily/MockGeminiSelect.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1090,
+        -100
+      ],
+      "name": "MockGeminiSelect",
+      "id": "sd-0030-4000-8000-000000000030"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "sd-cond-skip-gemini-summarize",
+              "leftValue": "={{ $execution.customData.get('isTest') }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2190,
+        0
+      ],
+      "name": "IfSkipGeminiSummarize",
+      "id": "sd-0021-4000-8000-000000000021"
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external shirankedo-daily/MockGeminiSummarize.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2190,
+        -100
+      ],
+      "name": "MockGeminiSummarize",
+      "id": "sd-0031-4000-8000-000000000031"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "sd-cond-skip-gemini-translate-vulns",
+              "leftValue": "={{ $execution.customData.get('isTest') }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1350,
+        1100
+      ],
+      "name": "IfSkipGeminiTranslateVulns",
+      "id": "sd-0022-4000-8000-000000000022"
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external shirankedo-daily/MockGeminiTranslateVulns.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1350,
+        1000
+      ],
+      "name": "MockGeminiTranslateVulns",
+      "id": "sd-0032-4000-8000-000000000032"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "sd-cond-skip-gemini-security-comment",
+              "leftValue": "={{ $execution.customData.get('isTest') }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2890,
+        1700
+      ],
+      "name": "IfSkipGeminiSecurityComment",
+      "id": "sd-0023-4000-8000-000000000023"
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external shirankedo-daily/MockGeminiSecurityComment.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2890,
+        1600
+      ],
+      "name": "MockGeminiSecurityComment",
+      "id": "sd-0033-4000-8000-000000000033"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "sd-cond-skip-post-articles",
+              "leftValue": "={{ $execution.customData.get('isTest') }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2630,
+        0
+      ],
+      "name": "IfSkipPostArticles",
+      "id": "sd-0040-4000-8000-000000000040"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "sd-cond-skip-discord-notify-articles",
+              "leftValue": "={{ $execution.customData.get('isTest') }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3070,
+        0
+      ],
+      "name": "IfSkipDiscordNotifyArticles",
+      "id": "sd-0041-4000-8000-000000000041"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "sd-cond-skip-post-vulnerabilities",
+              "leftValue": "={{ $execution.customData.get('isTest') }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2010,
+        1200
+      ],
+      "name": "IfSkipPostVulnerabilities",
+      "id": "sd-0042-4000-8000-000000000042"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "sd-cond-skip-discord-notify-vulns",
+              "leftValue": "={{ $execution.customData.get('isTest') }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2470,
+        1200
+      ],
+      "name": "IfSkipDiscordNotifyVulns",
+      "id": "sd-0043-4000-8000-000000000043"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "sd-cond-skip-post-releases",
+              "leftValue": "={{ $execution.customData.get('isTest') }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1490,
+        2200
+      ],
+      "name": "IfSkipPostReleases",
+      "id": "sd-0044-4000-8000-000000000044"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "sd-cond-skip-discord-notify-releases",
+              "leftValue": "={{ $execution.customData.get('isTest') }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1930,
+        2200
+      ],
+      "name": "IfSkipDiscordNotifyReleases",
+      "id": "sd-0045-4000-8000-000000000045"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "sd-cond-skip-discord-arxiv-warn",
+              "leftValue": "={{ $execution.customData.get('isTest') }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        610,
+        600
+      ],
+      "name": "IfSkipDiscordArXivWarn",
+      "id": "sd-0046-4000-8000-000000000046"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "sd-cond-skip-post-security-daily",
+              "leftValue": "={{ $execution.customData.get('isTest') }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3330,
+        1700
+      ],
+      "name": "IfSkipPostSecurityDaily",
+      "id": "sd-0047-4000-8000-000000000047"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "sd-cond-skip-discord-notify-security",
+              "leftValue": "={{ $execution.customData.get('isTest') }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3770,
+        1700
+      ],
+      "name": "IfSkipDiscordNotifySecurity",
+      "id": "sd-0048-4000-8000-000000000048"
     }
   ],
   "connections": {
@@ -990,47 +1516,7 @@
       "main": [
         [
           {
-            "node": "FetchExistingURLs",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "FetchHN",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "FetchHatena",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "FetchZenn",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "FetchLobsters",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "FetchArXiv",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "FetchNVD",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "FetchExistingCVEs",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "FetchTrackingRepos",
+            "node": "CheckTestMode",
             "type": "main",
             "index": 0
           }
@@ -1130,7 +1616,7 @@
             "index": 5
           },
           {
-            "node": "DiscordArXivWarn",
+            "node": "IfSkipDiscordArXivWarn",
             "type": "main",
             "index": 0
           }
@@ -1163,7 +1649,7 @@
       "main": [
         [
           {
-            "node": "GeminiSelect",
+            "node": "IfSkipGeminiSelect",
             "type": "main",
             "index": 0
           }
@@ -1218,7 +1704,7 @@
       "main": [
         [
           {
-            "node": "GeminiSummarize",
+            "node": "IfSkipGeminiSummarize",
             "type": "main",
             "index": 0
           }
@@ -1240,7 +1726,7 @@
       "main": [
         [
           {
-            "node": "PostArticles",
+            "node": "IfSkipPostArticles",
             "type": "main",
             "index": 0
           }
@@ -1262,7 +1748,7 @@
       "main": [
         [
           {
-            "node": "DiscordNotifyArticles",
+            "node": "IfSkipDiscordNotifyArticles",
             "type": "main",
             "index": 0
           }
@@ -1328,7 +1814,7 @@
       "main": [
         [
           {
-            "node": "GeminiTranslateVulns",
+            "node": "IfSkipGeminiTranslateVulns",
             "type": "main",
             "index": 0
           }
@@ -1379,7 +1865,7 @@
       "main": [
         [
           {
-            "node": "PostVulnerabilities",
+            "node": "IfSkipPostVulnerabilities",
             "type": "main",
             "index": 0
           }
@@ -1408,7 +1894,7 @@
       "main": [
         [
           {
-            "node": "DiscordNotifyVulns",
+            "node": "IfSkipDiscordNotifyVulns",
             "type": "main",
             "index": 0
           }
@@ -1521,7 +2007,7 @@
       "main": [
         [
           {
-            "node": "PostReleases",
+            "node": "IfSkipPostReleases",
             "type": "main",
             "index": 0
           }
@@ -1550,7 +2036,7 @@
       "main": [
         [
           {
-            "node": "DiscordNotifyReleases",
+            "node": "IfSkipDiscordNotifyReleases",
             "type": "main",
             "index": 0
           }
@@ -1594,7 +2080,7 @@
       "main": [
         [
           {
-            "node": "GeminiSecurityComment",
+            "node": "IfSkipGeminiSecurityComment",
             "type": "main",
             "index": 0
           }
@@ -1616,7 +2102,7 @@
       "main": [
         [
           {
-            "node": "PostSecurityDaily",
+            "node": "IfSkipPostSecurityDaily",
             "type": "main",
             "index": 0
           }
@@ -1643,6 +2129,344 @@
     },
     "PrepareDiscordSecurity": {
       "main": [
+        [
+          {
+            "node": "IfSkipDiscordNotifySecurity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WebhookTest": {
+      "main": [
+        [
+          {
+            "node": "CheckTestMode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CheckTestMode": {
+      "main": [
+        [
+          {
+            "node": "FetchExistingURLs",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "FetchHN",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "FetchHatena",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "FetchZenn",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "FetchLobsters",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "FetchArXiv",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "FetchNVD",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "FetchExistingCVEs",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "FetchTrackingRepos",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "TestResponse",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TestResponse": {
+      "main": [
+        [
+          {
+            "node": "RespondTest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IfSkipGeminiSelect": {
+      "main": [
+        [
+          {
+            "node": "MockGeminiSelect",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "GeminiSelect",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MockGeminiSelect": {
+      "main": [
+        [
+          {
+            "node": "ParseSelection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IfSkipGeminiSummarize": {
+      "main": [
+        [
+          {
+            "node": "MockGeminiSummarize",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "GeminiSummarize",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MockGeminiSummarize": {
+      "main": [
+        [
+          {
+            "node": "FormatArticles",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IfSkipPostArticles": {
+      "main": [
+        [
+          {
+            "node": "PrepareDiscordArticles",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PostArticles",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IfSkipDiscordNotifyArticles": {
+      "main": [
+        [],
+        [
+          {
+            "node": "DiscordNotifyArticles",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IfSkipGeminiTranslateVulns": {
+      "main": [
+        [
+          {
+            "node": "MockGeminiTranslateVulns",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "GeminiTranslateVulns",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MockGeminiTranslateVulns": {
+      "main": [
+        [
+          {
+            "node": "FormatVulnerabilities",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IfSkipPostVulnerabilities": {
+      "main": [
+        [
+          {
+            "node": "PrepareDiscordVulns",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PostVulnerabilities",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IfSkipDiscordNotifyVulns": {
+      "main": [
+        [
+          {
+            "node": "WaitBCD",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "DiscordNotifyVulns",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IfSkipPostReleases": {
+      "main": [
+        [
+          {
+            "node": "PrepareDiscordReleases",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PostReleases",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IfSkipDiscordNotifyReleases": {
+      "main": [
+        [
+          {
+            "node": "WaitBCD",
+            "type": "main",
+            "index": 1
+          }
+        ],
+        [
+          {
+            "node": "DiscordNotifyReleases",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IfSkipDiscordArXivWarn": {
+      "main": [
+        [],
+        [
+          {
+            "node": "DiscordArXivWarn",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IfSkipGeminiSecurityComment": {
+      "main": [
+        [
+          {
+            "node": "MockGeminiSecurityComment",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "GeminiSecurityComment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MockGeminiSecurityComment": {
+      "main": [
+        [
+          {
+            "node": "FormatSecurityDaily",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IfSkipPostSecurityDaily": {
+      "main": [
+        [
+          {
+            "node": "PrepareDiscordSecurity",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PostSecurityDaily",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IfSkipDiscordNotifySecurity": {
+      "main": [
+        [],
         [
           {
             "node": "DiscordNotifySecurity",

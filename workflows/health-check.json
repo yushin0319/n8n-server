@@ -25,6 +25,36 @@
     },
     {
       "parameters": {
+        "httpMethod": "POST",
+        "path": "test-health-check",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        200
+      ],
+      "name": "WebhookTest",
+      "id": "hc-0010-4000-8000-000000000010",
+      "webhookId": "hc-0010-4000-8000-000000000010"
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external health-check/CheckTestMode.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        100
+      ],
+      "name": "CheckTestMode",
+      "id": "hc-0011-4000-8000-000000000011"
+    },
+    {
+      "parameters": {
         "method": "GET",
         "url": "https://histlink-backend.onrender.com/health",
         "options": {
@@ -36,11 +66,22 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        220,
+        440,
         0
       ],
       "name": "CheckHistLink",
       "id": "hc-0002-4000-8000-000000000002"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        660,
+        -100
+      ],
+      "name": "OK",
+      "id": "hc-0005-4000-8000-000000000005"
     },
     {
       "parameters": {
@@ -49,11 +90,43 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        440,
+        660,
         100
       ],
       "name": "FormatDiscord",
       "id": "hc-0003-4000-8000-000000000003"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "hc-cond-skip-discord",
+              "leftValue": "={{ $execution.customData.get('isTest') }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        880,
+        100
+      ],
+      "name": "IfSkipDiscord",
+      "id": "hc-0012-4000-8000-000000000012"
     },
     {
       "parameters": {
@@ -74,8 +147,8 @@
       "type": "n8n-nodes-base.discord",
       "typeVersion": 2,
       "position": [
-        660,
-        100
+        1100,
+        200
       ],
       "name": "SendToDiscord",
       "id": "hc-0004-4000-8000-000000000004",
@@ -87,19 +160,58 @@
       }
     },
     {
-      "parameters": {},
-      "type": "n8n-nodes-base.noOp",
-      "typeVersion": 1,
+      "parameters": {
+        "jsCode": "// @external health-check/TestResponse.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [
-        440,
-        -100
+        1100,
+        0
       ],
-      "name": "OK",
-      "id": "hc-0005-4000-8000-000000000005"
+      "name": "TestResponse",
+      "id": "hc-0013-4000-8000-000000000013"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1320,
+        0
+      ],
+      "name": "RespondTest",
+      "id": "hc-0014-4000-8000-000000000014"
     }
   ],
   "connections": {
     "Schedule": {
+      "main": [
+        [
+          {
+            "node": "CheckTestMode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WebhookTest": {
+      "main": [
+        [
+          {
+            "node": "CheckTestMode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CheckTestMode": {
       "main": [
         [
           {
@@ -128,11 +240,51 @@
         ]
       ]
     },
+    "OK": {
+      "main": [
+        [
+          {
+            "node": "TestResponse",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "FormatDiscord": {
       "main": [
         [
           {
+            "node": "IfSkipDiscord",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IfSkipDiscord": {
+      "main": [
+        [
+          {
+            "node": "TestResponse",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
             "node": "SendToDiscord",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TestResponse": {
+      "main": [
+        [
+          {
+            "node": "RespondTest",
             "type": "main",
             "index": 0
           }
