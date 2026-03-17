@@ -207,7 +207,7 @@
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "const results = $input.first().json.results || [];\nconst tasks = results.map(page => {\n  const titleArr = page.properties['']?.title || [];\n  const title = titleArr.map(t => t.plain_text).join('') || '(無題)';\n  const status = page.properties['ステータス']?.status?.name || '不明';\n  const id = page.id;\n  const uniqueId = page.properties['ID']?.unique_id?.number;\n  const parentRels = (page.properties['親タスク']?.relation || []).map(r => r.id);\n  const childRels = (page.properties['子タスク']?.relation || []).map(r => r.id);\n  const lastEdited = page.properties['最終更新日時']?.last_edited_time || '';\n  const url = page.url;\n  return { id, task_id: uniqueId, title, status, parent_tasks: parentRels, child_tasks: childRels, last_edited: lastEdited, url };\n});\nreturn [{ json: { action: 'list', count: tasks.length, tasks } }];"
+        "jsCode": "// @external notion-tasks/FormatList.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -236,7 +236,7 @@
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "function parseRichText(text) {\n  const segments = [];\n  const re = /(\\*\\*(.+?)\\*\\*|`(.+?)`|\\[(.+?)\\]\\((.+?)\\))/g;\n  let last = 0;\n  let m;\n  while ((m = re.exec(text)) !== null) {\n    if (m.index > last) {\n      segments.push({ type: 'text', text: { content: text.slice(last, m.index) } });\n    }\n    if (m[2]) {\n      segments.push({ type: 'text', text: { content: m[2] }, annotations: { bold: true } });\n    } else if (m[3]) {\n      segments.push({ type: 'text', text: { content: m[3] }, annotations: { code: true } });\n    } else if (m[4] && m[5]) {\n      segments.push({ type: 'text', text: { content: m[4], link: { url: m[5] } } });\n    }\n    last = m.index + m[0].length;\n  }\n  if (last < text.length) {\n    segments.push({ type: 'text', text: { content: text.slice(last) } });\n  }\n  return segments.length ? segments : [{ type: 'text', text: { content: text } }];\n}\n\nfunction mdToBlocks(taskContent) {\n  const lines = taskContent.split('\\n');\n  const blocks = [];\n  for (const line of lines) {\n    if (line.match(/^## /)) {\n      blocks.push({ object: 'block', type: 'heading_2', heading_2: { rich_text: parseRichText(line.slice(3)) } });\n    } else if (line.match(/^### /)) {\n      blocks.push({ object: 'block', type: 'heading_3', heading_3: { rich_text: parseRichText(line.slice(4)) } });\n    } else if (line.match(/^- /)) {\n      blocks.push({ object: 'block', type: 'bulleted_list_item', bulleted_list_item: { rich_text: parseRichText(line.slice(2)) } });\n    } else if (line.match(/^\\d+\\. /)) {\n      blocks.push({ object: 'block', type: 'numbered_list_item', numbered_list_item: { rich_text: parseRichText(line.replace(/^\\d+\\. /, '')) } });\n    } else if (line.match(/^---$/)) {\n      blocks.push({ object: 'block', type: 'divider', divider: {} });\n    } else if (line.trim() === '') {\n      continue;\n    } else {\n      blocks.push({ object: 'block', type: 'paragraph', paragraph: { rich_text: parseRichText(line) } });\n    }\n  }\n  return blocks;\n}\n\nconst input = $input.first().json.body || $input.first().json;\nconst name = input.name || '新しいタスク';\nconst parentId = input.parent_id || null;\nconst taskContent = input.content || null;\n\nconst covers = [\n  'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1600&h=900&fit=crop',\n  'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1600&h=900&fit=crop',\n  'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=1600&h=900&fit=crop',\n  'https://images.unsplash.com/photo-1497436072909-60f360e1d4b1?w=1600&h=900&fit=crop',\n  'https://images.unsplash.com/photo-1501854140801-50d01698950b?w=1600&h=900&fit=crop',\n  'https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=1600&h=900&fit=crop',\n  'https://images.unsplash.com/photo-1579546929518-9e396f3cc135?w=1600&h=900&fit=crop',\n  'https://images.unsplash.com/photo-1531297484001-80022131f5a1?w=1600&h=900&fit=crop',\n  'https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=1600&h=900&fit=crop',\n  'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=1600&h=900&fit=crop',\n  'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1600&h=900&fit=crop',\n  'https://images.unsplash.com/photo-1508739773434-c26b3d09e071?w=1600&h=900&fit=crop',\n  'https://images.unsplash.com/photo-1528164344705-47542687000d?w=1600&h=900&fit=crop',\n  'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1600&h=900&fit=crop',\n  'https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?w=1600&h=900&fit=crop',\n  'https://images.unsplash.com/photo-1465146344425-f00d5f5c8f07?w=1600&h=900&fit=crop',\n  'https://images.unsplash.com/photo-1517483000871-1dbf64a6e1c6?w=1600&h=900&fit=crop',\n  'https://images.unsplash.com/photo-1516616370751-86d6bd8b0651?w=1600&h=900&fit=crop',\n  'https://images.unsplash.com/photo-1495616811223-4d98c6e9c869?w=1600&h=900&fit=crop',\n  'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1600&h=900&fit=crop'\n];\nconst coverUrl = input.cover_url || covers[Math.floor(Math.random() * covers.length)];\n\nconst body = {\n  parent: { database_id: '2a02570f-e49f-802b-a67c-fe4c230a5699' },\n  properties: {\n    '': { title: [{ text: { content: name } }] }\n  },\n  cover: { type: 'external', external: { url: coverUrl } }\n};\n\nif (parentId) {\n  body.properties['親タスク'] = { relation: [{ id: parentId }] };\n}\n\nif (taskContent) {\n  body.children = mdToBlocks(taskContent);\n}\n\nreturn [{ json: { requestBody: JSON.stringify(body) } }];"
+        "jsCode": "// @external notion-tasks/PrepCreate.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -300,7 +300,7 @@
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "const input = $input.first().json.body || $input.first().json;\nconst pageId = input.page_id;\nif (!pageId) {\n  throw new Error('page_id is required for update action');\n}\n\nconst body = { properties: {} };\n\nif (input.name !== undefined) {\n  body.properties[''] = { title: [{ text: { content: input.name } }] };\n}\n\nif (input.status !== undefined) {\n  body.properties['ステータス'] = { status: { name: input.status } };\n}\n\nif (input.parent_id !== undefined) {\n  if (input.parent_id) {\n    body.properties['親タスク'] = { relation: [{ id: input.parent_id }] };\n  } else {\n    body.properties['親タスク'] = { relation: [] };\n  }\n}\n\nconst taskContent = input.content || null;\nconst result = { pageId, requestBody: JSON.stringify(body), content: taskContent };\n\nif (input.cover_url) {\n  const bodyWithCover = JSON.parse(result.requestBody);\n  bodyWithCover.cover = { type: 'external', external: { url: input.cover_url } };\n  result.requestBody = JSON.stringify(bodyWithCover);\n}\n\nreturn [{ json: result }];"
+        "jsCode": "// @external notion-tasks/PrepUpdate.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -363,7 +363,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const input = $input.first().json.body || $input.first().json;\nconst filters = [];\nif (input.status) {\n  filters.push({property: 'ステータス', status: {equals: input.status}});\n}\nif (input.query) {\n  filters.push({property: '', title: {contains: input.query}});\n}\nif (input.date_from) {\n  filters.push({property: '最終更新日時', last_edited_time: {on_or_after: input.date_from}});\n}\nif (input.date_to) {\n  filters.push({property: '最終更新日時', last_edited_time: {on_or_before: input.date_to}});\n}\nconst body = {};\nif (filters.length > 0) {\n  body.filter = filters.length === 1 ? filters[0] : {and: filters};\n}\nbody.sorts = [{property: '最終更新日時', direction: 'descending'}];\nreturn [{json: {requestBody: JSON.stringify(body)}}];"
+        "jsCode": "// @external notion-tasks/PrepSearch.ts"
       },
       "id": "s1",
       "name": "PrepSearch",
@@ -401,7 +401,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const results = $input.first().json.results || [];\nconst tasks = results.map(page => {\n  const titleArr = page.properties['']?.title || [];\n  const title = titleArr.map(t => t.plain_text).join('') || '(無題)';\n  const status = page.properties['ステータス']?.status?.name || '不明';\n  const id = page.id;\n  const uniqueId = page.properties['ID']?.unique_id?.number;\n  const lastEdited = page.properties['最終更新日時']?.last_edited_time || '';\n  const url = page.url;\n  return { id, task_id: uniqueId, title, status, last_edited: lastEdited, url };\n});\nreturn [{ json: { action: 'search', count: tasks.length, tasks } }];"
+        "jsCode": "// @external notion-tasks/FormatSearch.ts"
       },
       "id": "s3",
       "name": "FormatSearch",
@@ -429,7 +429,7 @@
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "function parseRichText(text) {\n  const segments = [];\n  const re = /(\\*\\*(.+?)\\*\\*|`(.+?)`|\\[(.+?)\\]\\((.+?)\\))/g;\n  let last = 0;\n  let m;\n  while ((m = re.exec(text)) !== null) {\n    if (m.index > last) {\n      segments.push({ type: 'text', text: { content: text.slice(last, m.index) } });\n    }\n    if (m[2]) {\n      segments.push({ type: 'text', text: { content: m[2] }, annotations: { bold: true } });\n    } else if (m[3]) {\n      segments.push({ type: 'text', text: { content: m[3] }, annotations: { code: true } });\n    } else if (m[4] && m[5]) {\n      segments.push({ type: 'text', text: { content: m[4], link: { url: m[5] } } });\n    }\n    last = m.index + m[0].length;\n  }\n  if (last < text.length) {\n    segments.push({ type: 'text', text: { content: text.slice(last) } });\n  }\n  return segments.length ? segments : [{ type: 'text', text: { content: text } }];\n}\n\nfunction mdToBlocks(taskContent) {\n  const lines = taskContent.split('\\n');\n  const blocks = [];\n  for (const line of lines) {\n    if (line.match(/^## /)) {\n      blocks.push({ object: 'block', type: 'heading_2', heading_2: { rich_text: parseRichText(line.slice(3)) } });\n    } else if (line.match(/^### /)) {\n      blocks.push({ object: 'block', type: 'heading_3', heading_3: { rich_text: parseRichText(line.slice(4)) } });\n    } else if (line.match(/^- /)) {\n      blocks.push({ object: 'block', type: 'bulleted_list_item', bulleted_list_item: { rich_text: parseRichText(line.slice(2)) } });\n    } else if (line.match(/^\\d+\\. /)) {\n      blocks.push({ object: 'block', type: 'numbered_list_item', numbered_list_item: { rich_text: parseRichText(line.replace(/^\\d+\\. /, '')) } });\n    } else if (line.match(/^---$/)) {\n      blocks.push({ object: 'block', type: 'divider', divider: {} });\n    } else if (line.trim() === '') {\n      continue;\n    } else {\n      blocks.push({ object: 'block', type: 'paragraph', paragraph: { rich_text: parseRichText(line) } });\n    }\n  }\n  return blocks;\n}\n\nconst taskContent = $('PrepUpdate').first().json.content;\nconst pageId = $json.id;\nconst hasContent = !!(taskContent && pageId);\n\nlet contentBody = null;\nif (hasContent) {\n  const children = mdToBlocks(taskContent);\n  contentBody = JSON.stringify({ children });\n}\n\nreturn [{ json: { ...($json), pageId, hasContent, contentBody } }];"
+        "jsCode": "// @external notion-tasks/PrepAppend.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -510,7 +510,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const data = $input.first().json;\nreturn [{ json: {\n  action: 'create',\n  success: !!data.id,\n  id: data.id || null,\n  url: data.url || null\n}}];",
+        "jsCode": "// @external notion-tasks/FormatCreate.ts",
         "options": {}
       },
       "type": "n8n-nodes-base.code",
@@ -524,7 +524,7 @@
     },
     {
       "parameters": {
-        "jsCode": "let hasContent = false;\nlet pageId = null;\ntry {\n  const prepData = $('PrepAppend').first().json;\n  hasContent = !!prepData.hasContent;\n  pageId = prepData.pageId;\n} catch(e) {\n  throw new Error('PrepAppend取得エラー: ' + (e.message || e));\n}\n\nconst data = $input.first().json;\nconst contentAppended = hasContent && data.object === 'list';\n\nreturn [{ json: {\n  action: 'update',\n  success: true,\n  id: pageId,\n  url: pageId ? 'https://www.notion.so/' + pageId.replace(/-/g, '') : null,\n  hasContent,\n  contentAppended\n}}];",
+        "jsCode": "// @external notion-tasks/FormatUpdate.ts",
         "options": {}
       },
       "type": "n8n-nodes-base.code",
@@ -539,7 +539,7 @@
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "const input = $input.first().json.body || $input.first().json;\nconst pageId = input.page_id;\nif (!pageId) {\n  throw new Error('page_id is required for get action');\n}\nreturn [{ json: { pageId } }];"
+        "jsCode": "// @external notion-tasks/PrepGet.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -585,7 +585,7 @@
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "const pageId = $('PrepGet').first().json.pageId;\nconst blocksResult = $input.first().json;\nconst blocks = (blocksResult.results || []).map(block => {\n  const bType = block.type;\n  let text = '';\n  if (block[bType]?.rich_text) {\n    text = block[bType].rich_text.map(t => t.plain_text).join('');\n  } else if (bType === 'child_database') {\n    text = '[child_database: ' + (block.child_database?.title || '') + ']';\n  } else if (bType === 'image') {\n    text = '[image]';\n  } else if (bType === 'divider') {\n    text = '---';\n  }\n  return { type: bType, text };\n}).filter(b => b.text);\nconst textLines = blocks.map(b => b.text).join('\\n');\nreturn [{ json: {\n  action: 'get',\n  page_id: pageId,\n  blocks: blocks,\n  text_content: textLines\n}}];"
+        "jsCode": "// @external notion-tasks/FormatGet.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -631,7 +631,7 @@
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "const input = $input.first().json.body || $input.first().json;\nconst pageId = input.page_id;\nconst taskContent = input.content || '';\nif (!pageId) throw new Error('page_id is required for replace action');\nif (!taskContent) throw new Error('content is required for replace action');\nreturn [{ json: { pageId, taskContent } }];"
+        "jsCode": "// @external notion-tasks/PrepReplace.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -677,7 +677,7 @@
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "const results = $input.first().json.results || [];\nconst blockIds = results.map(b => b.id);\nif (blockIds.length === 0) {\n  return [{ json: { hasBlocks: false } }];\n}\nreturn blockIds.map(id => ({ json: { hasBlocks: true, blockId: id } }));"
+        "jsCode": "// @external notion-tasks/ExtractBlockIds.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -756,7 +756,7 @@
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "function parseRichText(text) {\n  const segments = [];\n  const re = /(\\*\\*(.+?)\\*\\*|`(.+?)`|\\[(.+?)\\]\\((.+?)\\))/g;\n  let last = 0;\n  let m;\n  while ((m = re.exec(text)) !== null) {\n    if (m.index > last) {\n      segments.push({ type: 'text', text: { content: text.slice(last, m.index) } });\n    }\n    if (m[2]) {\n      segments.push({ type: 'text', text: { content: m[2] }, annotations: { bold: true } });\n    } else if (m[3]) {\n      segments.push({ type: 'text', text: { content: m[3] }, annotations: { code: true } });\n    } else if (m[4] && m[5]) {\n      segments.push({ type: 'text', text: { content: m[4], link: { url: m[5] } } });\n    }\n    last = m.index + m[0].length;\n  }\n  if (last < text.length) {\n    segments.push({ type: 'text', text: { content: text.slice(last) } });\n  }\n  return segments.length ? segments : [{ type: 'text', text: { content: text } }];\n}\n\nfunction mdToBlocks(taskContent) {\n  const lines = taskContent.split('\\n');\n  const blocks = [];\n  for (const line of lines) {\n    if (line.match(/^## /)) {\n      blocks.push({ object: 'block', type: 'heading_2', heading_2: { rich_text: parseRichText(line.slice(3)) } });\n    } else if (line.match(/^### /)) {\n      blocks.push({ object: 'block', type: 'heading_3', heading_3: { rich_text: parseRichText(line.slice(4)) } });\n    } else if (line.match(/^- /)) {\n      blocks.push({ object: 'block', type: 'bulleted_list_item', bulleted_list_item: { rich_text: parseRichText(line.slice(2)) } });\n    } else if (line.match(/^\\d+\\. /)) {\n      blocks.push({ object: 'block', type: 'numbered_list_item', numbered_list_item: { rich_text: parseRichText(line.replace(/^\\d+\\. /, '')) } });\n    } else if (line.match(/^---$/)) {\n      blocks.push({ object: 'block', type: 'divider', divider: {} });\n    } else if (line.trim() === '') {\n      continue;\n    } else {\n      blocks.push({ object: 'block', type: 'paragraph', paragraph: { rich_text: parseRichText(line) } });\n    }\n  }\n  return blocks;\n}\n\nconst { pageId, taskContent } = $('PrepReplace').first().json;\nconst children = mdToBlocks(taskContent);\nconst contentBody = JSON.stringify({ children });\nreturn [{ json: { pageId, contentBody } }];"
+        "jsCode": "// @external notion-tasks/PrepReplaceAppend.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -804,7 +804,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const pageId = $('PrepReplace').first().json.pageId;\nreturn [{ json: {\n  action: 'replace',\n  success: true,\n  id: pageId,\n  url: 'https://www.notion.so/' + pageId.replace(/-/g, '')\n}}];",
+        "jsCode": "// @external notion-tasks/FormatReplace.ts",
         "options": {}
       },
       "type": "n8n-nodes-base.code",
