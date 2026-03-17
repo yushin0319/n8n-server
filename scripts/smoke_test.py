@@ -11,6 +11,7 @@ import sys
 import urllib.error
 import urllib.request
 
+# 本番環境URL（CI環境では SMOKE_TEST_URL 環境変数で上書き可能）
 BASE_URL = os.environ.get(
     "SMOKE_TEST_URL", "https://yushin-n8n.duckdns.org/webhook"
 )

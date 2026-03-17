@@ -280,6 +280,17 @@
         ]
       ]
     },
+    "SendToDiscord": {
+      "main": [
+        [
+          {
+            "node": "TestResponse",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "TestResponse": {
       "main": [
         [
