@@ -129,6 +129,29 @@ class TestExtractFunctionBody:
         # 先頭がスペースで始まらない（デデント済み）
         assert lines[0] == "const x = 1;"
 
+    def test_handles_bundle_format(self):
+        """esbuild --bundle の出力形式を正しく処理する."""
+        # 実際のesbuild --bundle出力を再現
+        esbuild_output = (
+            "// workflows/code-nodes/test/Node.ts\n"
+            "function Node_default() {\n"
+            "  const x = 1;\n"
+            "  return [{ json: { x } }];\n"
+            "}\n"
+            "export {\n"
+            "  Node_default as default\n"
+            "};\n"
+        )
+        body = extract_function_body(esbuild_output)
+        assert "const x = 1;" in body
+        assert "return" in body
+        assert "export" not in body
+        assert "Node_default" not in body
+        # 末尾に閉じ}が残っていないこと
+        assert not body.rstrip().endswith("}")
+        # デデント済み
+        assert body.split("\n")[0] == "const x = 1;"
+
 
 class TestExtract:
     """extract_code.py のテスト."""

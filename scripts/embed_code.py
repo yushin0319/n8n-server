@@ -39,11 +39,12 @@ def extract_function_body(esbuild_output):
     while lines and lines[0].startswith("//"):
         lines.pop(0)
 
-    # 末尾の export { ... }; ブロックを除去
-    while lines and (lines[-1].startswith("export {") or lines[-1].strip() in ("};", "")):
-        lines.pop()
-    # export の1行前が Xxx_default as default の行の場合も除去
-    while lines and "as default" in lines[-1]:
+    # 末尾の export ブロック + 空行を除去
+    while lines and (
+        lines[-1].startswith("export {")
+        or lines[-1].strip() in ("};", "")
+        or "as default" in lines[-1]
+    ):
         lines.pop()
 
     if len(lines) < 2:
