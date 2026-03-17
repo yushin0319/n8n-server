@@ -27,32 +27,34 @@ n8n-server/
 
 ## ワークフロー一覧
 
+`workflows/` にWF定義JSONを格納。最新のID・active状態は n8n API で確認可能。
+
 ### Webhook 型
 
-| ファイル | ID | パス | 説明 | ノード数 |
-|----------|-----|------|------|---------|
-| `server-status.json` | `IVGYXlxoKKGURa4y` | `/webhook/status` | サーバーステータス確認 | 2 |
-| `notion-tasks.json` | `c8ZI0oriZgjePMud` | `/webhook/notion-tasks` | Notion タスク管理 (list/create/update/search/get) | 24 |
-| `notion-emails.json` | `eR0S42ouMZUeNKG6` | `/webhook/notion-emails` | 重要メール DB 管理 (list/update) | 10 |
-| `notion-news.json` | `VamRqRKYszmI2Mdh` | `/webhook/notion-news` | ニュース DB 管理 (list/update/batch_update/search) | 17 |
-| `gdrive.json` | `fB6aarMmqETuHKWV` | `/webhook/gdrive` | Google Drive 操作 (list/search/upload/download/mkdir/delete/info/move/rename/share) | 46 |
-| `discord-notify.json` | `8CCP4flWRe4eaKoF` | `/webhook/discord-notify` | Discord 通知送信 | 5 |
+| ファイル | パス | 説明 |
+|----------|------|------|
+| `server-status.json` | `/webhook/status` | サーバーステータス確認 |
+| `notion-tasks.json` | `/webhook/notion-tasks` | Notion タスク管理 (list/create/update/search/get/replace) |
+| `notion-emails.json` | `/webhook/notion-emails` | 重要メール DB 管理 (search/update/briefing) |
+| `discord-notify.json` | `/webhook/discord-notify` | Discord 通知送信 |
+| `gdrive-*.json` (10種) | `/webhook/gdrive` | Google Drive 操作 (list/search/upload/download/mkdir/delete/info/move/rename/share) |
 
 ### スケジュール型
 
-| ファイル | スケジュール | 説明 | ノード数 |
-|----------|-------------|------|---------|
-| `health-check.json` | 10分毎 | HistLink Backend ヘルスチェック (`/health` に GET、DB 疎通確認付き)。失敗時 Discord 通知。Render 無料プランは15分無通信でスピンダウンするため10分間隔 | 5 |
-| `gmail-to-notion.json` | 1時間毎 | Gmail 未読メール → Notion 重要メール DB 自動取込 | 8 |
-| `github-summary.json` | 毎日 23:50 JST | GitHub Commits API → Notion タスク DB に日次活動サマリー作成 | 5 |
-| `rss-news.json` | 毎日 7:00 JST | Zenn + Hacker News RSS → Gemini 翻訳 → Notion ニュース DB | 12 |
-| `recurring-tasks.json` | 毎日 7:30 JST | 定期タスク定義 DB → Notion タスク自動生成 | 9 |
+| ファイル | スケジュール | 説明 |
+|----------|-------------|------|
+| `health-check.json` | 10分毎 | HistLink ヘルスチェック → 失敗時 Discord 通知 |
+| `gmail-to-notion.json` | 1時間毎 | Gmail 未読メール → Notion 重要メール DB |
+| `github-summary.json` | 毎日 23:50 JST | GitHub Commits → Notion タスク DB 日次サマリー |
+| `recurring-tasks.json` | 毎日 7:30 JST | 定期タスク定義 DB → Notion タスク自動生成 |
+| `shirankedo-daily.json` | 毎日 0:00 JST | ShiranKedo 日次更新（記事・脆弱性・リリース） |
+| `shirankedo-weekly.json` | 毎週月曜 3:00 JST | ShiranKedo 週次レポート・リポ追加・ページコメント |
 
 ### その他
 
-| ファイル | 説明 | ノード数 |
-|----------|------|---------|
-| `error-handler.json` | ワークフローエラーキャッチ → Discord 通知 | 3 |
+| ファイル | 説明 |
+|----------|------|
+| `error-handler.json` | ワークフローエラーキャッチ → Discord 通知 |
 
 ## デプロイ
 
