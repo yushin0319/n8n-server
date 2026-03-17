@@ -37,7 +37,7 @@ n8n-server/
 | `notion-tasks.json` | `/webhook/notion-tasks` | Notion タスク管理 (list/create/update/search/get/replace) |
 | `notion-emails.json` | `/webhook/notion-emails` | 重要メール DB 管理 (search/update/briefing) |
 | `discord-notify.json` | `/webhook/discord-notify` | Discord 通知送信 |
-| `gdrive-*.json` (10種) | `/webhook/gdrive` | Google Drive 操作。単一Webhookパスで受け、action パラメータで各WFに振り分け |
+| `gdrive-*.json` (10種) | `/webhook/gdrive-*` | Google Drive 操作。action別に独立WF（gdrive-list, gdrive-upload 等） |
 
 ### スケジュール型
 
