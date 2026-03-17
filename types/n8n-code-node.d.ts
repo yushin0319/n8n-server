@@ -113,3 +113,30 @@ declare const $today: Date;
 
 /** 他ノードのデータを参照する関数 */
 declare function $(nodeName: string): INodeReference;
+
+// --- Node.js built-ins available in n8n Code Node ---
+
+/** Buffer（n8n Code Node サンドボックス内で利用可能） */
+declare const Buffer: {
+  from(
+    data: string | ArrayBuffer | Uint8Array,
+    encoding?: BufferEncoding,
+  ): {
+    toString(encoding?: BufferEncoding): string;
+    length: number;
+  };
+  alloc(size: number): { toString(encoding?: BufferEncoding): string; length: number };
+};
+
+type BufferEncoding =
+  | "ascii"
+  | "utf-8"
+  | "utf8"
+  | "latin1"
+  | "binary"
+  | "hex"
+  | "base64"
+  | "base64url"
+  | "ucs-2"
+  | "ucs2"
+  | "utf16le";

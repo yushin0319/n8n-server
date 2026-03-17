@@ -21,7 +21,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// [共通パターン] Webhook認証チェック - 全n8nワークフロー共通\n// WEBHOOK_SECRET 環境変数で認証キーを管理（n8n設定 > Environment Variables）\nconst secret = $input.first().json.headers['x-webhook-secret'];\nif (secret !== $env.WEBHOOK_SECRET) {\n  throw new Error('Forbidden: Invalid webhook secret');\n}\nreturn $input.all();"
+        "jsCode": "// @external gdrive-mkdir/AuthCheck.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -34,7 +34,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const body = $json.body;\nconst name = body.name;\nif (!name) throw new Error('name is required');\nconst parentId = body.parent_id || 'root';\nreturn [{ json: {\n  name: name,\n  mimeType: 'application/vnd.google-apps.folder',\n  parents: [parentId]\n} }];"
+        "jsCode": "// @external gdrive-mkdir/PrepMkdir.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -73,7 +73,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const d = $input.first().json;\nreturn [{ json: { action: 'mkdir', success: true, id: d.id, name: d.name, url: d.webViewLink } }];",
+        "jsCode": "// @external gdrive-mkdir/FormatMkdir.ts",
         "options": {}
       },
       "type": "n8n-nodes-base.code",

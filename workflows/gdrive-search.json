@@ -21,7 +21,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// [共通パターン] Webhook認証チェック - 全n8nワークフロー共通\n// WEBHOOK_SECRET 環境変数で認証キーを管理（n8n設定 > Environment Variables）\nconst secret = $input.first().json.headers['x-webhook-secret'];\nif (secret !== $env.WEBHOOK_SECRET) {\n  throw new Error('Forbidden: Invalid webhook secret');\n}\nreturn $input.all();"
+        "jsCode": "// @external gdrive-search/AuthCheck.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -34,7 +34,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const body = $json.body;\nconst query = body.query || '';\nconst mimeType = body.mime_type || '';\nlet qParts = ['trashed = false'];\nif (query) qParts.push(`name contains '${query.replace(/'/g, \"\\\\'\")}'`);\nif (mimeType) qParts.push(`mimeType = '${mimeType}'`);\nconst q = qParts.join(' and ');\nconst fields = 'nextPageToken,files(id,name,mimeType,size,modifiedTime,webViewLink,parents)';\nconst pageSize = body.page_size || 20;\nreturn [{ json: { q, fields, pageSize } }];"
+        "jsCode": "// @external gdrive-search/PrepSearch.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -87,7 +87,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const data = $json;\nconst files = (data.files || []).map(f => ({\n  id: f.id,\n  name: f.name,\n  type: f.mimeType,\n  size: f.size ? parseInt(f.size) : null,\n  modified: f.modifiedTime,\n  url: f.webViewLink,\n  parents: f.parents\n}));\nreturn [{ json: { action: 'search', count: files.length, files } }];"
+        "jsCode": "// @external gdrive-search/FormatSearch.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,

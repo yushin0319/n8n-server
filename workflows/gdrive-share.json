@@ -21,7 +21,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// [共通パターン] Webhook認証チェック - 全n8nワークフロー共通\n// WEBHOOK_SECRET 環境変数で認証キーを管理（n8n設定 > Environment Variables）\nconst secret = $input.first().json.headers['x-webhook-secret'];\nif (secret !== $env.WEBHOOK_SECRET) {\n  throw new Error('Forbidden: Invalid webhook secret');\n}\nreturn $input.all();"
+        "jsCode": "// @external gdrive-share/AuthCheck.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -34,7 +34,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const body = $json.body;\nconst fileId = body.file_id;\nif (!fileId) throw new Error('file_id is required');\nconst role = body.role || 'reader';\nconst shareType = body.type || 'anyone';\nreturn [{ json: { fileId, role, shareType } }];"
+        "jsCode": "// @external gdrive-share/PrepShare.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -73,7 +73,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const perm = $json;\nconst prep = $('PrepShare').first().json;\nreturn [{ json: { action: 'share', success: true, file_id: prep.fileId, permission_id: perm.id, role: perm.role, type: perm.type } }];"
+        "jsCode": "// @external gdrive-share/FormatShare.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
