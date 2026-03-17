@@ -13,6 +13,7 @@ services:
       GENERIC_TIMEZONE: Asia/Tokyo
       N8N_SECURE_COOKIE: true
       N8N_RUNNERS_ENABLED: false
+      N8N_PROXY_HOPS: 1
     volumes:
       - n8n_data:/home/node/.n8n
     deploy:
