@@ -9,6 +9,7 @@
 import json
 import os
 import sys
+import time
 import urllib.error
 import urllib.request
 
@@ -71,28 +72,39 @@ def post_test(endpoint: dict) -> dict:
         headers["X-Webhook-Secret"] = WEBHOOK_SECRET
 
     req = urllib.request.Request(url, data=data, headers=headers, method="POST")
-    try:
-        with urllib.request.urlopen(req, timeout=endpoint["timeout"]) as resp:
-            status = resp.status
-            raw = resp.read().decode("utf-8")
-            try:
-                resp_data = json.loads(raw)
-            except json.JSONDecodeError:
-                resp_data = {"_raw": raw[:200]}
-            return {"status_code": status, "body": resp_data, "error": None}
-    except urllib.error.HTTPError as e:
-        body_text = None
+
+    # DNS一時障害対策: 最大3回リトライ（3秒間隔）
+    max_retries = 3
+    for attempt in range(1, max_retries + 1):
         try:
-            raw = e.read().decode("utf-8")
+            with urllib.request.urlopen(req, timeout=endpoint["timeout"]) as resp:
+                status = resp.status
+                raw = resp.read().decode("utf-8")
+                try:
+                    resp_data = json.loads(raw)
+                except json.JSONDecodeError:
+                    resp_data = {"_raw": raw[:200]}
+                return {"status_code": status, "body": resp_data, "error": None}
+        except urllib.error.HTTPError as e:
+            body_text = None
             try:
-                body_text = json.loads(raw)
-            except json.JSONDecodeError:
-                body_text = {"_raw": raw[:200]}
-        except Exception:
-            pass
-        return {"status_code": e.code, "body": body_text, "error": str(e)}
-    except Exception as e:
-        return {"status_code": 0, "body": None, "error": str(e)}
+                raw = e.read().decode("utf-8")
+                try:
+                    body_text = json.loads(raw)
+                except json.JSONDecodeError:
+                    body_text = {"_raw": raw[:200]}
+            except Exception:
+                pass
+            return {"status_code": e.code, "body": body_text, "error": str(e)}
+        except urllib.error.URLError as e:
+            # DNS解決失敗等のネットワークエラーのみリトライ
+            if attempt < max_retries and "name resolution" in str(e).lower():
+                print(f"retry({attempt})...", end=" ", flush=True)
+                time.sleep(3)
+                continue
+            return {"status_code": 0, "body": None, "error": str(e)}
+        except Exception as e:
+            return {"status_code": 0, "body": None, "error": str(e)}
 
 
 def verify_cron_response(result: dict) -> bool:
