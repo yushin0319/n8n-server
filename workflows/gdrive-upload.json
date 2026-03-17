@@ -20,20 +20,7 @@
       "name": "Webhook",
       "webhookId": "530d9f84-b674-413a-825d-e0abfb0b55b0"
     },
-    {
-      "parameters": {
-        "jsCode": "// @external gdrive-upload/AuthCheck.ts"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        220,
-        0
-      ],
-      "id": "0057bc63-9c0f-4991-8875-c4123fc8966f",
-      "name": "AuthCheck"
-    },
-    {
+{
       "parameters": {
         "jsCode": "// @external gdrive-upload/PrepUpload.ts"
       },
@@ -143,17 +130,6 @@
   ],
   "connections": {
     "Webhook": {
-      "main": [
-        [
-          {
-            "node": "AuthCheck",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "AuthCheck": {
       "main": [
         [
           {

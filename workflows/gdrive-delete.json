@@ -20,20 +20,7 @@
       "name": "Webhook",
       "webhookId": "3be17342-a37c-44d8-ba5d-2e5bd2c1b2f9"
     },
-    {
-      "parameters": {
-        "jsCode": "// @external gdrive-delete/AuthCheck.ts"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        220,
-        0
-      ],
-      "id": "74a6d1b9-1245-417a-b9fa-7b0a6cd13095",
-      "name": "AuthCheck"
-    },
-    {
+{
       "parameters": {
         "jsCode": "// @external gdrive-delete/PrepDelete.ts"
       },
@@ -104,17 +91,6 @@
   ],
   "connections": {
     "Webhook": {
-      "main": [
-        [
-          {
-            "node": "AuthCheck",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "AuthCheck": {
       "main": [
         [
           {
