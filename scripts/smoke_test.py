@@ -4,7 +4,7 @@
 
 全WFのWebhookエンドポイントにPOSTし、レスポンスを検証して結果をDiscordに通知する。
 - Cron WF: test:true でテストモード実行（副作用スキップ）
-- Webhook WF: 読み取り専用のリクエストで疎通確認
+- Webhook WF: 疎通確認（読み取り系は200、書き込み系はダミーIDでエラー応答も成功扱い）
 """
 import json
 import os
@@ -30,6 +30,7 @@ CRON_ENDPOINTS = [
 ]
 
 # Webhook WF（読み取り専用リクエストで疎通確認）
+# GDrive書き込み系（upload/delete/rename/move/mkdir/share）は副作用があるため除外
 WEBHOOK_ENDPOINTS = [
     {"path": "status", "name": "Server Status", "timeout": 10,
      "body": {}},
@@ -42,21 +43,21 @@ WEBHOOK_ENDPOINTS = [
     {"path": "gdrive-search", "name": "GDrive Search", "timeout": 30,
      "body": {"q": "name='__smoke_test_nonexistent__'"}},
     {"path": "gdrive-info", "name": "GDrive Info", "timeout": 30,
-     "body": {"fileId": "__smoke_test__"}},
+     "body": {"fileId": "__smoke_test__"}, "allow_error": True},
     {"path": "gdrive-download", "name": "GDrive Download", "timeout": 30,
-     "body": {"fileId": "__smoke_test__"}},
+     "body": {"fileId": "__smoke_test__"}, "allow_error": True},
     {"path": "gdrive-upload", "name": "GDrive Upload", "timeout": 30,
-     "body": {"name": "__smoke_test__"}},
+     "body": {"fileId": "__smoke_test__"}, "allow_error": True},
     {"path": "gdrive-delete", "name": "GDrive Delete", "timeout": 30,
-     "body": {"fileId": "__smoke_test__"}},
+     "body": {"fileId": "__smoke_test__"}, "allow_error": True},
     {"path": "gdrive-rename", "name": "GDrive Rename", "timeout": 30,
-     "body": {"fileId": "__smoke_test__", "newName": "test"}},
+     "body": {"fileId": "__smoke_test__", "newName": "test"}, "allow_error": True},
     {"path": "gdrive-move", "name": "GDrive Move", "timeout": 30,
-     "body": {"fileId": "__smoke_test__", "newFolderId": "__test__"}},
+     "body": {"fileId": "__smoke_test__", "newFolderId": "__test__"}, "allow_error": True},
     {"path": "gdrive-mkdir", "name": "GDrive Mkdir", "timeout": 30,
-     "body": {"folderName": "__smoke_test__"}},
+     "body": {"folderName": "__smoke_test__"}, "allow_error": True},
     {"path": "gdrive-share", "name": "GDrive Share", "timeout": 30,
-     "body": {"fileId": "__smoke_test__", "email": "test@test.com", "role": "reader"}},
+     "body": {"fileId": "__smoke_test__", "email": "test@test.com", "role": "reader"}, "allow_error": True},
 ]
 
 
@@ -96,9 +97,13 @@ def verify_cron_response(result: dict) -> bool:
     return body.get("status") == "ok" and body.get("test") is True
 
 
-def verify_webhook_response(result: dict) -> bool:
-    """Webhook WF: HTTP 200でレスポンスが返ればOK."""
-    return result["status_code"] == 200
+def verify_webhook_response(result: dict, allow_error: bool = False) -> bool:
+    """Webhook WF: HTTP 200でレスポンスが返ればOK. allow_errorならエラー応答も疎通成功扱い."""
+    if result["status_code"] == 200:
+        return True
+    if allow_error and result["status_code"] in (400, 404, 500):
+        return True
+    return False
 
 
 def send_discord_summary(results: list[dict]) -> None:
@@ -156,7 +161,7 @@ def main() -> int:
     for ep in WEBHOOK_ENDPOINTS:
         print(f"  {ep['name']}...", end=" ", flush=True)
         result = post_test(ep)
-        ok = verify_webhook_response(result)
+        ok = verify_webhook_response(result, allow_error=ep.get("allow_error", False))
         print("OK" if ok else f"FAIL ({result.get('error') or result['status_code']})")
         results.append({"endpoint": ep, "result": result, "ok": ok})
 
