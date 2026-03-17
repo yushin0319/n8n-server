@@ -26,7 +26,7 @@ CRON_ENDPOINTS = [
     {"path": "test-gmail-to-notion", "name": "Gmail to Notion", "timeout": 30},
     {"path": "test-recurring-tasks", "name": "Recurring Tasks", "timeout": 30},
     {"path": "test-shirankedo-daily", "name": "ShiranKedo Daily", "timeout": 60},
-    {"path": "test-shirankedo-weekly", "name": "ShiranKedo Weekly", "timeout": 60},
+    {"path": "test-shirankedo-weekly", "name": "ShiranKedo Weekly", "timeout": 120},
 ]
 
 # Webhook WF（読み取り専用リクエストで疎通確認）
@@ -74,12 +74,20 @@ def post_test(endpoint: dict) -> dict:
     try:
         with urllib.request.urlopen(req, timeout=endpoint["timeout"]) as resp:
             status = resp.status
-            resp_data = json.loads(resp.read().decode("utf-8"))
+            raw = resp.read().decode("utf-8")
+            try:
+                resp_data = json.loads(raw)
+            except json.JSONDecodeError:
+                resp_data = {"_raw": raw[:200]}
             return {"status_code": status, "body": resp_data, "error": None}
     except urllib.error.HTTPError as e:
         body_text = None
         try:
-            body_text = json.loads(e.read().decode("utf-8"))
+            raw = e.read().decode("utf-8")
+            try:
+                body_text = json.loads(raw)
+            except json.JSONDecodeError:
+                body_text = {"_raw": raw[:200]}
         except Exception:
             pass
         return {"status_code": e.code, "body": body_text, "error": str(e)}
