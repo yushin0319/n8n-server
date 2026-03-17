@@ -30,12 +30,19 @@ def extract_function_body(esbuild_output):
     """esbuild 出力から export default 関数のボディを抽出する.
 
     対応する出力形式:
-    (A) 非bundleモード:
+    (A) 非bundleモード（単一関数）:
         export default function() { <body> }
-    (B) bundleモード:
+    (B) bundleモード（単一関数）:
         // comment
         function Xxx_default() { <body> }
         export { Xxx_default as default };
+    (C) bundleモード（ヘルパー関数あり）:
+        // comment
+        function helper1() { ... }
+        function helper2() { ... }
+        function Xxx_default() { <body> }
+        export { Xxx_default as default };
+        → ヘルパー関数群 + <body> を返す
     """
     lines = esbuild_output.rstrip("\n").split("\n")
 
@@ -44,17 +51,38 @@ def extract_function_body(esbuild_output):
         lines.pop(0)
 
     # 末尾の export ブロック + 空行を除去
-    while lines and (
-        lines[-1].startswith("export {")
-        or lines[-1].strip() in ("};", "")
-        or "as default" in lines[-1]
-    ):
+    # export { ... }; は複数行にまたがる場合がある（re-export時）
+    # 正順スキャンで最後の "export {" から末尾の "};" までを除去する
+    export_start = None
+    for i in range(len(lines) - 1, -1, -1):
+        if lines[i].startswith("export {"):
+            export_start = i
+            break
+    if export_start is not None:
+        lines = lines[:export_start]
+    # 末尾の空行を除去
+    while lines and lines[-1].strip() == "":
         lines.pop()
 
     if len(lines) < 2:
         return esbuild_output.strip()
 
-    # 最初の行: 関数宣言を除去、最後の行: 閉じ } を除去
+    # _default 関数の開始行を探す（bundleモードでヘルパー関数がある場合）
+    default_idx = None
+    for i, line in enumerate(lines):
+        if "_default(" in line and line.startswith("function "):
+            default_idx = i
+            break
+
+    if default_idx is not None and default_idx > 0:
+        # (C) ヘルパー関数あり: ヘルパー部分はそのまま残し、_default のボディだけアンラップ
+        helper_lines = lines[:default_idx]
+        # _default 関数の宣言行と閉じ } を除去してボディを取得
+        default_body = lines[default_idx + 1:-1]
+        dedented_body = textwrap.dedent("\n".join(default_body))
+        return "\n".join(helper_lines).strip("\n") + "\n" + dedented_body.strip("\n")
+
+    # (A)(B) 単一関数: 従来どおり最初の行と最後の行を除去
     body_lines = lines[1:-1]
 
     # 2スペースデデント
