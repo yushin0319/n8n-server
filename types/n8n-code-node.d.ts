@@ -114,6 +114,11 @@ declare const $today: Date;
 /** 他ノードのデータを参照する関数 */
 declare function $(nodeName: string): INodeReference;
 
+/** ワークフロー実行間で共有される静的データを取得する */
+declare function $getWorkflowStaticData(
+  scope: "global" | "node",
+): IDataObject;
+
 // --- Node.js built-ins available in n8n Code Node ---
 
 /** Buffer（n8n Code Node サンドボックス内で利用可能） */

@@ -51,7 +51,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// tracking-reposからstar取得用GraphQLバッチを構築（50リポ/バッチ）\nconst repos = $input.first().json.data || [];\nif (!repos.length) return [{ json: { batches: [], count: 0 } }];\n\nconst batchSize = 50;\nconst batches = [];\nfor (let i = 0; i < repos.length; i += batchSize) {\n  const batch = repos.slice(i, i + batchSize);\n  const parts = batch.map((r, idx) => {\n    const [owner, name] = r.repo.split('/');\n    return `r${i+idx}: repository(owner: \"${owner}\", name: \"${name}\") { nameWithOwner stargazerCount }`;\n  });\n  batches.push({ json: { query: `{${parts.join(' ')}}`, batchIndex: batches.length } });\n}\nreturn batches;"
+        "jsCode": "// @external shirankedo-weekly/BuildStarBatches.ts"
       },
       "id": "2759a84d-5b14-4bfd-987e-152386d5920b",
       "name": "BuildStarBatches",
@@ -104,7 +104,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// 各バッチのGraphQL結果からstar数をstaticDataに蓄積\nconst staticData = $getWorkflowStaticData('global');\nif (!staticData.stars) staticData.stars = [];\nconst data = $input.first().json.data || $input.first().json || {};\nfor (const key of Object.keys(data)) {\n  const repo = data[key];\n  if (!repo || !repo.nameWithOwner) continue;\n  staticData.stars.push({ repo: repo.nameWithOwner, stars: repo.stargazerCount });\n}\nreturn $input.all();"
+        "jsCode": "// @external shirankedo-weekly/AccumulateStars.ts"
       },
       "id": "c155eb5d-634a-47b4-80e3-cf348393248f",
       "name": "AccumulateStars",
@@ -117,7 +117,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// staticDataからstar結果を取り出してPOST用に整形\nconst staticData = $getWorkflowStaticData('global');\nconst stars = staticData.stars || [];\nstaticData.stars = [];\n\n// 50件チャンクに分割\nconst chunks = [];\nfor (let i = 0; i < stars.length; i += 50) {\n  chunks.push(stars.slice(i, i + 50));\n}\nif (chunks.length === 0) chunks.push([]);\n\nreturn chunks.map((chunk, idx) => ({\n  json: {\n    requestBody: JSON.stringify(chunk),\n    count: chunk.length,\n    chunkIndex: idx,\n    totalChunks: chunks.length,\n    totalStars: stars.length,\n  }\n}));"
+        "jsCode": "// @external shirankedo-weekly/ParseStars.ts"
       },
       "id": "705aeb00-9f20-48ea-8884-1a38283ba81a",
       "name": "ParseStars",
@@ -171,7 +171,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// POST結果をstaticDataに蓄積\nconst staticData = $getWorkflowStaticData('global');\nif (!staticData.postResults) staticData.postResults = { total: 0, errors: 0 };\nconst res = $input.first().json;\nif (res && res.ok) {\n  staticData.postResults.total += (res.inserted || 0);\n} else {\n  staticData.postResults.errors += 1;\n}\nreturn $input.all();"
+        "jsCode": "// @external shirankedo-weekly/AccumulatePostResults.ts"
       },
       "id": "1898f2c5-4d4d-4a09-af6e-16f97a52aa4e",
       "name": "AccumulatePostResults",
@@ -184,7 +184,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// staticDataからPOST結果を読み出し\nconst staticData = $getWorkflowStaticData('global');\nconst results = staticData.postResults || { total: 0, errors: 0 };\nstaticData.postResults = null;\nreturn [{ json: results }];"
+        "jsCode": "// @external shirankedo-weekly/ParsePostResults.ts"
       },
       "id": "01e2f04c-3a6b-499c-a13f-869bdfd68e17",
       "name": "ParsePostResults",
@@ -197,7 +197,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const r = $input.first().json;\nconst msg = r.errors > 0\n  ? `❌ Star取得一部失敗: ${r.total}件成功, ${r.errors}件エラー`\n  : `✅ Star取得完了: ${r.total}件`;\nreturn [{ json: { message: msg } }];"
+        "jsCode": "// @external shirankedo-weekly/PrepareDiscordStars.ts"
       },
       "id": "c7676c8d-12a6-4e64-af0d-4b5a85f3acbd",
       "name": "PrepareDiscordStars",
@@ -251,7 +251,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// 直近7日の記事からGemini週次レポート用プロンプトを構築\nconst articles = $input.first().json.data || [];\nif (!articles.length) {\n  return [{ json: { prompt: '', hasArticles: false, count: 0 } }];\n}\n\nconst articleList = articles.map((a, i) =>\n  `${i+1}. [${a.source}] ${a.title}\\n   要約: ${a.summary}\\n   タグ: ${a.tags}`\n).join('\\n\\n');\n\nconst prompt = `以下の今週の記事一覧を分析し、週次サマリーを作成せよ。\nこのサマリーはページコメント生成AIへの入力として使われる内部資料である。\n\n## 出力フォーマット\n- 箇条書きで簡潔に（装飾・挨拶・口調の工夫は不要）\n- 今週の主要トピックを3〜5個に分類し、各トピックに関連記事を紐づける\n- 各トピックは「何が起きたか」「なぜ重要か」を1〜2文で記述\n- AI/LLM関連、セキュリティ関連、開発ツール関連の話題は必ず拾うこと\n\n## 今週の記事（${articles.length}件）\n${articleList}`;\n\nreturn [{ json: { prompt, hasArticles: true, count: articles.length } }];"
+        "jsCode": "// @external shirankedo-weekly/PrepareWeeklyPrompt.ts"
       },
       "id": "c889ea26-d2d0-42c2-af26-61ba0b129625",
       "name": "PrepareWeeklyPrompt",
@@ -321,7 +321,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Geminiレスポンスからレポートテキストを抽出\nconst resp = $input.first().json;\nconst reportContent = resp.candidates?.[0]?.content?.parts?.[0]?.text || '';\nif (!reportContent) {\n  return [{ json: { requestBody: JSON.stringify({ content: '生成失敗' }), reportContent: '' } }];\n}\nreturn [{ json: {\n  requestBody: JSON.stringify({ content: reportContent }),\n  reportContent\n} }];"
+        "jsCode": "// @external shirankedo-weekly/FormatWeeklyReport.ts"
       },
       "id": "a243a595-89cb-4c4b-b997-7e3fd9574678",
       "name": "FormatWeeklyReport",
@@ -361,7 +361,7 @@
     },
     {
       "parameters": {
-        "jsCode": "return [{ json: { message: \"記事なし、週次レポートスキップ\" } }];"
+        "jsCode": "// @external shirankedo-weekly/EmptyWeeklyResult.ts"
       },
       "id": "4e21a574-effd-4adc-98b9-8610f81a58a7",
       "name": "EmptyWeeklyResult",
@@ -388,7 +388,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const r = $input.first().json;\nconst ok = r.ok !== undefined ? r.ok : false;\nconst msg = ok\n  ? '✅ 週次レポート生成完了'\n  : r.message || '❌ 週次レポート生成失敗: ' + JSON.stringify(r).substring(0, 200);\nreturn [{ json: { message: msg } }];"
+        "jsCode": "// @external shirankedo-weekly/PrepareDiscordWeekly.ts"
       },
       "id": "40c7ff45-343e-4e05-a7e2-ae56104adbac",
       "name": "PrepareDiscordWeekly",
@@ -442,7 +442,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// 直近4週の週次サマリーからページコメント3件分のプロンプトを構築\nconst summaries = $input.first().json.data || [];\nconst summaryText = summaries.map((s, i) =>\n  `【${i+1}週前】\\n${s.content || s.reportContent || ''}`\n).join('\\n\\n---\\n\\n');\n\nif (!summaryText.trim()) {\n  return [{ json: { hasSummaries: false } }];\n}\n\nconst toneRules = `## 口調ルール\n「ギャルっぽい記号を貼り付けた文章」ではなく「ギャルが実際に喋りそうな文章」を書け。\n- 一人称「うち」。語尾「〜じゃん」「〜っしょ」「〜くない？」「〜じゃね？」「〜だし」\n- 強調「マジで」「ガチで」「超」「鬼」。感嘆「やば」「えぐ」「つよ」（体言止め）\n- テンションに緩急をつけろ。常時MAXはウソくさい。重い話は静かにしんどがれ\n- 絵文字は0〜1個。使わなくていい。効かせる時だけ\n- 「おけまる」「わかりみが深い」「あーし」は古い。使うな\n- 同じ語彙の連打禁止。「マジ？」「ヤバすぎ！」を毎回使うな\n- 1文目の入り方を毎回変えろ。同じパターンで始めるな\n- 「知らんけど」は毎回入れない。くどくなる`;\n\nconst formatRules = `## フォーマット\n- 150〜300文字で書くこと。短すぎも長すぎもダメ\n- 「何が起きたか」だけでなく「それに対してどう感じるか」を必ず含めること\n- 事実の羅列は禁止。読んだ人が「ふーん」で終わるコメントは失敗\n- 最後まで書ききること。文の途中で終わるな`;\n\nconst trendPrompt = `あなたはテック系トレンドページの総評コメントを書くライターです。\n\n${toneRules}\n\n${formatRules}\n\n## このコメントの役割\nテック業界全体のトレンドページに表示される総評。\n以下の週次レポートを参考にしつつ、今のテック業界で何が熱いか・どこに向かってるかを語れ。\n具体的なプロジェクト名やツール名を挙げて、抽象論で逃げるな。\n\n## 直近の週次レポート\n${summaryText}`;\n\nconst aiApiPrompt = `あなたはAI API・LLMの比較ページの総評コメントを書くライターです。\n\n${toneRules}\n\n${formatRules}\n\n## このコメントの役割\nAI APIの料金・性能比較ページに表示される総評。\n以下の週次レポートからAI・LLM関連の話題を拾い、最近のモデル動向・API機能・価格の変化について語れ。\n月額目安（独自算出値）には言及しないこと。\n具体的なモデル名やサービス名を挙げて語れ。\n\n## 直近の週次レポート\n${summaryText}`;\n\nconst aiSubPrompt = `あなたはAIサブスクリプション比較ページの総評コメントを書くライターです。\n\n${toneRules}\n\n${formatRules}\n\n## このコメントの役割\nChatGPT / Claude / Gemini 等のサブスクプラン比較ページに表示される総評。\n以下の週次レポートを参考に、最近のAIサブスク事情（料金変更、新プラン、使い分け戦略）について語れ。\n開発者・ユーザー目線で「結局どれ使えばいいの？」に答える方向性で。\n\n## 直近の週次レポート\n${summaryText}`;\n\nreturn [{ json: {\n  hasSummaries: true,\n  trendPrompt,\n  aiApiPrompt,\n  aiSubPrompt\n} }];"
+        "jsCode": "// @external shirankedo-weekly/PreparePageCommentPrompts.ts"
       },
       "id": "6c2f2427-13d9-4bab-94a7-007b6db8d48e",
       "name": "PreparePageCommentPrompts",
@@ -512,7 +512,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const resp = $input.first().json;\nconst trendText = resp.candidates?.[0]?.content?.parts?.[0]?.text || '生成失敗';\n// 前ノードのプロンプト情報を引き継ぐ\nconst prev = $('HasSummariesForComments').first().json;\nreturn [{ json: {\n  trendComment: trendText,\n  aiApiPrompt: prev.aiApiPrompt,\n  aiSubPrompt: prev.aiSubPrompt\n} }];"
+        "jsCode": "// @external shirankedo-weekly/FormatTrendComment.ts"
       },
       "id": "7456f2f9-75a5-4d51-a55d-4c0466c0f063",
       "name": "FormatTrendComment",
@@ -551,7 +551,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const resp = $input.first().json;\nconst aiApiText = resp.candidates?.[0]?.content?.parts?.[0]?.text || '生成失敗';\nconst prev = $('FormatTrendComment').first().json;\nreturn [{ json: {\n  trendComment: prev.trendComment,\n  aiApiComment: aiApiText,\n  aiSubPrompt: prev.aiSubPrompt\n} }];"
+        "jsCode": "// @external shirankedo-weekly/FormatAIApiComment.ts"
       },
       "id": "7ed4f490-5bf7-4121-a1e8-ab986befb9d5",
       "name": "FormatAIApiComment",
@@ -590,7 +590,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const resp = $input.first().json;\nconst aiSubText = resp.candidates?.[0]?.content?.parts?.[0]?.text || '生成失敗';\nconst prev = $('FormatAIApiComment').first().json;\n\nconst comments = [\n  { type: 'trend', content: prev.trendComment },\n  { type: 'ai_api', content: prev.aiApiComment },\n  { type: 'ai_sub', content: aiSubText },\n];\n\nreturn [{ json: {\n  requestBody: JSON.stringify(comments),\n  count: comments.length\n} }];"
+        "jsCode": "// @external shirankedo-weekly/FormatPageComments.ts"
       },
       "id": "b11c154b-d7ca-4990-9f09-eaa6ca170134",
       "name": "FormatPageComments",
@@ -630,7 +630,7 @@
     },
     {
       "parameters": {
-        "jsCode": "return [{ json: { message: \"サマリーなし、ページコメントスキップ\" } }];"
+        "jsCode": "// @external shirankedo-weekly/EmptyCommentResult.ts"
       },
       "id": "99b46d7e-70c3-4549-9b4c-d3c9e07f4044",
       "name": "EmptyCommentResult",
@@ -657,7 +657,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const r = $input.first().json;\nconst ok = r.ok !== undefined ? r.ok : false;\nconst msg = ok\n  ? '✅ ページコメント生成完了: 3件'\n  : r.message || '❌ ページコメント生成失敗: ' + JSON.stringify(r).substring(0, 200);\nreturn [{ json: { message: msg } }];"
+        "jsCode": "// @external shirankedo-weekly/PrepareDiscordComments.ts"
       },
       "id": "5f11adb8-f792-4400-b90e-c157e93a6e69",
       "name": "PrepareDiscordComments",
@@ -741,7 +741,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// AA APIデータからモデルをフィルタ・デデュプして56モデルに絞る\nconst aaResp = $('FetchAAModels').first().json;\nconst rateResp = $('FetchExchangeRate').first().json;\nconst aaData = aaResp.data || [];\nconst jpyRate = rateResp?.rates?.JPY || 150;\n\n// Provider mapping\nconst PROVIDERS = {\n  'Anthropic': 'Anthropic', 'OpenAI': 'OpenAI', 'Google': 'Google',\n  'DeepSeek': 'DeepSeek', 'xAI': 'xAI', 'Meta': 'Meta',\n  'Mistral': 'Mistral', 'Alibaba': 'Alibaba', 'Kimi': 'Moonshot',\n  'MiniMax': 'MiniMax', 'Z AI': 'Zhipu AI', 'Xiaomi': 'Xiaomi',\n  'Amazon': 'Amazon', 'Microsoft': 'Microsoft',\n};\n\n// Step 1: Basic filter\nconst filtered = [];\nfor (const m of aaData) {\n  const name = m.name || '';\n  const creatorName = m.model_creator?.name || '';\n  let provider = null;\n  for (const [pname, display] of Object.entries(PROVIDERS)) {\n    if (creatorName.toLowerCase().includes(pname.toLowerCase())) {\n      provider = display; break;\n    }\n  }\n  if (!provider) continue;\n  const pricing = m.pricing || {};\n  const inp = pricing.price_1m_input_tokens;\n  const out = pricing.price_1m_output_tokens;\n  if (inp == null || out == null || (inp === 0 && out === 0)) continue;\n  if (name.toLowerCase().includes('codex')) continue;\n  const intel = m.evaluations?.artificial_analysis_intelligence_index;\n  if (intel == null) continue;\n  filtered.push({ name, provider, score: intel, inputPrice: inp, outputPrice: out });\n}\n\n// Step 2: Skip patterns\nfunction shouldSkip(name) {\n  const skipExact = ['Distill','Mixtral','Ministral','Pixtral','Devstral','gpt-oss','Gemma'];\n  if (skipExact.some(x => name.includes(x))) return true;\n  if (['GPT-3.5','Llama 2 ','Mistral 7B'].some(x => name.includes(x))) return true;\n  if (name === 'o1-preview' || name === 'o1-pro') return true;\n  if (name.includes('Llama')) {\n    if (!['Llama 4 Maverick','Llama 4 Scout','Llama 3.3'].some(a => name.includes(a))) return true;\n  }\n  if (['Mistral Small','Mistral Medium','Mistral Large'].includes(name)) return true;\n  if (['Claude 4 Opus','Claude 4.1 Opus'].some(x => name.includes(x))) return true;\n  if (name.includes('Magistral Small')) return true;\n  if (['Qwen3 VL','Qwen3.5 VL','Coder','Omni','QwQ','Qwen2','Qwen Chat'].some(x => name.includes(x))) return true;\n  if (/Qwen3\\.?5?\\s+[0-4](?:\\.\\d+)?B\\b/.test(name)) return true;\n  if (/^Qwen3 \\d+B/.test(name) && !name.includes('Qwen3 Max')) return true;\n  if (name.includes('Qwen3 Next')) return true;\n  if (name.includes('GLM') && (/V /.test(name) || /V\\(/.test(name))) return true;\n  if (name.includes('GLM-4.5-Air')) return true;\n  if (name.includes('Nova') && name.includes('Omni')) return true;\n  return false;\n}\n\n// Step 3: Family key dedup\nfunction familyKey(n) {\n  let c = n.replace(/\\s*\\(.*?\\)/g, '');\n  c = c.replace(/\\s*-\\s*\\d{4}-\\d{2}-\\d{2}$/, '');\n  c = c.replace(/\\s*(Preview|Exp|Terminus)\\b/g, '');\n  c = c.replace(/\\s+\\d{4}$/, '');\n  c = c.replace(/(Mistral (?:Small|Medium|Large|Magistral \\w+))\\s+[\\d.]+/g, '$1');\n  if (/^GPT-5(\\.\\d+)?$/.test(c)) c = 'GPT-5';\n  c = c.replace(/(DeepSeek V3)[\\d.]*/g, '$1');\n  c = c.replace(/(DeepSeek R1)[\\s\\d]*/g, '$1');\n  c = c.replace(/Grok [\\d.]+ Fast/g, 'Grok Fast');\n  c = c.replace(/Gemini 3\\.\\d+ Pro/g, 'Gemini 3 Pro');\n  c = c.replace(/Gemini (\\d+)\\.(\\d+) (Flash-Lite|Flash)$/g, 'Gemini $1 $3');\n  c = c.replace(/(Qwen3\\.5 \\d+B(?: A\\d+B)?)\\s+\\d{4}/g, '$1');\n  c = c.replace(/(Qwen3 \\d+B(?: A\\d+B)?)\\s+\\d{4}/g, '$1');\n  c = c.replace(/Qwen3 Max.*/g, 'Qwen3 Max');\n  c = c.replace(/Kimi K2\\.5.*/g, 'Kimi K2.5');\n  c = c.replace(/Kimi K2(?!\\.5).*/g, 'Kimi K2');\n  c = c.replace(/MiniMax-M2\\.\\d+/g, 'MiniMax-M2');\n  c = c.replace(/MiniMax M2/g, 'MiniMax-M2');\n  c = c.replace(/(GLM-\\d+(?:\\.\\d+)?)\\b.*/g, '$1');\n  c = c.replace(/(MiMo-V2-Flash).*/g, '$1');\n  c = c.replace(/(Nova \\d+\\.\\d+ (?:Pro|Lite|Omni)).*/g, '$1');\n  c = c.replace(/(Nova Premier).*/g, '$1');\n  return c.trim();\n}\n\nconst families = {};\nfor (const m of filtered) {\n  if (shouldSkip(m.name)) continue;\n  const fk = familyKey(m.name);\n  if (!families[fk] || m.score > families[fk].score) {\n    families[fk] = m;\n  }\n}\n\n// Step 4: Sort + cut below 15\nconst models = Object.values(families)\n  .filter(m => m.score >= 15)\n  .sort((a, b) => b.score - a.score)\n  .map(m => {\n    const cleanName = m.name.replace(/\\s*\\(.*?\\)/g, '').trim();\n    return {\n      modelName: cleanName,\n      provider: m.provider,\n      score: m.score,\n      inputPrice: m.inputPrice,\n      outputPrice: m.outputPrice,\n      currency: 'USD',\n    };\n  });\n\n// 出力: [0] LLMモデル配列, [1] 為替レート\nreturn [\n  { json: {\n    requestBody: JSON.stringify(models),\n    count: models.length,\n    type: 'llm-models'\n  }},\n  { json: {\n    requestBody: JSON.stringify({ jpyPerUsd: jpyRate, updatedAt: new Date().toISOString() }),\n    type: 'exchange-rate'\n  }}\n];"
+        "jsCode": "// @external shirankedo-weekly/ParseLLMData.ts"
       },
       "id": "638c0a55-3069-474e-930e-465bea2fcad2",
       "name": "ParseLLMData",
@@ -839,7 +839,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const r = $input.first().json;\nconst ok = r.ok !== undefined ? r.ok : false;\nconst count = r.inserted || 0;\nconst updated = r.updated || 0;\nconst msg = ok\n  ? `✅ LLM価格更新完了: ${count}件追加, ${updated}件更新`\n  : '❌ LLM価格更新失敗: ' + JSON.stringify(r).substring(0, 200);\nreturn [{ json: { message: msg } }];"
+        "jsCode": "// @external shirankedo-weekly/PrepareDiscordLLM.ts"
       },
       "id": "b9efaa57-0266-4f14-970e-f2d698e83411",
       "name": "PrepareDiscordLLM",
@@ -893,7 +893,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// 5ティアのGitHub Search APIクエリを構築\nconst now = new Date();\nconst fmt = d => d.toISOString().slice(0, 10);\nconst ago = days => { const d = new Date(now); d.setDate(d.getDate() - days); return fmt(d); };\n\nconst tiers = [\n  { q: 'stars:>50000', label: 'Tier1: ★50k+' },\n  { q: `stars:10000..50000 pushed:>${ago(365)}`, label: 'Tier2: 1yr ★10k+' },\n  { q: `stars:5000..10000 pushed:>${ago(180)}`, label: 'Tier3: 6mo ★5k+' },\n  { q: `stars:2000..5000 pushed:>${ago(90)}`, label: 'Tier4: 3mo ★2k+' },\n  { q: `stars:1000..2000 pushed:>${ago(30)}`, label: 'Tier5: 1mo ★1k+' },\n];\n\n// 各ティアを2ページずつ（最大200件/ティア）\nconst queries = [];\nfor (const tier of tiers) {\n  for (let page = 1; page <= 2; page++) {\n    queries.push({\n      json: {\n        url: `https://api.github.com/search/repositories?q=${encodeURIComponent(tier.q)}&sort=stars&order=desc&per_page=100&page=${page}`,\n        label: tier.label,\n        page,\n      }\n    });\n  }\n}\nreturn queries;"
+        "jsCode": "// @external shirankedo-weekly/BuildSearchQueries.ts"
       },
       "id": "af2c426b-64fe-4f38-b3a9-39f203862e44",
       "name": "BuildSearchQueries",
@@ -958,7 +958,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// 検索結果をstaticDataに蓄積\nconst staticData = $getWorkflowStaticData('global');\nif (!staticData.searchRepos) staticData.searchRepos = [];\nconst items = $input.first().json.items || [];\nfor (const r of items) {\n  staticData.searchRepos.push({\n    repo: r.full_name,\n    name: r.name,\n    description: r.description || '',\n    language: r.language || '',\n    stars: r.stargazers_count,\n  });\n}\nreturn $input.all();"
+        "jsCode": "// @external shirankedo-weekly/AccumulateSearchResults.ts"
       },
       "id": "3aa53497-b8a8-4edb-a2d5-259789e52400",
       "name": "AccumulateSearchResults",
@@ -971,7 +971,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// staticDataから検索結果を読み出し、フィルタ・既存除外\nconst staticData = $getWorkflowStaticData('global');\nconst allRepos = staticData.searchRepos || [];\nstaticData.searchRepos = [];\n\n// 既存リポ一覧\nconst existingRepos = $('FetchExistingRepos').first().json.data || [];\nconst existingSet = new Set(existingRepos.map(r => r.repo.toLowerCase()));\n\n// ブロックリスト\nconst blocklist = [\n  'awesome','interview','free-programming-books','build-your-own',\n  'public-apis','developer-roadmap','system-design','cheatsheet',\n  'learn-','tutorial','roadmap','study-plan','coding-guide',\n  'freeCodeCamp','computer-science','project-based-learning',\n  'the-art-of-command-line','the-book-of-secret-knowledge',\n];\n\n// デデュプ（repo名で）\nconst seen = new Set();\nconst deduped = [];\nfor (const r of allRepos) {\n  const key = r.repo.toLowerCase();\n  if (seen.has(key)) continue;\n  seen.add(key);\n  deduped.push(r);\n}\n\n// フィルタ: 言語あり + ブロックリスト除外 + 既存除外\nconst newRepos = deduped.filter(r => {\n  if (!r.language) return false;\n  const name = r.repo.toLowerCase();\n  if (blocklist.some(kw => name.includes(kw))) return false;\n  if (existingSet.has(name)) return false;\n  return true;\n});\n\nif (newRepos.length === 0) {\n  return [{ json: { hasNewRepos: false, count: 0 } }];\n}\n\n// Gemini翻訳用にバッチ化（20件ずつ）\nconst batchSize = 20;\nconst batches = [];\nfor (let i = 0; i < newRepos.length; i += batchSize) {\n  batches.push(newRepos.slice(i, i + batchSize));\n}\n\nreturn [{ json: {\n  hasNewRepos: true,\n  count: newRepos.length,\n  batches: batches,\n  totalBatches: batches.length,\n} }];"
+        "jsCode": "// @external shirankedo-weekly/ParseSearchResults.ts"
       },
       "id": "fa432fdb-29cf-474b-afa9-e30102f8d68b",
       "name": "ParseSearchResults",
@@ -1015,7 +1015,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// バッチごとにGemini翻訳プロンプトを構築\nconst data = $input.first().json;\nconst batches = data.batches || [];\nconst results = [];\n\nfor (const batch of batches) {\n  const lines = batch.map((r, i) =>\n    `${i+1}. ${r.repo}: ${r.description || 'No description'}`\n  ).join('\\n');\n\n  const prompt = `以下のGitHubリポジトリについて、display_nameと説明文(description)を生成してください。\n\n## display_nameルール\n- リポジトリの公式名称（README/サイトの表記）に合わせる\n- ハイフン区切りはスペース区切り+先頭大文字に（例: open-webui → Open WebUI）\n- 公式略称があればそれを使う（例: vscode → VS Code）\n\n## descriptionルール\n- 10〜20文字の日本語\n- 体言止め（「〜ツール」「〜フレームワーク」「〜ライブラリ」等）\n- そのリポが何であるかを一言で表す。機能列挙はしない\n- 良い例: ローカルLLMランタイム、AI対応ワークフロー自動化、手書き風ホワイトボード\n- 悪い例: 監視ツール（短すぎ・曖昧）、OpenAIの代替となるセルフホスト型ローカルLLM推論エンジン（長すぎ）\n\n各行を「番号. display_name | description」の形式で返してください。\n\n${lines}`;\n\n  results.push({ json: { prompt, repos: batch, batchIndex: results.length } });\n}\nreturn results;"
+        "jsCode": "// @external shirankedo-weekly/PrepareTranslatePrompt.ts"
       },
       "id": "ff3829d3-ab08-43f6-a5a8-e70098aba7b1",
       "name": "PrepareTranslatePrompt",
@@ -1068,7 +1068,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Gemini結果を解析してstaticDataに蓄積（stars含む）\n// フォーマット: 番号. display_name | description\nconst staticData = $getWorkflowStaticData('global');\nif (!staticData.translations) staticData.translations = [];\n\nconst resp = $input.first().json;\nconst text = resp.candidates?.[0]?.content?.parts?.[0]?.text || '';\nconst repos = $('SplitTranslateBatches').first().json.repos || [];\n\nconst lines = text.split('\\n').filter(l => /^\\d+\\./.test(l.trim()));\nfor (let i = 0; i < repos.length; i++) {\n  const r = repos[i];\n  const line = lines[i] || '';\n  const lineContent = line.replace(/^\\d+\\.\\s*/, '').trim();\n  // 「display_name | description」形式をパース\n  const parts = lineContent.split('|').map(s => s.trim());\n  const displayName = parts.length >= 2 ? parts[0] : (r.name || r.repo.split('/')[1] || r.repo);\n  const desc = parts.length >= 2 ? parts[1] : (lineContent || r.description);\n  staticData.translations.push({\n    repo: r.repo,\n    displayName,\n    description: desc,\n    language: r.language,\n    stars: r.stars || 0,\n  });\n}\nreturn $input.all();"
+        "jsCode": "// @external shirankedo-weekly/AccumulateTranslations.ts"
       },
       "id": "1eeee0cc-51aa-493d-bfb0-364772566bdf",
       "name": "AccumulateTranslations",
@@ -1081,7 +1081,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// staticDataから翻訳結果を読み出し、star情報も保持\nconst staticData = $getWorkflowStaticData('global');\nconst repos = staticData.translations || [];\nstaticData.translations = [];\n\nif (repos.length === 0) {\n  return [{ json: { requestBody: '[]', count: 0 } }];\n}\n\n// 新規リポのstar情報をstaticDataに保存（後でrepo-statsにPOST）\nstaticData.newRepoStars = repos.map(r => ({ repo: r.repo, stars: r.stars || 0 }));\n\n// 50件チャンクに分割\nconst chunks = [];\nfor (let i = 0; i < repos.length; i += 50) {\n  chunks.push(repos.slice(i, i + 50));\n}\n\nreturn chunks.map((chunk, idx) => ({\n  json: {\n    requestBody: JSON.stringify(chunk),\n    count: chunk.length,\n    chunkIndex: idx,\n    totalRepos: repos.length,\n  }\n}));"
+        "jsCode": "// @external shirankedo-weekly/ParseTranslations.ts"
       },
       "id": "83bedec4-fa73-41a5-a756-b031bdf6ae45",
       "name": "ParseTranslations",
@@ -1135,7 +1135,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const staticData = $getWorkflowStaticData('global');\nif (!staticData.repoPostResults) staticData.repoPostResults = { total: 0, errors: 0 };\nconst res = $input.first().json;\nif (res && res.ok) {\n  staticData.repoPostResults.total += (res.inserted || 0);\n} else {\n  staticData.repoPostResults.errors += 1;\n}\nreturn $input.all();"
+        "jsCode": "// @external shirankedo-weekly/AccumulateRepoPostResults.ts"
       },
       "id": "646fd2de-a855-4155-9e26-c464532f85d4",
       "name": "AccumulateRepoPostResults",
@@ -1148,7 +1148,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const staticData = $getWorkflowStaticData('global');\nconst results = staticData.repoPostResults || { total: 0, errors: 0 };\nstaticData.repoPostResults = null;\n// 新規リポのstar情報を取り出してrepo-stats POST用に整形\nconst newStars = staticData.newRepoStars || [];\nstaticData.newRepoStars = null;\nreturn [{ json: { ...results, starRequestBody: JSON.stringify(newStars), starCount: newStars.length } }];"
+        "jsCode": "// @external shirankedo-weekly/ParseRepoPostResults.ts"
       },
       "id": "93e45a75-6901-4441-bc83-a9d481f6bc4c",
       "name": "ParseRepoPostResults",
@@ -1161,7 +1161,7 @@
     },
     {
       "parameters": {
-        "jsCode": "return [{ json: { message: \"新規リポなし、スキップ\" } }];"
+        "jsCode": "// @external shirankedo-weekly/EmptyRepoResult.ts"
       },
       "id": "4d8636dc-2345-410b-99e0-6655f222a905",
       "name": "EmptyRepoResult",
@@ -1188,7 +1188,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const r = $input.first().json;\nif (r.message) return [{ json: { message: r.message } }];\nconst msg = r.errors > 0\n  ? `❌ TrackingRepo更新一部失敗: ${r.total}件追加, ${r.errors}件エラー`\n  : `✅ TrackingRepo更新完了: ${r.total}件追加`;\nreturn [{ json: { message: msg } }];"
+        "jsCode": "// @external shirankedo-weekly/PrepareDiscordRepos.ts"
       },
       "id": "8f8d7f47-9f94-4fb5-b3d9-5fcfc04e61d3",
       "name": "PrepareDiscordRepos",
