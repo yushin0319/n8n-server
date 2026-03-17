@@ -153,6 +153,76 @@ class TestExtractFunctionBody:
         assert body.split("\n")[0] == "const x = 1;"
 
 
+    def test_handles_bundle_with_helpers(self):
+        """バンドルモードでヘルパー関数がある場合、ヘルパーを残し_defaultのボディだけアンラップする."""
+        # _shared をインポートした .ts のバンドル出力を再現
+        esbuild_output = (
+            "// workflows/code-nodes/_shared/notionBlocks.ts\n"
+            "function parseRichText(text) {\n"
+            "  const segments = [];\n"
+            "  return segments;\n"
+            "}\n"
+            "function mdToBlocks(content) {\n"
+            "  return parseRichText(content);\n"
+            "}\n"
+            "\n"
+            "// workflows/code-nodes/notion-tasks/PrepAppend.ts\n"
+            "function PrepAppend_default() {\n"
+            "  const body = mdToBlocks($json.content);\n"
+            "  return [{ json: { body } }];\n"
+            "}\n"
+            "export {\n"
+            "  PrepAppend_default as default\n"
+            "};\n"
+        )
+        body = extract_function_body(esbuild_output)
+        # ヘルパー関数が残っている
+        assert "function parseRichText(text) {" in body
+        assert "function mdToBlocks(content) {" in body
+        # _default のラッパーは除去されている
+        assert "PrepAppend_default" not in body
+        # _default のボディは残っている
+        assert "mdToBlocks($json.content)" in body
+        assert "return [{ json: { body } }];" in body
+        # ブレースが対応している
+        assert body.count("{") == body.count("}")
+
+    def test_handles_bundle_with_reexports(self):
+        """re-export がある場合もexportブロックが正しく除去される."""
+        esbuild_output = (
+            "// workflows/code-nodes/_shared/notionBlocks.ts\n"
+            "function parseRichText(text) {\n"
+            "  return [{ type: 'text', text: { content: text } }];\n"
+            "}\n"
+            "\n"
+            "// workflows/code-nodes/notion-tasks/PrepCreate.ts\n"
+            "var COVERS = [\n"
+            '  "https://example.com/img1.jpg",\n'
+            '  "https://example.com/img2.jpg"\n'
+            "];\n"
+            "function PrepCreate_default() {\n"
+            "  const name = $json.name;\n"
+            "  return [{ json: { name } }];\n"
+            "}\n"
+            "export {\n"
+            "  PrepCreate_default as default,\n"
+            "  parseRichText\n"
+            "};\n"
+        )
+        body = extract_function_body(esbuild_output)
+        # export ブロックが除去されている
+        assert "export" not in body
+        # ヘルパー関数と定数が残っている
+        assert "function parseRichText(text) {" in body
+        assert "var COVERS = [" in body
+        # _default のボディが残っている
+        assert "$json.name" in body
+        # _default のラッパーは除去されている
+        assert "PrepCreate_default" not in body
+        # ブレースが対応している
+        assert body.count("{") == body.count("}")
+
+
 class TestExtract:
     """extract_code.py のテスト."""
 
