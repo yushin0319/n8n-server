@@ -1,4 +1,5 @@
 {
+  "id": "r3wJRXG0qggIu4PM",
   "name": "Google Drive - Upload",
   "active": true,
   "nodes": [
@@ -21,7 +22,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// [共通パターン] Webhook認証チェック - 全n8nワークフロー共通\n// WEBHOOK_SECRET 環境変数で認証キーを管理（n8n設定 > Environment Variables）\nconst secret = $input.first().json.headers['x-webhook-secret'];\nif (secret !== $env.WEBHOOK_SECRET) {\n  throw new Error('Forbidden: Invalid webhook secret');\n}\nreturn $input.all();"
+        "jsCode": "// @external gdrive-upload/AuthCheck.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -34,7 +35,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const body = $json.body;\nconst name = body.name || 'untitled.txt';\nconst fileContent = body.content || '';\nconst folderId = body.folder_id || 'root';\nconst mimeType = body.mime_type || 'text/plain';\nconst encoding = body.encoding || 'utf-8';\nreturn [{ json: { name, fileContent, folderId, mimeType, encoding } }];"
+        "jsCode": "// @external gdrive-upload/PrepUpload.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -66,14 +67,14 @@
       "name": "CreateEmpty",
       "credentials": {
         "googleDriveOAuth2Api": {
-          "id": "PLACEHOLDER",
+          "id": "AeFJzyeByGcfTH8r",
           "name": "Google Drive account"
         }
       }
     },
     {
       "parameters": {
-        "jsCode": "const fileContent = $('PrepUpload').first().json.fileContent;\nconst fileId = $json.id;\nconst name = $json.name;\nconst webViewLink = $json.webViewLink;\nconst mimeType = $('PrepUpload').first().json.mimeType;\nconst encoding = $('PrepUpload').first().json.encoding || 'utf-8';\n\n// Size limit check (5MB) to prevent memory exhaustion\nconst MAX_SIZE = 5 * 1024 * 1024;\nconst contentSize = encoding === 'base64' ? Math.ceil(fileContent.length * 3 / 4) : fileContent.length;\nif (contentSize > MAX_SIZE) {\n  throw new Error('Content too large: ' + Math.round(contentSize / 1024 / 1024) + 'MB exceeds 5MB limit');\n}\n\n// Create binary data from content (supports utf-8 for text, base64 for binary)\nconst binaryData = Buffer.from(fileContent, encoding);\n\nreturn [{\n  json: { fileId, name, webViewLink, mimeType },\n  binary: {\n    file: {\n      data: binaryData.toString('base64'),\n      mimeType: mimeType,\n      fileName: name\n    }\n  }\n}];"
+        "jsCode": "// @external gdrive-upload/PrepContent.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -105,14 +106,14 @@
       "name": "UpdateContent",
       "credentials": {
         "googleDriveOAuth2Api": {
-          "id": "PLACEHOLDER",
+          "id": "AeFJzyeByGcfTH8r",
           "name": "Google Drive account"
         }
       }
     },
     {
       "parameters": {
-        "jsCode": "const d = $input.first().json;\nconst prep = $('PrepContent').first().json;\nreturn [{ json: { action: 'upload', success: true, id: d.id || prep.fileId, name: d.name || prep.name, url: prep.webViewLink } }];",
+        "jsCode": "// @external gdrive-upload/FormatUpload.ts",
         "options": {}
       },
       "type": "n8n-nodes-base.code",

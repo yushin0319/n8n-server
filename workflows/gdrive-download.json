@@ -1,4 +1,5 @@
 {
+  "id": "0PSOcLu8sEC0Tqdh",
   "name": "Google Drive - Download",
   "active": true,
   "nodes": [
@@ -21,7 +22,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// [共通パターン] Webhook認証チェック - 全n8nワークフロー共通\n// WEBHOOK_SECRET 環境変数で認証キーを管理（n8n設定 > Environment Variables）\nconst secret = $input.first().json.headers['x-webhook-secret'];\nif (secret !== $env.WEBHOOK_SECRET) {\n  throw new Error('Forbidden: Invalid webhook secret');\n}\nreturn $input.all();"
+        "jsCode": "// @external gdrive-download/AuthCheck.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -34,7 +35,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const body = $json.body;\nconst fileId = body.file_id;\nif (!fileId) throw new Error('file_id is required');\nreturn [{ json: { fileId } }];"
+        "jsCode": "// @external gdrive-download/PrepDownload.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -63,14 +64,14 @@
       "name": "DownloadRequest",
       "credentials": {
         "googleDriveOAuth2Api": {
-          "id": "PLACEHOLDER",
+          "id": "AeFJzyeByGcfTH8r",
           "name": "Google Drive account"
         }
       }
     },
     {
       "parameters": {
-        "jsCode": "// n8n wraps raw text response in { data: \"...\" }\nconst raw = $json;\nlet content;\nif (raw.data !== undefined) {\n  content = raw.data;\n} else if (typeof raw === 'string') {\n  content = raw;\n} else {\n  content = JSON.stringify(raw);\n}\nconst fileId = $('PrepDownload').first().json.fileId;\nreturn [{ json: { action: 'download', file_id: fileId, content } }];"
+        "jsCode": "// @external gdrive-download/FormatDownload.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,

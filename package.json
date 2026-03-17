@@ -1,0 +1,31 @@
+{
+  "name": "n8n-server",
+  "version": "1.0.0",
+  "description": "Oracle Cloud Free Tier 上で動作する n8n (v2.6.3) のワークフロー管理リポジトリ。",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yushin0319/n8n-server.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/yushin0319/n8n-server/issues"
+  },
+  "homepage": "https://github.com/yushin0319/n8n-server#readme",
+  "devDependencies": {
+    "esbuild": "^0.27.4",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.0"
+  }
+}

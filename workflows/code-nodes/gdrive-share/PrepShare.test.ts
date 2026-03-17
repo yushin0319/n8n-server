@@ -1,0 +1,38 @@
+import { describe, expect, it, vi, beforeEach } from "vitest";
+import prepShare from "./PrepShare";
+
+describe("gdrive-share/PrepShare", () => {
+  beforeEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("file_idを抽出しデフォルト値を適用する", () => {
+    vi.stubGlobal("$json", {
+      body: { file_id: "file123" },
+    });
+
+    const result = prepShare() as INodeExecutionData[];
+    expect(result).toEqual([
+      { json: { fileId: "file123", role: "reader", shareType: "anyone" } },
+    ]);
+  });
+
+  it("roleとtypeを指定できる", () => {
+    vi.stubGlobal("$json", {
+      body: { file_id: "file123", role: "writer", type: "user" },
+    });
+
+    const result = prepShare() as INodeExecutionData[];
+    expect(result).toEqual([
+      { json: { fileId: "file123", role: "writer", shareType: "user" } },
+    ]);
+  });
+
+  it("file_idがない場合エラーを投げる", () => {
+    vi.stubGlobal("$json", {
+      body: { role: "reader" },
+    });
+
+    expect(() => prepShare()).toThrow("file_id is required");
+  });
+});

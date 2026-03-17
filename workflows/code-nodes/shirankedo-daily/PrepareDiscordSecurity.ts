@@ -1,0 +1,19 @@
+import { discordMessage } from "../_shared/discordMessage";
+
+export default function (): CodeNodeReturn {
+  const input = $input.first().json;
+  const vulnCount =
+    ($("PrepareSecurityComment").first().json.vulnCount as number) || 0;
+  const releaseCount =
+    ($("PrepareSecurityComment").first().json.releaseCount as number) || 0;
+  const isError =
+    !!input.error || (input.statusCode && (input.statusCode as number) >= 400);
+  const msg = discordMessage({
+    label: "shirankedo セキュリティ日次更新完了",
+    isError: !!isError,
+    detail: isError
+      ? String(input.error || input.message || "unknown")
+      : `脆弱性${vulnCount}件、リリース${releaseCount}件`,
+  });
+  return [{ json: { message: msg } }];
+}
