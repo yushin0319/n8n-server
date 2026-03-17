@@ -44,3 +44,12 @@ jobs:
         run: |
           chmod +x scripts/deploy.sh
           bash scripts/deploy.sh
+
+      - name: Smoke test (post-deploy verification)
+        if: success()
+        env:
+          WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          sleep 10
+          python scripts/smoke_test.py
