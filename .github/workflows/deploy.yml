@@ -3,7 +3,7 @@ name: Deploy n8n Workflows
 on:
   push:
     branches: [main]
-    paths: ['workflows/**']
+    paths: ['workflows/**', 'scripts/**', 'types/**']
   workflow_dispatch:
     inputs:
       deploy_all:
