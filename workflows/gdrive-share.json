@@ -1,4 +1,5 @@
 {
+  "id": "k4xdXUWPDExWYflR",
   "name": "Google Drive - Share",
   "active": true,
   "nodes": [
@@ -66,7 +67,7 @@
       "name": "ShareRequest",
       "credentials": {
         "googleDriveOAuth2Api": {
-          "id": "PLACEHOLDER",
+          "id": "AeFJzyeByGcfTH8r",
           "name": "Google Drive account"
         }
       }

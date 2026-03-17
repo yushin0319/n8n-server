@@ -1,4 +1,5 @@
 {
+  "id": "17S2wXRFXrbJhjAY",
   "name": "Google Drive - Info",
   "active": true,
   "nodes": [
@@ -72,7 +73,7 @@
       "name": "InfoRequest",
       "credentials": {
         "googleDriveOAuth2Api": {
-          "id": "PLACEHOLDER",
+          "id": "AeFJzyeByGcfTH8r",
           "name": "Google Drive account"
         }
       }

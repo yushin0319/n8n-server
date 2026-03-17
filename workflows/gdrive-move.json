@@ -1,4 +1,5 @@
 {
+  "id": "owtleGxULdMzYtL2",
   "name": "Google Drive - Move",
   "active": true,
   "nodes": [
@@ -72,7 +73,7 @@
       "name": "GetParents",
       "credentials": {
         "googleDriveOAuth2Api": {
-          "id": "PLACEHOLDER",
+          "id": "AeFJzyeByGcfTH8r",
           "name": "Google Drive account"
         }
       }
@@ -95,7 +96,7 @@
       "name": "MoveRequest",
       "credentials": {
         "googleDriveOAuth2Api": {
-          "id": "PLACEHOLDER",
+          "id": "AeFJzyeByGcfTH8r",
           "name": "Google Drive account"
         }
       }

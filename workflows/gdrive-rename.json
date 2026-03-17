@@ -1,4 +1,5 @@
 {
+  "id": "nPtIUfy3eRC7fEfP",
   "name": "Google Drive - Rename",
   "active": true,
   "nodes": [
@@ -75,7 +76,7 @@
       "name": "RenameRequest",
       "credentials": {
         "googleDriveOAuth2Api": {
-          "id": "PLACEHOLDER",
+          "id": "AeFJzyeByGcfTH8r",
           "name": "Google Drive account"
         }
       }

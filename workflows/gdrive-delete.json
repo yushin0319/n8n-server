@@ -1,4 +1,5 @@
 {
+  "id": "HTACtJzFhDDHBrxO",
   "name": "Google Drive - Delete",
   "active": true,
   "nodes": [
@@ -66,7 +67,7 @@
       "name": "DeleteRequest",
       "credentials": {
         "googleDriveOAuth2Api": {
-          "id": "PLACEHOLDER",
+          "id": "AeFJzyeByGcfTH8r",
           "name": "Google Drive account"
         }
       }

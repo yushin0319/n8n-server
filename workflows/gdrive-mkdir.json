@@ -1,4 +1,5 @@
 {
+  "id": "u4CCn8cD1WEPqRJL",
   "name": "Google Drive - Mkdir",
   "active": true,
   "nodes": [
@@ -66,7 +67,7 @@
       "name": "MkdirRequest",
       "credentials": {
         "googleDriveOAuth2Api": {
-          "id": "PLACEHOLDER",
+          "id": "AeFJzyeByGcfTH8r",
           "name": "Google Drive account"
         }
       }
