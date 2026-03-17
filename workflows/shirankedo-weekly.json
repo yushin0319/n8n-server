@@ -1329,6 +1329,38 @@
           },
           "conditions": [
             {
+              "id": "sw-cond-is-test",
+              "leftValue": "={{ $execution.customData.get('isTest') }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        100
+      ],
+      "name": "IfIsTest",
+      "id": "sw-0050-4000-8000-000000000050"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
               "id": "sw-cond-skip-gemini-weekly-report",
               "leftValue": "={{ $execution.customData.get('isTest') }}",
               "rightValue": "true",
@@ -2787,6 +2819,24 @@
       "main": [
         [
           {
+            "node": "IfIsTest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IfIsTest": {
+      "main": [
+        [
+          {
+            "node": "TestResponse",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
             "node": "FetchTrackingRepos",
             "type": "main",
             "index": 0
@@ -2813,11 +2863,6 @@
           },
           {
             "node": "IfSkipDiscordSubReminder",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "TestResponse",
             "type": "main",
             "index": 0
           }
