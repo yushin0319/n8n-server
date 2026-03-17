@@ -9,9 +9,13 @@ CLI: python scripts/embed_code.py workflows/health-check.json > /tmp/embedded.js
 
 import json
 import os
+import platform
 import subprocess
 import sys
 import textwrap
+
+# Windows では npx を shell 経由で呼ぶ必要がある
+_SHELL = platform.system() == "Windows"
 
 sys.stdout.reconfigure(encoding="utf-8")
 sys.stderr.reconfigure(encoding="utf-8")
@@ -71,7 +75,7 @@ def compile_ts(file_path):
         capture_output=True,
         text=True,
         encoding="utf-8",
-        shell=True,
+        shell=_SHELL,
     )
     if result.returncode != 0:
         raise RuntimeError(
