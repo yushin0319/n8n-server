@@ -44,7 +44,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const now = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });\nreturn [{ json: { embed: {\n  title: 'HistLink Backend DOWN',\n  description: now + ' にヘルスチェックが失敗しました。',\n  color: 15158332\n}}}];"
+        "jsCode": "// @external health-check/FormatDiscord.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,

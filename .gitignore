@@ -13,5 +13,8 @@ __pycache__/
 tmp_*.json
 tmp_*.py
 
+# Node.js
+node_modules/
+
 # IDE
 .serena/

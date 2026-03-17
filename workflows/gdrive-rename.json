@@ -1,4 +1,5 @@
 {
+  "id": "nPtIUfy3eRC7fEfP",
   "name": "Google Drive - Rename",
   "active": true,
   "nodes": [
@@ -21,7 +22,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// [共通パターン] Webhook認証チェック - 全n8nワークフロー共通\n// WEBHOOK_SECRET 環境変数で認証キーを管理（n8n設定 > Environment Variables）\nconst secret = $input.first().json.headers['x-webhook-secret'];\nif (secret !== $env.WEBHOOK_SECRET) {\n  throw new Error('Forbidden: Invalid webhook secret');\n}\nreturn $input.all();"
+        "jsCode": "// @external gdrive-rename/AuthCheck.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -34,7 +35,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const body = $json.body;\nconst fileId = body.file_id;\nconst name = body.name;\nif (!fileId) throw new Error('file_id is required');\nif (!name) throw new Error('name is required');\nreturn [{ json: { fileId, name } }];"
+        "jsCode": "// @external gdrive-rename/PrepRename.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -75,14 +76,14 @@
       "name": "RenameRequest",
       "credentials": {
         "googleDriveOAuth2Api": {
-          "id": "PLACEHOLDER",
+          "id": "AeFJzyeByGcfTH8r",
           "name": "Google Drive account"
         }
       }
     },
     {
       "parameters": {
-        "jsCode": "const d = $json;\nreturn [{ json: { action: 'rename', success: true, id: d.id, name: d.name, url: d.webViewLink } }];"
+        "jsCode": "// @external gdrive-rename/FormatRename.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,

@@ -49,7 +49,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const items = $input.all();\nif (items.length === 0) return [];\nconst emails = [];\nfor (const item of items) {\n  const e = item.json;\n  const subject = (e.Subject || e.subject || '(件名なし)').substring(0, 200);\n  const from = e.From || e.from || '不明';\n  const snippet = (e.snippet || '').substring(0, 300);\n  const messageId = e.id;\n  let dateISO;\n  try {\n    const ts = e.internalDate ? Number(e.internalDate) : null;\n    dateISO = ts ? new Date(ts).toISOString() : (e.date ? new Date(e.date).toISOString() : new Date().toISOString());\n  } catch(_) { dateISO = new Date().toISOString(); }\n  emails.push({ subject, from, snippet, messageId, dateISO });\n}\nconst emailList = emails.map((e, i) => `${i + 1}. 件名: ${e.subject}, 差出人: ${e.from}, スニペット: ${e.snippet}`).join('\\n');\nconst prompt = `以下のメール一覧を「重要」「不要」「確認」に分類してください。\\n\\n分類基準:\\n- 重要: 銀行・金融通知、インフラ関連（Oracle Cloud, AWS等）、セキュリティ関連、個人宛の重要連絡\\n- 不要: 広告・宣伝メール、自動通知（GitHub等）、飲食店プロモーション、ポイント付与通知\\n- 確認: 上記のどちらにも明確に該当しないもの\\n\\nメール一覧:\\n${emailList}\\n\\nJSON配列で返答してください（他のテキストは不要）:\\n[{\"index\": 1, \"importance\": \"重要\"}, {\"index\": 2, \"importance\": \"不要\"}, ...]`;\nconst geminiBody = JSON.stringify({\n  contents: [{ parts: [{ text: prompt }] }],\n  generationConfig: { responseMimeType: 'application/json', temperature: 0.1, maxOutputTokens: 1000 }\n});\nreturn [{ json: { geminiBody, emails } }];"
+        "jsCode": "// @external gmail-to-notion/PrepareClassify.ts"
       },
       "id": "a3",
       "name": "PrepareClassify",
@@ -88,7 +88,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const geminiResponse = $input.first().json;\nconst emailData = $('PrepareClassify').first().json.emails;\nlet classifications = [];\ntry {\n  const responseText = geminiResponse.candidates?.[0]?.content?.parts?.[0]?.text || '';\n  const jsonMatch = responseText.match(/\\[[\\s\\S]*\\]/);\n  if (jsonMatch) {\n    classifications = JSON.parse(jsonMatch[0]);\n  }\n} catch (e) { throw new Error('BuildNotionBody: Gemini分類結果のパースに失敗: ' + e.message); }\nconst classMap = {};\nfor (const c of classifications) {\n  classMap[c.index] = c.importance || '確認';\n}\nreturn emailData.map((email, i) => {\n  const importance = classMap[i + 1] || '確認';\n  const body = {\n    parent: { database_id: '2ff2570f-e49f-8119-aaaf-f688605e5aa3' },\n    properties: {\n      '件名': { title: [{ text: { content: email.subject } }] },\n      '差出人': { rich_text: [{ text: { content: email.from.substring(0, 2000) } }] },\n      '日時': { date: { start: email.dateISO } },\n      '重要度': { select: { name: importance } },\n      'スニペット': { rich_text: [{ text: { content: email.snippet } }] },\n      'ステータス': { select: { name: '未読' } }\n    }\n  };\n  return { json: { requestBody: JSON.stringify(body), messageId: email.messageId } };\n});"
+        "jsCode": "// @external gmail-to-notion/BuildNotionBody.ts"
       },
       "id": "a3c",
       "name": "BuildNotionBody",
@@ -126,7 +126,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const prepItems = $('BuildNotionBody').all();\nreturn prepItems.map(item => ({\n  json: { messageId: item.json.messageId }\n}));"
+        "jsCode": "// @external gmail-to-notion/ExtractMessageIds.ts"
       },
       "id": "a5",
       "name": "ExtractMessageIds",

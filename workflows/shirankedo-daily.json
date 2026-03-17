@@ -125,7 +125,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// arXiv Atom XML をパースして [{title, url, description, source}] に変換\nconst raw = $input.first().json.data || '';\nconst entries = [];\nconst entryRegex = /<entry>([\\s\\S]*?)<\\/entry>/g;\nlet match;\nwhile ((match = entryRegex.exec(raw)) !== null) {\n  const block = match[1];\n  const titleMatch = block.match(/<title[^>]*>([\\s\\S]*?)<\\/title>/);\n  const linkMatch = block.match(/<id>([\\s\\S]*?)<\\/id>/);\n  const summaryMatch = block.match(/<summary[^>]*>([\\s\\S]*?)<\\/summary>/);\n  const title = (titleMatch ? titleMatch[1] : '').replace(/\\s+/g, ' ').trim();\n  const url = (linkMatch ? linkMatch[1] : '').trim();\n  const desc = (summaryMatch ? summaryMatch[1] : '').replace(/<[^>]+>/g, '').replace(/\\s+/g, ' ').trim().substring(0, 200);\n  if (title && url) {\n    entries.push({ json: { title, url, description: desc, source: 'arxiv' } });\n  }\n  if (entries.length >= 30) break;\n}\nif (entries.length === 0) {\n  return [{ json: { title: 'arXiv empty', url: '', description: '', source: 'arxiv' } }];\n}\nreturn entries;"
+        "jsCode": "// @external shirankedo-daily/ParseArXiv.ts"
       },
       "id": "a1000002-0001-0001-0001-000000000009",
       "name": "ParseArXiv",
@@ -138,7 +138,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// arXiv APIエラー時: 空データを返してパイプライン続行\nreturn [{ json: { title: 'arXiv empty', url: '', description: '', source: 'arxiv' } }];"
+        "jsCode": "// @external shirankedo-daily/ArXivFallback.ts"
       },
       "id": "a1000002-0001-0001-0001-000000000030",
       "name": "ArXivFallback",
@@ -183,7 +183,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// 全ソースの記事を集約し、URL正規化+既存排除+重複統合\n// WaitAllFeeds(Merge)経由で全フィード完了後に実行される\nconst existingData = $('FetchExistingURLs').first().json;\nconst existingURLs = new Set((existingData.data || []).map(u => u.toLowerCase()));\n\nfunction normalizeUrl(url) {\n  try {\n    const u = new URL(url);\n    let host = u.hostname.replace(/^www\\./, '');\n    const tracking = new Set(['utm_source','utm_medium','utm_campaign','utm_term','utm_content','ref','source','via','fbclid','gclid']);\n    const params = new URLSearchParams(u.search);\n    for (const key of [...params.keys()]) {\n      if (tracking.has(key.toLowerCase())) params.delete(key);\n    }\n    let path = u.pathname.replace(/\\/+$/, '') || '/';\n    const qs = params.toString();\n    return 'https://' + host + path + (qs ? '?' + qs : '');\n  } catch { return url; }\n}\n\nfunction extractRssItems(nodeName, sourceName) {\n  try {\n    const items = $(nodeName).all();\n    return items.map(item => {\n      const d = item.json;\n      return {\n        title: (d.title || '').substring(0, 200),\n        url: d.link || d.url || '',\n        description: (d.contentSnippet || d.description || '').replace(/<[^>]+>/g, '').substring(0, 200),\n        source: sourceName\n      };\n    });\n  } catch (e) {\n    return [];\n  }\n}\n\nconst rssItems = [\n  ...extractRssItems('FetchHN', 'hackernews'),\n  ...extractRssItems('FetchHatena', 'hatena'),\n  ...extractRssItems('FetchZenn', 'zenn'),\n  ...extractRssItems('FetchLobsters', 'lobsters')\n];\n\n// arXiv: ParseArXiv または ArXivFallback のどちらかから取得\nlet arxivItems = [];\ntry {\n  arxivItems = $('ParseArXiv').all().map(item => item.json);\n} catch {\n  try {\n    arxivItems = $('ArXivFallback').all().map(item => item.json);\n  } catch { arxivItems = []; }\n}\n\n// 重複排除\nconst seen = new Set();\nconst articles = [];\nfor (const item of rssItems) {\n  if (!item.url || !item.title) continue;\n  const norm = normalizeUrl(item.url);\n  if (seen.has(norm) || existingURLs.has(norm.toLowerCase())) continue;\n  seen.add(norm);\n  articles.push(item);\n}\n\nconst papers = [];\nfor (const item of arxivItems) {\n  if (!item.url || !item.title) continue;\n  const norm = normalizeUrl(item.url);\n  if (seen.has(norm) || existingURLs.has(norm.toLowerCase())) continue;\n  seen.add(norm);\n  papers.push(item);\n}\n\nreturn [{ json: { articles, papers, articleCount: articles.length, paperCount: papers.length } }];"
+        "jsCode": "// @external shirankedo-daily/DeduplicateArticles.ts"
       },
       "id": "a1000002-0001-0001-0001-000000000011",
       "name": "DeduplicateArticles",
@@ -196,7 +196,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const data = $input.first().json;\nconst articles = data.articles || [];\nconst papers = data.papers || [];\n\nconst articleLines = articles.map((a, i) =>\n  `${i + 1}. [${a.source}] ${a.title}${a.description ? '\\n   ' + a.description.substring(0, 100) : ''}`\n).join('\\n');\n\nconst paperLines = papers.map((p, i) =>\n  `${i + 1}. ${p.title}${p.description ? '\\n   ' + p.description.substring(0, 100) : ''}`\n).join('\\n');\n\nconst prompt = `あなたはテック系キュレーターです。以下の記事候補から、今日のトップ6件と注目論文1件を選んでください。\\n\\n## 選定ルール\\n\\n### Step 1: 重複統合\\n同じトピックの記事が複数ソースにある場合、1つに統合してください。\\n\\n### Step 2: テーマ別クラスタリング\\n記事を内容でクラスタ分けしてください。偏りがある場合はそれがトレンドの信号です。\\n\\n### Step 3: 2軸で選定\\n- 軸1（テーマ）: 最低5つの異なるテーマから選ぶ\\n- 軸2（読者への作用）: 以下の4種から最低3種を含める\\n  - 「すぐ動く」: 脆弱性、破壊的変更、重要リリース（1-2件）\\n  - 「知見が増える」: やってみた、実践記、チュートリアル（1-2件）\\n  - 「視点が変わる」: 議論提起、意外な事実、逆張り（1-2件）\\n  - 「触りたくなる」: 新ツール、ゲーム、デモ（1-2件）\\n\\n### インパクトスコア基準\\n- 10: 業界全体が動く（主要FWのRCE、GPT-5リリース）\\n- 8-9: 多くの開発者に影響\\n- 6-7: 対応必要 or 注目イベント\\n- 4-5: 特定分野の人に重要\\n- 1-3: 面白いが行動不要\\n\\n## 記事候補（${articles.length}件）\\n${articleLines}\\n\\n## 論文候補（${papers.length}件）\\n${paperLines}\\n\\n## 出力形式（JSON）\\n{\"clusters\":[{\"theme\":\"テーマ名\",\"count\":1}],\"articles\":[{\"index\":1,\"title\":\"タイトル\",\"source\":\"ソース\",\"impact\":5,\"effect\":\"すぐ動く\",\"reason\":\"選定理由\"}],\"paper\":{\"index\":1,\"title\":\"タイトル\",\"impact\":5,\"reason\":\"選定理由\"}}\\nJSONのみ出力してください。`;\n\nconst geminiBody = JSON.stringify({\n  contents: [{ parts: [{ text: prompt }] }],\n  generationConfig: { temperature: 0.3, responseMimeType: 'application/json' }\n});\n\nreturn [{ json: { geminiBody, articles, papers } }];"
+        "jsCode": "// @external shirankedo-daily/PrepareSelectionPrompt.ts"
       },
       "id": "a1000002-0001-0001-0001-000000000012",
       "name": "PrepareSelectionPrompt",
@@ -237,7 +237,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const geminiResponse = $input.first().json;\nconst originalData = $('PrepareSelectionPrompt').first().json;\nconst articles = originalData.articles;\nconst papers = originalData.papers;\n\n// Geminiレスポンス解析\nconst responseText = geminiResponse.candidates?.[0]?.content?.parts?.[0]?.text || '';\nif (!responseText) {\n  throw new Error('ParseSelection: Geminiレスポンスが空。response: ' + JSON.stringify(geminiResponse).substring(0, 500));\n}\n\nlet selection;\ntry {\n  selection = JSON.parse(responseText);\n} catch (e) {\n  throw new Error('ParseSelection: JSONパース失敗。text: ' + responseText.substring(0, 300));\n}\n\n// タイトルベースでマッチ（indexが信頼できない場合のフォールバック）\nfunction findByTitle(list, title) {\n  if (!title) return null;\n  const norm = title.toLowerCase().trim();\n  return list.find(a => a.title && a.title.toLowerCase().trim() === norm) || null;\n}\n\nconst results = [];\nfor (const a of (selection.articles || []).slice(0, 6)) {\n  const idx = (a.index || 1) - 1;\n  let original = articles[idx];\n  // indexがずれている場合、タイトルで探す\n  if (!original || (a.title && original.title !== a.title)) {\n    const byTitle = findByTitle(articles, a.title);\n    if (byTitle) original = byTitle;\n  }\n  if (!original) continue;\n  results.push({ json: {\n    url: original.url, title: a.title || original.title,\n    source: original.source, impact: a.impact || 5, isPaper: 0\n  }});\n}\n\nconst paper = selection.paper;\nif (paper && papers.length > 0) {\n  const pidx = (paper.index || 1) - 1;\n  let original = papers[pidx] || null;\n  if (!original || (paper.title && original.title !== paper.title)) {\n    const byTitle = findByTitle(papers, paper.title);\n    if (byTitle) original = byTitle;\n  }\n  if (!original) original = papers[0];\n  results.push({ json: {\n    url: original.url, title: paper.title || original.title,\n    source: 'arxiv', impact: paper.impact || 5, isPaper: 1\n  }});\n}\n\nif (results.length === 0) {\n  throw new Error('ParseSelection: 選定結果が0件\\narticles候補: ' + articles.length + '件, papers候補: ' + papers.length + '件\\nGemini selection: ' + JSON.stringify(selection).substring(0, 500));\n}\nreturn results;"
+        "jsCode": "// @external shirankedo-daily/ParseSelection.ts"
       },
       "id": "a1000002-0001-0001-0001-000000000014",
       "name": "ParseSelection",
@@ -273,7 +273,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// HTML本文から<p>タグ内容を抽出し、元データとマージして1件に集約\nconst fetchResults = $input.all();\nconst originals = $('ParseSelection').all();\n\nconst combined = [];\nfor (let i = 0; i < originals.length; i++) {\n  const orig = originals[i].json;\n  const fetched = fetchResults[i]?.json || {};\n  let fulltext = '';\n  const rawHtml = fetched.data || '';\n  if (rawHtml && typeof rawHtml === 'string') {\n    const paragraphs = rawHtml.match(/<p[^>]*>[\\s\\S]*?<\\/p>/gi) || [];\n    fulltext = paragraphs\n      .map(p => p.replace(/<[^>]+>/g, '').trim())\n      .filter(t => t.length > 20)\n      .join('\\n')\n      .substring(0, 3000);\n  }\n  if (!fulltext) fulltext = '(本文取得失敗)';\n  combined.push({\n    url: orig.url, title: orig.title, source: orig.source,\n    impact: orig.impact, isPaper: orig.isPaper, fulltext\n  });\n}\nreturn [{ json: { items: combined } }];"
+        "jsCode": "// @external shirankedo-daily/ExtractTexts.ts"
       },
       "id": "a1000002-0001-0001-0001-000000000016",
       "name": "ExtractTexts",
@@ -286,7 +286,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const data = $input.first().json;\nconst items = data.items || [];\n\nconst itemsText = items.map((a, i) =>\n  `=== 記事${i + 1}: ${a.title} (impact: ${a.impact}) ===\\n${(a.fulltext || '(本文なし)').substring(0, 2000)}`\n).join('\\n\\n');\n\nconst prompt = `以下の${items.length}件のテック記事それぞれに対して、4つの情報を生成してください。\\n\\n## 生成ルール\\n1. **tags**: 記事のカテゴリタグ。以下の固定リストから1-2個選択:\\n   [\"AI\", \"セキュリティ\", \"フロントエンド\", \"インフラ\", \"OSS\", \"言語・ランタイム\", \"データ\", \"キャリア\"]\\n\\n2. **title_ja**: 日本語タイトル\\n   - 元タイトルが英語の場合: 自然な日本語に翻訳（直訳NG、意味が伝わる訳に）\\n   - 元タイトルが日本語の場合: そのまま返す\\n\\n3. **summary**: 記事の要約（100〜150字、普通の日本語）\\n   - タイトルのコピーは禁止。本文を読んで内容を要約する\\n   - 「何が起きたか」「なぜ重要か」を含める\\n   - 検索で引っかかるようにキーワードを含める\\n\\n4. **comment**: ギャル解説（200字以内）\\n   ## 口調ルール\\n   「ギャルっぽい記号を貼り付けた文章」ではなく「ギャルが実際に喋りそうな文章」を書け。\\n   - 一人称「うち」。語尾「〜じゃん」「〜っしょ」「〜くない？」「〜じゃね？」「〜だし」\\n   - 強調「マジで」「ガチで」「超」「鬼」。感嘆「やば」「えぐ」「つよ」（体言止め）\\n   - テンションに緩急をつけろ。常時MAXはウソくさい。重い話は静かにしんどがれ\\n   - 絵文字は0〜1個。使わなくていい。効かせる時だけ\\n   - 「おけまる」「わかりみが深い」「あーし」は古い。使うな\\n   - 同じ語彙の連打禁止。「マジ？」「ヤバすぎ！」を毎回使うな\\n   - 1文目の入り方を毎回変えろ。同じパターンで始めるな\\n   - 比喩は「事実だけでは構図が伝わりにくい時」だけ使え。無理に入れるな\\n   - 禁止: 「〜だわ」「あたし」、敬語\\n\\n## 記事\\n${itemsText}\\n\\n## 出力形式（JSON配列）\\n[{\"article_index\":1,\"tags\":[\"AI\"],\"title_ja\":\"日本語タイトル\",\"summary\":\"100〜150字の要約\",\"comment\":\"ギャル解説テキスト\"}]\\nJSONのみ出力してください。`;\n\nconst geminiBody = JSON.stringify({\n  contents: [{ parts: [{ text: prompt }] }],\n  generationConfig: { temperature: 0.7, responseMimeType: 'application/json' }\n});\n\nreturn [{ json: { geminiBody, items } }];"
+        "jsCode": "// @external shirankedo-daily/PrepareSummaryPrompt.ts"
       },
       "id": "a1000002-0001-0001-0001-000000000017",
       "name": "PrepareSummaryPrompt",
@@ -327,7 +327,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const geminiResponse = $input.first().json;\nconst originalItems = $('PrepareSummaryPrompt').first().json.items;\n\nlet summaries;\ntry {\n  const responseText = geminiResponse.candidates?.[0]?.content?.parts?.[0]?.text || '';\n  summaries = JSON.parse(responseText);\n} catch (e) {\n  throw new Error('FormatArticles: Gemini要約結果のパースに失敗: ' + e.message);\n}\n\nconst apiBody = [];\nfor (const s of summaries) {\n  const idx = (s.article_index || 1) - 1;\n  const orig = originalItems[idx];\n  if (!orig) continue;\n  // title_ja があれば翻訳タイトルを使用、なければ元タイトル\n  const title = s.title_ja || orig.title;\n  apiBody.push({\n    url: orig.url, title, source: orig.source,\n    summary: s.summary || '', comment: s.comment || '',\n    tags: s.tags || [], impact: orig.impact || 5,\n    isPaper: orig.isPaper || 0,\n    publishedAt: new Date().toISOString().substring(0, 10)\n  });\n}\n\nif (apiBody.length === 0) throw new Error('FormatArticles: 整形後の記事が0件');\nreturn [{ json: { requestBody: JSON.stringify(apiBody), articleCount: apiBody.length } }];"
+        "jsCode": "// @external shirankedo-daily/FormatArticles.ts"
       },
       "id": "a1000002-0001-0001-0001-000000000019",
       "name": "FormatArticles",
@@ -366,7 +366,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const result = $input.first().json;\nconst count = $('FormatArticles').first().json.articleCount || 0;\nconst msg = result.ok\n  ? '✅ shirankedo 記事更新完了: ' + count + '件追加'\n  : '❌ shirankedo 記事投入失敗: ' + (result.error || 'unknown');\nreturn [{ json: { message: msg } }];"
+        "jsCode": "// @external shirankedo-daily/PrepareDiscordArticles.ts"
       },
       "id": "a1000002-0001-0001-0001-000000000021",
       "name": "PrepareDiscordArticles",
@@ -454,7 +454,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// NVD APIレスポンスをパース（CVSS >= 8.0 フィルタ + 既存CVE除外）\nconst nvdData = $('FetchNVD').first().json;\nconst existingData = $('FetchExistingCVEs').first().json;\nconst existingIds = new Set(existingData.data || []);\nconst vulns = nvdData.vulnerabilities || [];\nconst results = [];\nfor (const v of vulns) {\n  const cve = v.cve || {};\n  const cveId = cve.id || '';\n  if (existingIds.has(cveId)) continue;\n  const descriptions = cve.descriptions || [];\n  const enDesc = descriptions.find(d => d.lang === 'en');\n  const description = enDesc ? enDesc.value : '';\n  const metrics = cve.metrics || {};\n  let cvssScore = null;\n  if (metrics.cvssMetricV31 && metrics.cvssMetricV31.length > 0) {\n    cvssScore = metrics.cvssMetricV31[0].cvssData?.baseScore;\n  } else if (metrics.cvssMetricV30 && metrics.cvssMetricV30.length > 0) {\n    cvssScore = metrics.cvssMetricV30[0].cvssData?.baseScore;\n  }\n  if (cvssScore === null || cvssScore < 8.0) continue;\n  const publishedAt = cve.published ? cve.published.substring(0, 10) : '';\n  if (cveId && description) {\n    results.push({ cveId, description: description.substring(0, 500), cvssScore, publishedAt });\n  }\n}\nreturn [{ json: { vulnerabilities: results, count: results.length } }];"
+        "jsCode": "// @external shirankedo-daily/ParseNVD.ts"
       },
       "id": "a1000002-0001-0001-0001-000000000041",
       "name": "ParseNVD",
@@ -467,7 +467,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Geminiバッチ翻訳プロンプトを構築\nconst data = $input.first().json;\nconst vulns = data.vulnerabilities || [];\nif (vulns.length === 0) {\n  return [{ json: { requestBody: '[]', count: 0, skip: true } }];\n}\nconst vulnText = vulns.map((v, i) => `${i + 1}. [${v.cveId}] (CVSS: ${v.cvssScore || 'N/A'})\\n   ${v.description}`).join('\\n\\n');\nconst prompt = `以下のNVD脆弱性情報の英語説明を、簡潔な日本語タイトル（30～50字）に変換してください。\\n技術用語はカタカナまたは英語のまま残してください。\\n\\n## 脆弱性一覧（${vulns.length}件）\\n${vulnText}\\n\\n## 出力形式（JSON配列）\\n[{\"index\": 1, \"title\": \"日本語タイトル\"}]\\nJSONのみ出力してください。`;\nconst geminiBody = JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.2, responseMimeType: 'application/json' } });\nreturn [{ json: { geminiBody, vulnerabilities: vulns, count: vulns.length, skip: false } }];"
+        "jsCode": "// @external shirankedo-daily/PrepareNVDTranslation.ts"
       },
       "id": "a1000002-0001-0001-0001-000000000042",
       "name": "PrepareNVDTranslation",
@@ -539,7 +539,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Gemini翻訳結果とCVEデータをマージ\nconst data = $('PrepareNVDTranslation').first().json;\nconst vulns = data.vulnerabilities;\nconst geminiResponse = $input.first().json;\nlet titles = [];\ntry {\n  const responseText = geminiResponse.candidates?.[0]?.content?.parts?.[0]?.text || '';\n  titles = JSON.parse(responseText);\n} catch (e) {\n  titles = vulns.map((v, i) => ({ index: i + 1, title: v.description.substring(0, 50) }));\n}\nconst apiBody = vulns.map((v, i) => {\n  const titleEntry = titles.find(t => t.index === i + 1);\n  return { cveId: v.cveId, title: titleEntry ? titleEntry.title : v.description.substring(0, 50), cvssScore: v.cvssScore, publishedAt: v.publishedAt };\n});\nreturn [{ json: { requestBody: JSON.stringify(apiBody), count: apiBody.length, vulnerabilities: apiBody } }];"
+        "jsCode": "// @external shirankedo-daily/FormatVulnerabilities.ts"
       },
       "id": "a1000002-0001-0001-0001-000000000045",
       "name": "FormatVulnerabilities",
@@ -552,7 +552,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// 0件の場合: 空配列でフォーマット\nreturn [{ json: { requestBody: '[]', count: 0, vulnerabilities: [] } }];"
+        "jsCode": "// @external shirankedo-daily/EmptyVulnResult.ts"
       },
       "id": "a1000002-0001-0001-0001-000000000046",
       "name": "EmptyVulnResult",
@@ -606,7 +606,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const input = $input.first().json;\nconst count = $('MergeVulnPaths').first().json.count || 0;\nconst isError = !!input.error || (input.statusCode && input.statusCode >= 400);\nconst msg = !isError\n  ? `✅ shirankedo 脆弱性更新完了: ${count}件`\n  : `❌ shirankedo 脆弱性投入失敗: ${typeof input.error === 'object' ? JSON.stringify(input.error) : (input.error || input.message || 'unknown')}`;\nreturn [{ json: { message: msg } }];"
+        "jsCode": "// @external shirankedo-daily/PrepareDiscordVulns.ts"
       },
       "id": "a1000002-0001-0001-0001-000000000049",
       "name": "PrepareDiscordVulns",
@@ -660,7 +660,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// tracking-reposからGraphQLバッチクエリを構築（40リポ/バッチ）\nconst response = $input.first().json;\nconst repos = response.data || response || [];\nconst repoList = Array.isArray(repos) ? repos.map(r => typeof r === 'string' ? r : (r.repo || '')) : [];\nconst valid = repoList.filter(r => r && r.includes('/'));\nif (valid.length === 0) {\n  return [{ json: { releases: [], count: 0, empty: true } }];\n}\nconst BATCH_SIZE = 40;\nconst batches = [];\nfor (let i = 0; i < valid.length; i += BATCH_SIZE) {\n  const batch = valid.slice(i, i + BATCH_SIZE);\n  const parts = batch.map((repo, idx) => {\n    const [owner, name] = repo.split('/');\n    const alias = `r${Math.floor(i / BATCH_SIZE)}_${idx}`;\n    return `${alias}: repository(owner: \"${owner}\", name: \"${name}\") { nameWithOwner releases(first: 5, orderBy: {field: CREATED_AT, direction: DESC}) { nodes { tagName isPrerelease publishedAt name } } }`;\n  });\n  batches.push({ json: { query: `{${parts.join(' ')}}`, batchIndex: Math.floor(i / BATCH_SIZE) } });\n}\nreturn batches;"
+        "jsCode": "// @external shirankedo-daily/BuildGraphQLBatches.ts"
       },
       "id": "a1000002-0001-0001-0001-000000000056",
       "name": "BuildGraphQLBatches",
@@ -749,7 +749,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// 各バッチのGraphQL結果からリリースを抽出してstaticDataに蓄積\nconst staticData = $getWorkflowStaticData('global');\nif (!staticData.releases) staticData.releases = [];\nconst now = new Date();\nconst cutoff = new Date(now.getTime() - 72 * 60 * 60 * 1000).toISOString();\nconst data = $input.first().json.data || $input.first().json || {};\nfor (const key of Object.keys(data)) {\n  const repo = data[key];\n  if (!repo || !repo.releases) continue;\n  const repoName = repo.nameWithOwner;\n  for (const rel of repo.releases.nodes) {\n    if (rel.isPrerelease) continue;\n    if (!rel.publishedAt || rel.publishedAt < cutoff) continue;\n    const tag = rel.tagName;\n    const rawVer = tag.includes('@') ? tag.split('@').pop() : tag;\n    const version = rawVer.replace(/^v/, '');\n    const parts = version.split('.');\n    let type = null;\n    if (parts.length >= 3) {\n      const [maj, min, pat] = parts.map(p => parseInt(p));\n      if (!isNaN(maj) && !isNaN(min) && !isNaN(pat)) {\n        if (min === 0 && pat === 0) type = 'major';\n        else if (pat === 0) type = 'minor';\n      }\n    } else if (parts.length === 2) {\n      if (!isNaN(parseInt(parts[0])) && !isNaN(parseInt(parts[1]))) type = 'minor';\n    }\n    if (!type) continue;\n    staticData.releases.push({ repo: repoName, tag, version, type, publishedAt: rel.publishedAt.substring(0, 10) });\n  }\n}\nreturn $input.all();"
+        "jsCode": "// @external shirankedo-daily/AccumulateReleases.ts"
       },
       "id": "a1000002-0001-0001-0001-000000000079",
       "name": "AccumulateReleases",
@@ -762,7 +762,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// SplitInBatches完了後: staticDataから蓄積リリースを取得\nconst staticData = $getWorkflowStaticData('global');\nconst releases = staticData.releases || [];\nstaticData.releases = [];\nreturn [{ json: { requestBody: JSON.stringify(releases), count: releases.length, releases } }];"
+        "jsCode": "// @external shirankedo-daily/ParseReleases.ts"
       },
       "id": "a1000002-0001-0001-0001-000000000061",
       "name": "ParseReleases",
@@ -775,7 +775,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// tracking-repos空の場合\nreturn [{ json: { requestBody: '[]', count: 0, releases: [] } }];"
+        "jsCode": "// @external shirankedo-daily/EmptyReleaseResult.ts"
       },
       "id": "a1000002-0001-0001-0001-000000000062",
       "name": "EmptyReleaseResult",
@@ -829,7 +829,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const input = $input.first().json;\nconst count = $('MergeReleasePaths').first().json.count || 0;\nconst isError = !!input.error || (input.statusCode && input.statusCode >= 400);\nconst msg = !isError\n  ? `✅ shirankedo リリース更新完了: ${count}件`\n  : `❌ shirankedo リリース投入失敗: ${typeof input.error === 'object' ? JSON.stringify(input.error) : (input.error || input.message || 'unknown')}`;\nreturn [{ json: { message: msg } }];"
+        "jsCode": "// @external shirankedo-daily/PrepareDiscordReleases.ts"
       },
       "id": "a1000002-0001-0001-0001-000000000065",
       "name": "PrepareDiscordReleases",
@@ -874,7 +874,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// B(脆弱性)とC(リリース)の結果からセキュリティ日次コメントを生成\nlet vulns = [];\nlet releases = [];\ntry { vulns = $('MergeVulnPaths').first().json.vulnerabilities || []; } catch {}\ntry { releases = $('MergeReleasePaths').first().json.releases || []; } catch {}\nconst vulnText = vulns.length > 0\n  ? vulns.map(v => `- ${v.cve_id}: ${v.title} (CVSS: ${v.cvss_score || 'N/A'})`).join('\\n')\n  : '（本日のCRITICAL脆弱性はなし）';\nconst relText = releases.length > 0\n  ? releases.map(r => `- ${r.repo} ${r.tag} (${r.type})`).join('\\n')\n  : '（本日のメジャー/マイナーリリースはなし）';\nconst prompt = `あなたはギャルのセキュリティアナリストです。今日のセキュリティ状況をまとめてコメントしてください。\\n\\n## 今日の脆弱性（${vulns.length}件）\\n${vulnText}\\n\\n## 今日のリリース（${releases.length}件）\\n${relText}\\n\\n## コメントルール\\n- 200字以内\\n## 口調ルール\\n「ギャルっぽい記号を貼り付けた文章」ではなく「ギャルが実際に喋りそうな文章」を書け。\\n- 一人称「うち」。語尾「〜じゃん」「〜っしょ」「〜くない？」「〜じゃね？」「〜だし」\\n- 強調「マジで」「ガチで」「超」「鬼」。感嘆「やば」「えぐ」「つよ」（体言止め）\\n- テンションに緩急をつけろ。常時MAXはウソくさい。重い話は静かにしんどがれ\\n- 絵文字は0〜1個。使わなくていい。効かせる時だけ\\n- 「おけまる」「わかりみが深い」「あーし」は古い。使うな\\n- 同じ語彙の連打禁止。「マジ？」「ヤバすぎ！」を毎回使うな\\n- 禁止: 「〜だわ」「あたし」、敬語\\n- 脆弱性が多い日は注意喚起、リリースが目立つ日はアプデ推奨\\n- 何もない日は「今日は平和っしょ」的なコメント\\n\\n## 出力形式（JSON）\\n{\"comment\": \"コメント本文\", \"vuln_ids\": [\"CVE-2026-XXXXX\"], \"release_ids\": []}\\nvuln_idsは言及したCVE-IDのリスト、release_idsは空配列。\\nJSONのみ出力してください。`;\nconst geminiBody = JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.7, responseMimeType: 'application/json' } });\nreturn [{ json: { geminiBody, vulnCount: vulns.length, releaseCount: releases.length } }];"
+        "jsCode": "// @external shirankedo-daily/PrepareSecurityComment.ts"
       },
       "id": "a1000002-0001-0001-0001-000000000071",
       "name": "PrepareSecurityComment",
@@ -915,7 +915,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const geminiResponse = $input.first().json;\nlet result;\ntry {\n  const responseText = geminiResponse.candidates?.[0]?.content?.parts?.[0]?.text || '';\n  result = JSON.parse(responseText);\n} catch (e) {\n  throw new Error('FormatSecurityDaily: Geminiレスポンスのパースに失敗: ' + e.message);\n}\nconst apiBody = { comment: result.comment || '', vuln_ids: result.vuln_ids || [], release_ids: result.release_ids || [] };\nreturn [{ json: { requestBody: JSON.stringify(apiBody), comment: apiBody.comment } }];"
+        "jsCode": "// @external shirankedo-daily/FormatSecurityDaily.ts"
       },
       "id": "a1000002-0001-0001-0001-000000000073",
       "name": "FormatSecurityDaily",
@@ -955,7 +955,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const input = $input.first().json;\nconst vulnCount = $('PrepareSecurityComment').first().json.vulnCount || 0;\nconst releaseCount = $('PrepareSecurityComment').first().json.releaseCount || 0;\nconst isError = !!input.error || (input.statusCode && input.statusCode >= 400);\nconst msg = !isError\n  ? `✅ shirankedo セキュリティ日次更新完了（脆弱性${vulnCount}件、リリース${releaseCount}件）`\n  : `❌ shirankedo セキュリティ日次投入失敗: ${input.error || input.message || 'unknown'}`;\nreturn [{ json: { message: msg } }];"
+        "jsCode": "// @external shirankedo-daily/PrepareDiscordSecurity.ts"
       },
       "id": "a1000002-0001-0001-0001-000000000075",
       "name": "PrepareDiscordSecurity",
