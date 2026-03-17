@@ -12,19 +12,24 @@
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [0, 0],
+      "position": [
+        0,
+        0
+      ],
       "name": "Webhook",
       "id": "a1b2c3d4-0001-4000-8000-000000000001",
       "webhookId": "a1b2c3d4-0001-4000-8000-000000000001"
     },
-
     {
       "parameters": {
-        "jsCode": "const msg = $input.first().json;\nconst message = msg.body.message || 'No message provided';\nreturn [{ json: { message } }];"
+        "jsCode": "// @external discord-notify/FormatDiscord.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [220, 0],
+      "position": [
+        220,
+        0
+      ],
       "name": "FormatDiscord",
       "id": "a1b2c3d4-0002-4000-8000-000000000002"
     },
@@ -38,7 +43,10 @@
       },
       "type": "n8n-nodes-base.discord",
       "typeVersion": 2,
-      "position": [440, 0],
+      "position": [
+        440,
+        0
+      ],
       "name": "SendToDiscord",
       "id": "a1b2c3d4-0003-4000-8000-000000000003",
       "credentials": {
@@ -50,11 +58,14 @@
     },
     {
       "parameters": {
-        "jsCode": "const original = $('FormatDiscord').first().json;\nreturn [{ json: { success: true, message: original.message } }];"
+        "jsCode": "// @external discord-notify/FormatResponse.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [660, 0],
+      "position": [
+        660,
+        0
+      ],
       "name": "FormatResponse",
       "id": "a1b2c3d4-0004-4000-8000-000000000004"
     },
@@ -66,23 +77,58 @@
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
-      "position": [880, 0],
+      "position": [
+        880,
+        0
+      ],
       "name": "Respond",
       "id": "a1b2c3d4-0005-4000-8000-000000000005"
     }
   ],
   "connections": {
     "Webhook": {
-      "main": [[{ "node": "FormatDiscord", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "FormatDiscord",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "FormatDiscord": {
-      "main": [[{ "node": "SendToDiscord", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "SendToDiscord",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "SendToDiscord": {
-      "main": [[{ "node": "FormatResponse", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "FormatResponse",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "FormatResponse": {
-      "main": [[{ "node": "Respond", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "settings": {
