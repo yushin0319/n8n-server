@@ -14,9 +14,28 @@ SKIPPED=0
 # settings 内の binaryMode, availableInMCP 等は 400 エラーになるため除外
 BODY_FILTER='{name, nodes, connections, staticData, settings: (.settings | {executionOrder, callerPolicy, errorWorkflow} | with_entries(select(.value != null)))}'
 
+retry_curl() {
+  # DNS一時障害対策: 最大3回リトライ（3秒間隔）
+  local attempt
+  for attempt in 1 2 3; do
+    local result
+    result=$(curl "$@" 2>&1) && { echo "$result"; return 0; }
+    local exit_code=$?
+    if [ "$exit_code" -eq 6 ]; then
+      echo "  Retry $attempt/3: DNS resolution failed, waiting 3s..." >&2
+      sleep 3
+    else
+      echo "$result"
+      return $exit_code
+    fi
+  done
+  echo "$result"
+  return 6
+}
+
 call_api() {
   local method="$1" url="$2" bodyfile="$3"
-  curl -s -w "\n%{http_code}" -X "$method" "$url" \
+  retry_curl -s -w "\n%{http_code}" -X "$method" "$url" \
     -H "Content-Type: application/json" \
     -H "X-N8N-API-KEY: ${N8N_API_KEY}" \
     --connect-timeout 10 --max-time 30 \
@@ -58,7 +77,7 @@ deploy_workflow() {
 
   # 既存ワークフローの存在確認 → PUT(更新) or POST(新規)
   local check_code
-  check_code=$(curl -s -o /dev/null -w "%{http_code}" \
+  check_code=$(retry_curl -s -o /dev/null -w "%{http_code}" \
     --connect-timeout 10 --max-time 15 \
     "${N8N_API_URL}/workflows/${wf_id}" \
     -H "X-N8N-API-KEY: ${N8N_API_KEY}")
@@ -113,7 +132,7 @@ deploy_workflow() {
   local toggle
   toggle=$([ "$wf_active" = "true" ] && echo "activate" || echo "deactivate")
   local toggle_code
-  toggle_code=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+  toggle_code=$(retry_curl -s -o /dev/null -w "%{http_code}" -X POST \
     --connect-timeout 10 --max-time 15 \
     "${N8N_API_URL}/workflows/${wf_id}/${toggle}" \
     -H "X-N8N-API-KEY: ${N8N_API_KEY}")
