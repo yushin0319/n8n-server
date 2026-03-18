@@ -8,11 +8,10 @@ describe("prepParams", () => {
     expect(result).toEqual({ file_id: "abc123" });
   });
 
-  it("必須フィールドがない場合エラーを投げる", () => {
+  it("必須フィールドがない場合エラーオブジェクトを返す", () => {
     const body = {};
-    expect(() => prepParams(body, { required: ["file_id"] })).toThrow(
-      "file_id is required",
-    );
+    const result = prepParams(body, { required: ["file_id"] });
+    expect(result).toEqual({ _error: true, message: "file_id is required" });
   });
 
   it("任意フィールドにデフォルト値を適用する", () => {
@@ -35,9 +34,8 @@ describe("prepParams", () => {
 
   it("複数の必須フィールドをチェックする", () => {
     const body = { file_id: "abc" };
-    expect(() =>
-      prepParams(body, { required: ["file_id", "folder_id"] }),
-    ).toThrow("folder_id is required");
+    const result = prepParams(body, { required: ["file_id", "folder_id"] });
+    expect(result).toEqual({ _error: true, message: "folder_id is required" });
   });
 
   it("必須も任意もなければ空オブジェクトを返す", () => {

@@ -28,11 +28,11 @@ describe("gdrive-share/PrepShare", () => {
     ]);
   });
 
-  it("file_idがない場合エラーを投げる", () => {
+  it("file_idがない場合エラーオブジェクトを返す", () => {
     vi.stubGlobal("$json", {
       body: { role: "reader" },
     });
 
-    expect(() => prepShare()).toThrow("file_id is required");
+    expect(prepShare()).toEqual([{ json: { _error: true, message: "file_id is required" } }]);
   });
 });

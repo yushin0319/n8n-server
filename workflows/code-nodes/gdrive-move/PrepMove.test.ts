@@ -17,19 +17,19 @@ describe("gdrive-move/PrepMove", () => {
     ]);
   });
 
-  it("file_idがない場合エラーを投げる", () => {
+  it("file_idがない場合エラーオブジェクトを返す", () => {
     vi.stubGlobal("$json", {
       body: { folder_id: "folder456" },
     });
 
-    expect(() => prepMove()).toThrow("file_id is required");
+    expect(prepMove()).toEqual([{ json: { _error: true, message: "file_id is required" } }]);
   });
 
-  it("folder_idがない場合エラーを投げる", () => {
+  it("folder_idがない場合エラーオブジェクトを返す", () => {
     vi.stubGlobal("$json", {
       body: { file_id: "file123" },
     });
 
-    expect(() => prepMove()).toThrow("folder_id is required");
+    expect(prepMove()).toEqual([{ json: { _error: true, message: "folder_id is required" } }]);
   });
 });

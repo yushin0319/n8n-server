@@ -20,7 +20,7 @@
       "name": "Webhook",
       "webhookId": "96838f48-4cfa-4cf5-8426-8dfcb2828170"
     },
-{
+    {
       "parameters": {
         "jsCode": "// @external gdrive-share/PrepShare.ts"
       },
@@ -47,7 +47,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        680,
+        920,
         0
       ],
       "id": "gdrive-share-002",
@@ -66,7 +66,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        920,
+        1160,
         0
       ],
       "id": "gdrive-share-003",
@@ -81,11 +81,59 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        1160,
+        1400,
         0
       ],
       "id": "gdrive-share-004",
       "name": "RespondShare"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": ""
+          },
+          "conditions": [
+            {
+              "id": "7a9b488c-2fd1-4188-8b9b-b7f81214f490",
+              "leftValue": "={{ $json._error }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        680,
+        0
+      ],
+      "id": "5359fdd6-b0b1-4d44-842e-24a9a2e0fd37",
+      "name": "CheckError"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ error: true, message: $json.message }) }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        920,
+        200
+      ],
+      "id": "1a36be59-bd95-468d-afa6-c515c51e0a8d",
+      "name": "RespondError"
     }
   ],
   "connections": {
@@ -104,7 +152,7 @@
       "main": [
         [
           {
-            "node": "ShareRequest",
+            "node": "CheckError",
             "type": "main",
             "index": 0
           }
@@ -127,6 +175,24 @@
         [
           {
             "node": "RespondShare",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CheckError": {
+      "main": [
+        [
+          {
+            "node": "RespondError",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "ShareRequest",
             "type": "main",
             "index": 0
           }

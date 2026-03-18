@@ -27,9 +27,9 @@ describe("gdrive-mkdir/PrepMkdir", () => {
     expect(result[0].json.parents).toEqual(["parent123"]);
   });
 
-  it("nameがない場合エラーを投げる", () => {
+  it("nameがない場合エラーオブジェクトを返す", () => {
     vi.stubGlobal("$json", { body: {} });
 
-    expect(() => prepMkdir()).toThrow("name is required");
+    expect(prepMkdir()).toEqual([{ json: { _error: true, message: "name is required" } }]);
   });
 });
