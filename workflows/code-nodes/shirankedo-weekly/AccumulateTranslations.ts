@@ -2,7 +2,11 @@ export default function (): CodeNodeReturn {
   // Gemini結果を解析してstaticDataに蓄積（stars含む）
   // フォーマット: 番号. display_name | description
   const staticData = $getWorkflowStaticData("global");
-  if (!staticData.translations) staticData.translations = [];
+  // 初回バッチで明示クリア（前回失敗時のゴミデータ防止）
+  if (!staticData._translationsInitialized) {
+    staticData.translations = [];
+    staticData._translationsInitialized = true;
+  }
 
   const resp = $input.first().json;
   const text: string =
