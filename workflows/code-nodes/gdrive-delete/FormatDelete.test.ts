@@ -7,7 +7,7 @@ describe("gdrive-delete/FormatDelete", () => {
   });
 
   it("削除成功レスポンスを返す", () => {
-    vi.stubGlobal("$", (name: string) => ({
+    vi.stubGlobal("$", (_name: string) => ({
       first: () => ({ json: { file_id: "abc123" } }),
     }));
 

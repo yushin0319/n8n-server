@@ -8,7 +8,6 @@ TDD: RED → GREEN → REFACTOR
   4. 既存の import なしファイルも引き続き動く
 """
 
-import json
 import os
 import sys
 
@@ -16,7 +15,7 @@ import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from scripts.embed_code import EXTERNAL_PREFIX, embed_workflow
+from scripts.embed_code import embed_workflow
 
 
 @pytest.fixture
@@ -80,7 +79,7 @@ class TestBundleImport:
 
     def test_no_import_still_works(self, code_workspace, monkeypatch):
         """import なしのファイルも引き続き動く."""
-        code_dir, shared_dir, wf_dir = code_workspace
+        code_dir, _shared_dir, wf_dir = code_workspace
         monkeypatch.setattr("scripts.embed_code.CODE_NODES_DIR", str(code_dir))
 
         (wf_dir / "Simple.ts").write_text(
