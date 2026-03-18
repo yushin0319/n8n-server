@@ -1,7 +1,7 @@
 export default function (): CodeNodeReturn {
   const items = $input.all();
   const originals = $('ParseDueTasks').all();
-  return items.map((item, i) => {
+  return items.map((_item, i) => {
     const original = originals[i].json;
     const today = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split('T')[0];
     const nextDate = new Date();

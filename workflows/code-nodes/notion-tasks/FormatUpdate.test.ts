@@ -7,7 +7,7 @@ describe("FormatUpdate", () => {
   });
 
   it("コンテンツ追加ありで success を返す", () => {
-    vi.stubGlobal("$", (name: string) => ({
+    vi.stubGlobal("$", (_name: string) => ({
       first: () => ({ json: { hasContent: true, pageId: "page-1" } }),
     }));
     vi.stubGlobal("$input", {
@@ -24,7 +24,7 @@ describe("FormatUpdate", () => {
   });
 
   it("コンテンツなしで success を返す", () => {
-    vi.stubGlobal("$", (name: string) => ({
+    vi.stubGlobal("$", (_name: string) => ({
       first: () => ({ json: { hasContent: false, pageId: "page-2" } }),
     }));
     vi.stubGlobal("$input", {
@@ -38,7 +38,7 @@ describe("FormatUpdate", () => {
   });
 
   it("PrepAppend ノード取得失敗時にエラーをスローする", () => {
-    vi.stubGlobal("$", (name: string) => {
+    vi.stubGlobal("$", (_name: string) => {
       throw new Error("node not found");
     });
     vi.stubGlobal("$input", {

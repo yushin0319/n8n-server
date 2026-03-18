@@ -7,7 +7,7 @@ describe("PrepAppend", () => {
   });
 
   it("contentとpageIdがある場合contentBodyを生成する", () => {
-    vi.stubGlobal("$", (name: string) => ({
+    vi.stubGlobal("$", (_name: string) => ({
       first: () => ({ json: { content: "## 見出し\nテキスト" } }),
     }));
     vi.stubGlobal("$json", { id: "page-123", status: "ok" });

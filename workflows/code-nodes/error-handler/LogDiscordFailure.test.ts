@@ -17,7 +17,7 @@ describe("LogDiscordFailure", () => {
     vi.stubGlobal("$input", {
       first: () => ({ json: { error: { message: "Discord API error" } } }),
     });
-    vi.stubGlobal("$", (nodeName: string) => ({
+    vi.stubGlobal("$", (_nodeName: string) => ({
       first: () => ({ json: { embed: { title: "test" } } }),
     }));
 
@@ -33,7 +33,7 @@ describe("LogDiscordFailure", () => {
     vi.stubGlobal("$input", {
       first: () => ({ json: { error: { message: "timeout" } } }),
     });
-    vi.stubGlobal("$", (nodeName: string) => ({
+    vi.stubGlobal("$", (_nodeName: string) => ({
       first: () => ({ json: { embed: { title: "n8nエラー発生" } } }),
     }));
 

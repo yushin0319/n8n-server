@@ -12,7 +12,7 @@ describe("gdrive-share/FormatShare", () => {
       role: "reader",
       type: "anyone",
     });
-    vi.stubGlobal("$", (name: string) => ({
+    vi.stubGlobal("$", (_name: string) => ({
       first: () => ({ json: { fileId: "file123" } }),
     }));
 

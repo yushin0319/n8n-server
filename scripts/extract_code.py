@@ -30,7 +30,7 @@ def extract_workflow(json_path):
 
     code_nodes = [n for n in wf.get("nodes", []) if n.get("type") == "n8n-nodes-base.code"]
     if not code_nodes:
-        print(f"  SKIP: Code Node なし")
+        print("  SKIP: Code Node なし")
         return 0
 
     os.makedirs(out_dir, exist_ok=True)
