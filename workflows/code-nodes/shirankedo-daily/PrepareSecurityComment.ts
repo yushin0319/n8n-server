@@ -1,4 +1,5 @@
 import { buildGeminiRequest } from "../_shared/gemini";
+import { sanitizeForPrompt } from "../_shared/sanitizeForPrompt";
 
 /** 脆弱性の型（MergeVulnPaths経由） */
 interface VulnEntry {
@@ -35,14 +36,20 @@ export default function (): CodeNodeReturn {
     vulns.length > 0
       ? vulns
           .map(
-            (v) => `- ${v.cve_id}: ${v.title} (CVSS: ${v.cvss_score ?? "N/A"})`,
+            (v) =>
+              `- ${v.cve_id}: ${sanitizeForPrompt(v.title, 200)} (CVSS: ${v.cvss_score ?? "N/A"})`,
           )
           .join("\n")
       : "（本日のCRITICAL脆弱性はなし）";
 
   const relText =
     releases.length > 0
-      ? releases.map((r) => `- ${r.repo} ${r.tag} (${r.type})`).join("\n")
+      ? releases
+          .map(
+            (r) =>
+              `- ${sanitizeForPrompt(r.repo, 100)} ${sanitizeForPrompt(r.tag, 50)} (${sanitizeForPrompt(r.type, 20)})`,
+          )
+          .join("\n")
       : "（本日のメジャー/マイナーリリースはなし）";
 
   const prompt = `あなたはギャルのセキュリティアナリストです。今日のセキュリティ状況をまとめてコメントしてください。

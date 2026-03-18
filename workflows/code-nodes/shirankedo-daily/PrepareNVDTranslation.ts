@@ -1,4 +1,5 @@
 import { buildGeminiRequest } from "../_shared/gemini";
+import { sanitizeForPrompt } from "../_shared/sanitizeForPrompt";
 
 /** NVD脆弱性データの型 */
 interface Vulnerability {
@@ -19,7 +20,7 @@ export default function (): CodeNodeReturn {
   const vulnText = vulns
     .map(
       (v, i) =>
-        `${i + 1}. [${v.cveId}] (CVSS: ${v.cvssScore ?? "N/A"})\n   ${v.description}`,
+        `${i + 1}. [${v.cveId}] (CVSS: ${v.cvssScore ?? "N/A"}) ${sanitizeForPrompt(v.description, 300)}`,
     )
     .join("\n\n");
 

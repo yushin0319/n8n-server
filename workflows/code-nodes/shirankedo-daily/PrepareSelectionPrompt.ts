@@ -1,4 +1,5 @@
 import { buildGeminiRequest } from "../_shared/gemini";
+import { sanitizeForPrompt } from "../_shared/sanitizeForPrompt";
 
 /** 記事/論文の候補型 */
 interface ArticleCandidate {
@@ -16,14 +17,14 @@ export default function (): CodeNodeReturn {
   const articleLines = articles
     .map(
       (a, i) =>
-        `${i + 1}. [${a.source}] ${a.title}${a.description ? "\n   " + a.description.substring(0, 100) : ""}`,
+        `${i + 1}. [${sanitizeForPrompt(a.source, 50)}] ${sanitizeForPrompt(a.title, 200)}${a.description ? ` - ${sanitizeForPrompt(a.description, 100)}` : ""}`,
     )
     .join("\n");
 
   const paperLines = papers
     .map(
       (p, i) =>
-        `${i + 1}. ${p.title}${p.description ? "\n   " + p.description.substring(0, 100) : ""}`,
+        `${i + 1}. ${sanitizeForPrompt(p.title, 200)}${p.description ? ` - ${sanitizeForPrompt(p.description, 100)}` : ""}`,
     )
     .join("\n");
 
