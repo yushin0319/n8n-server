@@ -5,8 +5,7 @@ export default function (): CodeNodeReturn {
   let classifications: IDataObject[] = [];
   try {
     const responseText =
-      (geminiResponse as any)?.candidates?.[0]?.content?.parts?.[0]?.text ||
-      "";
+      (geminiResponse as any)?.candidates?.[0]?.content?.parts?.[0]?.text || "";
     const jsonMatch = (responseText as string).match(/\[[\s\S]*\]/);
     if (jsonMatch) {
       classifications = JSON.parse(jsonMatch[0]);

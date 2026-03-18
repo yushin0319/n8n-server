@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import accumulateTranslations from "./AccumulateTranslations";
 
 describe("AccumulateTranslations", () => {
@@ -18,7 +18,9 @@ describe("AccumulateTranslations", () => {
             {
               content: {
                 parts: [
-                  { text: "1. Open WebUI | ローカルLLM用WebUI\n2. VS Code | 高機能コードエディタ" },
+                  {
+                    text: "1. Open WebUI | ローカルLLM用WebUI\n2. VS Code | 高機能コードエディタ",
+                  },
                 ],
               },
             },
@@ -33,8 +35,20 @@ describe("AccumulateTranslations", () => {
           first: () => ({
             json: {
               repos: [
-                { repo: "owner/open-webui", name: "open-webui", description: "orig", language: "Python", stars: 5000 },
-                { repo: "microsoft/vscode", name: "vscode", description: "orig2", language: "TypeScript", stars: 150000 },
+                {
+                  repo: "owner/open-webui",
+                  name: "open-webui",
+                  description: "orig",
+                  language: "Python",
+                  stars: 5000,
+                },
+                {
+                  repo: "microsoft/vscode",
+                  name: "vscode",
+                  description: "orig2",
+                  language: "TypeScript",
+                  stars: 150000,
+                },
               ],
             },
           }),
@@ -69,8 +83,20 @@ describe("AccumulateTranslations", () => {
           first: () => ({
             json: {
               repos: [
-                { repo: "owner/tool", name: "tool", description: "fallback desc", language: "Go", stars: 100 },
-                { repo: "owner/other", name: "other", description: "other desc", language: "Rust", stars: 200 },
+                {
+                  repo: "owner/tool",
+                  name: "tool",
+                  description: "fallback desc",
+                  language: "Go",
+                  stars: 100,
+                },
+                {
+                  repo: "owner/other",
+                  name: "other",
+                  description: "other desc",
+                  language: "Rust",
+                  stars: 200,
+                },
               ],
             },
           }),

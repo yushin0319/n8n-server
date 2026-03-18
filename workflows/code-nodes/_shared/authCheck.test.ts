@@ -18,9 +18,7 @@ describe("authCheck", () => {
   });
 
   it("secretヘッダーがない場合もエラーを投げる", () => {
-    const items: INodeExecutionData[] = [
-      { json: { headers: {}, body: {} } },
-    ];
+    const items: INodeExecutionData[] = [{ json: { headers: {}, body: {} } }];
     expect(() => authCheck(items, "correct-secret")).toThrow("Forbidden");
   });
 });

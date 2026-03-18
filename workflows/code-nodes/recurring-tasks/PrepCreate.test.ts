@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import prepCreate from "./PrepCreate";
 
 function callAndGetItems() {
@@ -65,7 +65,11 @@ describe("PrepCreate", () => {
       all: () => [
         { json: { taskName: "タスク1", templateText: "", frequency: "daily" } },
         {
-          json: { taskName: "タスク2", templateText: "内容", frequency: "weekly" },
+          json: {
+            taskName: "タスク2",
+            templateText: "内容",
+            frequency: "weekly",
+          },
         },
       ],
     });

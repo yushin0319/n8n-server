@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import formatSecurityDaily from "./FormatSecurityDaily";
 
 function callAndGetItems() {
@@ -10,9 +10,7 @@ function callAndGetItems() {
 /** Geminiレスポンスのヘルパー */
 function geminiResponse(data: unknown) {
   return {
-    candidates: [
-      { content: { parts: [{ text: JSON.stringify(data) }] } },
-    ],
+    candidates: [{ content: { parts: [{ text: JSON.stringify(data) }] } }],
   };
 }
 

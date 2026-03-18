@@ -12,8 +12,7 @@ export default function (): CodeNodeReturn {
     : discordMessage({
         label: "ページコメント生成失敗",
         isError: true,
-        detail:
-          (r.message as string) || JSON.stringify(r).substring(0, 200),
+        detail: (r.message as string) || JSON.stringify(r).substring(0, 200),
       });
   return [{ json: { message: msg } }];
 }

@@ -1,0 +1,9 @@
+{
+  "*.{js,ts,json}": [
+    "npx @biomejs/biome check --write --no-errors-on-unmatched"
+  ],
+  "*.py": [
+    "ruff check --fix",
+    "ruff format"
+  ]
+}

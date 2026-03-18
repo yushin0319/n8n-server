@@ -38,10 +38,7 @@ function normalizeUrl(url: string): string {
 }
 
 /** RSSノードからアイテムを抽出 */
-function extractRssItems(
-  nodeName: string,
-  sourceName: string,
-): ArticleItem[] {
+function extractRssItems(nodeName: string, sourceName: string): ArticleItem[] {
   try {
     const items = $(nodeName).all();
     return items.map((item) => {
@@ -49,7 +46,11 @@ function extractRssItems(
       return {
         title: ((d.title as string) || "").substring(0, 200),
         url: (d.link as string) || (d.url as string) || "",
-        description: ((d.contentSnippet as string) || (d.description as string) || "")
+        description: (
+          (d.contentSnippet as string) ||
+          (d.description as string) ||
+          ""
+        )
           .replace(/<[^>]+>/g, "")
           .substring(0, 200),
         source: sourceName,

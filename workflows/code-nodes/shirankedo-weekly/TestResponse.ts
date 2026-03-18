@@ -1,11 +1,13 @@
 export default function (): CodeNodeReturn {
-  return [{
-    json: {
-      status: "ok",
-      workflow: "shirankedo-weekly",
-      test: true,
-      timestamp: new Date().toISOString(),
-      message: "スモークテスト正常終了",
+  return [
+    {
+      json: {
+        status: "ok",
+        workflow: "shirankedo-weekly",
+        test: true,
+        timestamp: new Date().toISOString(),
+        message: "スモークテスト正常終了",
+      },
     },
-  }];
+  ];
 }

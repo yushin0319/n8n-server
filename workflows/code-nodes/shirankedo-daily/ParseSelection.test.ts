@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import parseSelection from "./ParseSelection";
 
 function callAndGetItems() {
@@ -10,9 +10,7 @@ function callAndGetItems() {
 /** Geminiレスポンスのヘルパー */
 function geminiResponse(data: unknown) {
   return {
-    candidates: [
-      { content: { parts: [{ text: JSON.stringify(data) }] } },
-    ],
+    candidates: [{ content: { parts: [{ text: JSON.stringify(data) }] } }],
   };
 }
 
@@ -24,8 +22,22 @@ describe("ParseSelection", () => {
   it("インデックスで記事を選定する", () => {
     const selection = {
       articles: [
-        { index: 1, title: "Article A", source: "hackernews", impact: 8, effect: "すぐ動く", reason: "重要" },
-        { index: 2, title: "Article B", source: "techcrunch", impact: 6, effect: "知見が増える", reason: "参考" },
+        {
+          index: 1,
+          title: "Article A",
+          source: "hackernews",
+          impact: 8,
+          effect: "すぐ動く",
+          reason: "重要",
+        },
+        {
+          index: 2,
+          title: "Article B",
+          source: "techcrunch",
+          impact: 6,
+          effect: "知見が増える",
+          reason: "参考",
+        },
       ],
       paper: null,
     };
@@ -57,7 +69,14 @@ describe("ParseSelection", () => {
   it("論文選定時は isPaper=1 を設定する", () => {
     const selection = {
       articles: [
-        { index: 1, title: "Article A", source: "hackernews", impact: 8, effect: "すぐ動く", reason: "重要" },
+        {
+          index: 1,
+          title: "Article A",
+          source: "hackernews",
+          impact: 8,
+          effect: "すぐ動く",
+          reason: "重要",
+        },
       ],
       paper: { index: 1, title: "ML Paper", impact: 7, reason: "注目" },
     };
@@ -99,7 +118,12 @@ describe("ParseSelection", () => {
     vi.stubGlobal("$", (nodeName: string) => {
       if (nodeName === "PrepareSelectionPrompt") {
         return {
-          first: () => ({ json: { articles: [{ title: "A", url: "https://a.com", source: "hn" }], papers: [] } }),
+          first: () => ({
+            json: {
+              articles: [{ title: "A", url: "https://a.com", source: "hn" }],
+              papers: [],
+            },
+          }),
         };
       }
       throw new Error(`Unknown node: ${nodeName}`);

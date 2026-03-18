@@ -2,8 +2,7 @@ export default function (): CodeNodeReturn {
   const results = ($input.first().json.results as IDataObject[]) || [];
   const tasks = results.map((page: IDataObject) => {
     const props = page.properties as IDataObject;
-    const titleArr =
-      ((props[""] as IDataObject)?.title as IDataObject[]) || [];
+    const titleArr = ((props[""] as IDataObject)?.title as IDataObject[]) || [];
     const title =
       titleArr.map((t: IDataObject) => t.plain_text).join("") || "(無題)";
     const status =

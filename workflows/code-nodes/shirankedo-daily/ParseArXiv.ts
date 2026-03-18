@@ -9,9 +9,7 @@ export default function (): CodeNodeReturn {
     const titleMatch = block.match(/<title[^>]*>([\s\S]*?)<\/title>/);
     const linkMatch = block.match(/<id>([\s\S]*?)<\/id>/);
     const summaryMatch = block.match(/<summary[^>]*>([\s\S]*?)<\/summary>/);
-    const title = (titleMatch ? titleMatch[1] : "")
-      .replace(/\s+/g, " ")
-      .trim();
+    const title = (titleMatch ? titleMatch[1] : "").replace(/\s+/g, " ").trim();
     const url = (linkMatch ? linkMatch[1] : "").trim();
     const desc = (summaryMatch ? summaryMatch[1] : "")
       .replace(/<[^>]+>/g, "")

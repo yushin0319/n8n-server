@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import accumulateReleases from "./AccumulateReleases";
 
 function callAndGetItems() {
@@ -18,7 +18,9 @@ describe("AccumulateReleases", () => {
 
   it("メジャーリリースをstaticDataに蓄積する", () => {
     const now = new Date();
-    const recentDate = new Date(now.getTime() - 1 * 60 * 60 * 1000).toISOString();
+    const recentDate = new Date(
+      now.getTime() - 1 * 60 * 60 * 1000,
+    ).toISOString();
     vi.stubGlobal("$input", {
       first: () => ({
         json: {
@@ -53,7 +55,9 @@ describe("AccumulateReleases", () => {
 
   it("プレリリースはスキップする", () => {
     const now = new Date();
-    const recentDate = new Date(now.getTime() - 1 * 60 * 60 * 1000).toISOString();
+    const recentDate = new Date(
+      now.getTime() - 1 * 60 * 60 * 1000,
+    ).toISOString();
     vi.stubGlobal("$input", {
       first: () => ({
         json: {
@@ -85,7 +89,9 @@ describe("AccumulateReleases", () => {
 
   it("72時間以上前のリリースはスキップする", () => {
     const now = new Date();
-    const oldDate = new Date(now.getTime() - 100 * 60 * 60 * 1000).toISOString();
+    const oldDate = new Date(
+      now.getTime() - 100 * 60 * 60 * 1000,
+    ).toISOString();
     vi.stubGlobal("$input", {
       first: () => ({
         json: {
@@ -117,7 +123,9 @@ describe("AccumulateReleases", () => {
 
   it("マイナーバージョンを正しく分類する", () => {
     const now = new Date();
-    const recentDate = new Date(now.getTime() - 1 * 60 * 60 * 1000).toISOString();
+    const recentDate = new Date(
+      now.getTime() - 1 * 60 * 60 * 1000,
+    ).toISOString();
     vi.stubGlobal("$input", {
       first: () => ({
         json: {
@@ -150,7 +158,9 @@ describe("AccumulateReleases", () => {
 
   it("パッチバージョンはスキップする", () => {
     const now = new Date();
-    const recentDate = new Date(now.getTime() - 1 * 60 * 60 * 1000).toISOString();
+    const recentDate = new Date(
+      now.getTime() - 1 * 60 * 60 * 1000,
+    ).toISOString();
     vi.stubGlobal("$input", {
       first: () => ({
         json: {

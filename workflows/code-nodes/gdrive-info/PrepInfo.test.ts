@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import prepInfo from "./PrepInfo";
 
 describe("gdrive-info/PrepInfo", () => {
@@ -17,6 +17,8 @@ describe("gdrive-info/PrepInfo", () => {
   it("file_idがない場合エラーオブジェクトを返す", () => {
     vi.stubGlobal("$json", { body: {} });
 
-    expect(prepInfo()).toEqual([{ json: { _error: true, message: "file_id is required" } }]);
+    expect(prepInfo()).toEqual([
+      { json: { _error: true, message: "file_id is required" } },
+    ]);
   });
 });

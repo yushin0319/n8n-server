@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import prepareSecurityComment from "./PrepareSecurityComment";
 
 function callAndGetItems() {
@@ -19,7 +19,11 @@ describe("PrepareSecurityComment", () => {
           first: () => ({
             json: {
               vulnerabilities: [
-                { cve_id: "CVE-2026-1234", title: "RCE脆弱性", cvss_score: 9.8 },
+                {
+                  cve_id: "CVE-2026-1234",
+                  title: "RCE脆弱性",
+                  cvss_score: 9.8,
+                },
               ],
             },
           }),
@@ -55,9 +59,7 @@ describe("PrepareSecurityComment", () => {
         return {
           first: () => ({
             json: {
-              releases: [
-                { repo: "vuejs/core", tag: "v3.5.0", type: "minor" },
-              ],
+              releases: [{ repo: "vuejs/core", tag: "v3.5.0", type: "minor" }],
             },
           }),
         };
@@ -78,7 +80,11 @@ describe("PrepareSecurityComment", () => {
           first: () => ({
             json: {
               vulnerabilities: [
-                { cve_id: "CVE-2026-9999", title: "XSS脆弱性", cvss_score: 6.1 },
+                {
+                  cve_id: "CVE-2026-9999",
+                  title: "XSS脆弱性",
+                  cvss_score: 6.1,
+                },
               ],
             },
           }),

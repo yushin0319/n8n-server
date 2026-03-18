@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import prepareDiscordReleases from "./PrepareDiscordReleases";
 
 function callAndGetItems() {

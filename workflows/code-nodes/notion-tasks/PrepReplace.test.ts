@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import prepReplace from "./PrepReplace";
 
 describe("PrepReplace", () => {
@@ -29,7 +29,7 @@ describe("PrepReplace", () => {
     });
 
     expect(() => prepReplace()).toThrow(
-      "page_id is required for replace action"
+      "page_id is required for replace action",
     );
   });
 
@@ -41,7 +41,7 @@ describe("PrepReplace", () => {
     });
 
     expect(() => prepReplace()).toThrow(
-      "content is required for replace action"
+      "content is required for replace action",
     );
   });
 });

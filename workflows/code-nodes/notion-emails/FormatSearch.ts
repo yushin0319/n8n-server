@@ -17,9 +17,7 @@ export default function (): CodeNodeReturn {
       ((props["重要度"] as IDataObject)?.select as IDataObject)?.name ||
       "未設定";
     const snippet =
-      (
-        ((props["スニペット"] as IDataObject)?.rich_text as IDataObject[]) || []
-      )
+      (((props["スニペット"] as IDataObject)?.rich_text as IDataObject[]) || [])
         .map((t: IDataObject) => t.plain_text)
         .join("") || "";
     const status =

@@ -7,7 +7,7 @@ export default function (): CodeNodeReturn {
     size: f.size ? parseInt(f.size) : null,
     modified: f.modifiedTime,
     url: f.webViewLink,
-    parents: f.parents
+    parents: f.parents,
   }));
-  return [{ json: { action: 'search', count: files.length, files } }];
+  return [{ json: { action: "search", count: files.length, files } }];
 }

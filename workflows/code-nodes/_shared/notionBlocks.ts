@@ -4,9 +4,7 @@
  */
 
 /** Markdown インライン記法をNotionリッチテキストセグメントに変換する */
-export function parseRichText(
-  text: string,
-): IDataObject[] {
+export function parseRichText(text: string): IDataObject[] {
   const segments: IDataObject[] = [];
   const re = /(\*\*(.+?)\*\*|`(.+?)`|\[(.+?)\]\((.+?)\))/g;
   let last = 0;
@@ -83,7 +81,6 @@ export function mdToBlocks(taskContent: string): IDataObject[] {
     } else if (line.match(/^---$/)) {
       blocks.push({ object: "block", type: "divider", divider: {} });
     } else if (line.trim() === "") {
-      continue;
     } else {
       blocks.push({
         object: "block",

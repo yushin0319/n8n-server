@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import formatTrendComment from "./FormatTrendComment";
 
 function callAndGetItems() {
@@ -15,9 +15,7 @@ describe("FormatTrendComment", () => {
     vi.stubGlobal("$input", {
       first: () => ({
         json: {
-          candidates: [
-            { content: { parts: [{ text: "トレンドテキスト" }] } },
-          ],
+          candidates: [{ content: { parts: [{ text: "トレンドテキスト" }] } }],
         },
       }),
     });
@@ -40,9 +38,7 @@ describe("FormatTrendComment", () => {
     vi.stubGlobal("$input", {
       first: () => ({
         json: {
-          candidates: [
-            { content: { parts: [{ text: "text" }] } },
-          ],
+          candidates: [{ content: { parts: [{ text: "text" }] } }],
         },
       }),
     });
@@ -50,7 +46,10 @@ describe("FormatTrendComment", () => {
       if (nodeName === "HasSummariesForComments") {
         return {
           first: () => ({
-            json: { aiApiPrompt: "my api prompt", aiSubPrompt: "my sub prompt" },
+            json: {
+              aiApiPrompt: "my api prompt",
+              aiSubPrompt: "my sub prompt",
+            },
           }),
         };
       }
