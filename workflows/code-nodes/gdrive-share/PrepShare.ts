@@ -5,6 +5,7 @@ export default function (): CodeNodeReturn {
     required: ["file_id"],
     optional: { role: "reader", type: "anyone" },
   });
+  if (params._error) return [{ json: params }];
   return [
     {
       json: {

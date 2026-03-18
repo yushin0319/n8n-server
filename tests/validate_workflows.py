@@ -9,6 +9,7 @@
 6. 空catch / console-onlyのcatch (エラー隠蔽)
 7. jsCode 内の Unicode エスケープ残存 (可読性)
 8. continueErrorOutput のエラー出力未接続 (サイレント失敗)
+9. 接続グラフに含まれない孤立ノード (不要ノード残存)
 """
 
 import glob
@@ -236,6 +237,29 @@ def check_error_output_connected(wf, errors):
             )
 
 
+def check_isolated_nodes(wf, errors):
+    """接続グラフに含まれない孤立ノードを検出."""
+    connections = wf.get("connections", {})
+    all_nodes = {n["name"] for n in wf.get("nodes", [])}
+
+    # 接続に登場するノードを収集（src側 + dst側）
+    connected = set()
+    for src_name, conn_data in connections.items():
+        connected.add(src_name)
+        for output_group in conn_data.get("main", []):
+            for conn in output_group:
+                connected.add(conn.get("node", ""))
+
+    # トリガーノードは接続元にしかならないので、srcに含まれていれば接続済み
+    # 孤立 = 接続グラフに一切登場しないノード
+    isolated = all_nodes - connected
+    for node_name in sorted(isolated):
+        errors.append(
+            f"[{node_name}] 接続グラフに含まれていません。"
+            " 不要なら削除してください。"
+        )
+
+
 def validate_workflow(path):
     """1つのワークフローを検証し、エラーリストを返す."""
     wf = load_workflow(path)
@@ -248,6 +272,7 @@ def validate_workflow(path):
     check_empty_catch(wf, errors)
     check_unicode_escapes(wf, errors)
     check_error_output_connected(wf, errors)
+    check_isolated_nodes(wf, errors)
     return errors
 
 

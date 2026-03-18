@@ -17,19 +17,19 @@ describe("gdrive-rename/PrepRename", () => {
     ]);
   });
 
-  it("file_idがない場合エラーを投げる", () => {
+  it("file_idがない場合エラーオブジェクトを返す", () => {
     vi.stubGlobal("$json", {
       body: { name: "new-name.txt" },
     });
 
-    expect(() => prepRename()).toThrow("file_id is required");
+    expect(prepRename()).toEqual([{ json: { _error: true, message: "file_id is required" } }]);
   });
 
-  it("nameがない場合エラーを投げる", () => {
+  it("nameがない場合エラーオブジェクトを返す", () => {
     vi.stubGlobal("$json", {
       body: { file_id: "file123" },
     });
 
-    expect(() => prepRename()).toThrow("name is required");
+    expect(prepRename()).toEqual([{ json: { _error: true, message: "name is required" } }]);
   });
 });

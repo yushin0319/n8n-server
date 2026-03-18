@@ -1,6 +1,6 @@
 /**
  * リクエストボディからパラメータを抽出・バリデーションする.
- * 必須フィールドがなければエラー、任意フィールドにはデフォルト値を適用。
+ * 必須フィールドがなければエラーオブジェクトを返す。任意フィールドにはデフォルト値を適用。
  */
 export function prepParams(
   body: Record<string, unknown>,
@@ -14,7 +14,7 @@ export function prepParams(
   // 必須フィールドのチェック
   for (const field of schema.required ?? []) {
     if (!body[field]) {
-      throw new Error(`${field} is required`);
+      return { _error: true, message: `${field} is required` };
     }
     result[field] = body[field];
   }

@@ -20,7 +20,7 @@
       "name": "Webhook",
       "webhookId": "3be17342-a37c-44d8-ba5d-2e5bd2c1b2f9"
     },
-{
+    {
       "parameters": {
         "jsCode": "// @external gdrive-delete/PrepDelete.ts"
       },
@@ -47,7 +47,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        680,
+        920,
         0
       ],
       "id": "708d2dac-2860-46e8-896a-5f1f1152c1a2",
@@ -67,7 +67,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        920,
+        1160,
         0
       ],
       "name": "FormatDelete",
@@ -82,11 +82,59 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        1160,
+        1400,
         0
       ],
       "id": "1389eec8-ac5e-4b77-b8bd-234a361c101f",
       "name": "RespondDelete"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": ""
+          },
+          "conditions": [
+            {
+              "id": "16f8d0c7-cb07-4036-9d7d-5e317bd68bc6",
+              "leftValue": "={{ $json._error }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        680,
+        0
+      ],
+      "id": "deed5de5-97df-49bb-832e-b594eb48fc45",
+      "name": "CheckError"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ error: true, message: $json.message }) }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        920,
+        200
+      ],
+      "id": "f0424abf-cd11-427d-8d2f-2f6a0a0ef603",
+      "name": "RespondError"
     }
   ],
   "connections": {
@@ -105,7 +153,7 @@
       "main": [
         [
           {
-            "node": "DeleteRequest",
+            "node": "CheckError",
             "type": "main",
             "index": 0
           }
@@ -128,6 +176,24 @@
         [
           {
             "node": "RespondDelete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CheckError": {
+      "main": [
+        [
+          {
+            "node": "RespondError",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "DeleteRequest",
             "type": "main",
             "index": 0
           }
