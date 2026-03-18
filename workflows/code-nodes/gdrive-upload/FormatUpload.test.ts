@@ -12,7 +12,7 @@ describe("gdrive-upload/FormatUpload", () => {
         json: { id: "file123", name: "uploaded.txt" },
       }),
     });
-    vi.stubGlobal("$", (name: string) => ({
+    vi.stubGlobal("$", (_name: string) => ({
       first: () => ({
         json: {
           fileId: "file123",
@@ -40,7 +40,7 @@ describe("gdrive-upload/FormatUpload", () => {
     vi.stubGlobal("$input", {
       first: () => ({ json: {} }),
     });
-    vi.stubGlobal("$", (name: string) => ({
+    vi.stubGlobal("$", (_name: string) => ({
       first: () => ({
         json: {
           fileId: "fallback123",

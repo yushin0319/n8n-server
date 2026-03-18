@@ -12,7 +12,7 @@ describe("gdrive-upload/PrepContent", () => {
       name: "test.txt",
       webViewLink: "https://drive.google.com/file/123",
     });
-    vi.stubGlobal("$", (name: string) => ({
+    vi.stubGlobal("$", (_name: string) => ({
       first: () => ({
         json: {
           fileContent: "Hello World",
@@ -43,7 +43,7 @@ describe("gdrive-upload/PrepContent", () => {
       name: "data.bin",
       webViewLink: "https://drive.google.com/file/456",
     });
-    vi.stubGlobal("$", (name: string) => ({
+    vi.stubGlobal("$", (_name: string) => ({
       first: () => ({
         json: {
           fileContent: originalContent,
@@ -66,7 +66,7 @@ describe("gdrive-upload/PrepContent", () => {
       name: "large.txt",
       webViewLink: "https://drive.google.com/file/789",
     });
-    vi.stubGlobal("$", (name: string) => ({
+    vi.stubGlobal("$", (_name: string) => ({
       first: () => ({
         json: {
           fileContent: largeContent,

@@ -228,7 +228,7 @@ class TestExtract:
 
     def test_extract_creates_ts_with_wrapper(self, temp_workspace, monkeypatch):
         """jsCodeがexport default functionラッパー付きの.tsとして抽出される."""
-        tmp_path, wf_dir, code_dir, wf_path = temp_workspace
+        _tmp_path, wf_dir, code_dir, wf_path = temp_workspace
         monkeypatch.setattr("scripts.extract_code.WORKFLOWS_DIR", str(wf_dir))
         monkeypatch.setattr("scripts.extract_code.CODE_NODES_DIR", str(code_dir))
 
@@ -246,7 +246,7 @@ class TestExtract:
 
     def test_extract_replaces_jscode_with_marker(self, temp_workspace, monkeypatch):
         """JSON内のjsCodeが外部参照マーカーに置換される."""
-        tmp_path, wf_dir, code_dir, wf_path = temp_workspace
+        _tmp_path, wf_dir, code_dir, wf_path = temp_workspace
         monkeypatch.setattr("scripts.extract_code.WORKFLOWS_DIR", str(wf_dir))
         monkeypatch.setattr("scripts.extract_code.CODE_NODES_DIR", str(code_dir))
 
@@ -255,13 +255,13 @@ class TestExtract:
         with open(wf_path, encoding="utf-8") as f:
             wf = json.load(f)
 
-        code_node = [n for n in wf["nodes"] if n["type"] == "n8n-nodes-base.code"][0]
+        code_node = next(n for n in wf["nodes"] if n["type"] == "n8n-nodes-base.code")
         assert code_node["parameters"]["jsCode"].startswith(EXTERNAL_PREFIX)
         assert code_node["parameters"]["jsCode"].endswith(".ts")
 
     def test_extract_skips_non_code_nodes(self, temp_workspace, monkeypatch):
         """Code Node以外のノードは変更されない."""
-        tmp_path, wf_dir, code_dir, wf_path = temp_workspace
+        _tmp_path, wf_dir, code_dir, wf_path = temp_workspace
         monkeypatch.setattr("scripts.extract_code.WORKFLOWS_DIR", str(wf_dir))
         monkeypatch.setattr("scripts.extract_code.CODE_NODES_DIR", str(code_dir))
 
@@ -270,12 +270,12 @@ class TestExtract:
         with open(wf_path, encoding="utf-8") as f:
             wf = json.load(f)
 
-        http_node = [n for n in wf["nodes"] if n["type"] == "n8n-nodes-base.httpRequest"][0]
+        http_node = next(n for n in wf["nodes"] if n["type"] == "n8n-nodes-base.httpRequest")
         assert http_node["parameters"]["url"] == "https://example.com"
 
     def test_extract_skips_already_externalized(self, temp_workspace, monkeypatch):
         """既に外部化済みのCode Nodeはスキップされる."""
-        tmp_path, wf_dir, code_dir, wf_path = temp_workspace
+        _tmp_path, wf_dir, code_dir, wf_path = temp_workspace
         monkeypatch.setattr("scripts.extract_code.WORKFLOWS_DIR", str(wf_dir))
         monkeypatch.setattr("scripts.extract_code.CODE_NODES_DIR", str(code_dir))
 
@@ -285,7 +285,7 @@ class TestExtract:
 
     def test_extract_no_code_nodes(self, temp_workspace, monkeypatch):
         """Code Nodeがない WF は0件を返す."""
-        tmp_path, wf_dir, code_dir, wf_path = temp_workspace
+        _tmp_path, wf_dir, code_dir, _wf_path = temp_workspace
         monkeypatch.setattr("scripts.extract_code.WORKFLOWS_DIR", str(wf_dir))
         monkeypatch.setattr("scripts.extract_code.CODE_NODES_DIR", str(code_dir))
 
@@ -310,7 +310,7 @@ class TestEmbed:
 
     def test_embed_compiles_ts_and_extracts_body(self, temp_workspace, monkeypatch):
         """外部.tsのラッパーが除去され、関数ボディだけがjsCodeに埋め込まれる."""
-        tmp_path, wf_dir, code_dir, wf_path = temp_workspace
+        _tmp_path, _wf_dir, code_dir, _wf_path = temp_workspace
         monkeypatch.setattr("scripts.embed_code.CODE_NODES_DIR", str(code_dir))
 
         ts_dir = code_dir / "test-wf"
@@ -339,18 +339,18 @@ class TestEmbed:
 
     def test_embed_leaves_inline_code_unchanged(self, temp_workspace, monkeypatch):
         """マーカーがないCode Nodeはそのまま残る."""
-        tmp_path, wf_dir, code_dir, wf_path = temp_workspace
+        _tmp_path, _wf_dir, code_dir, _wf_path = temp_workspace
         monkeypatch.setattr("scripts.embed_code.CODE_NODES_DIR", str(code_dir))
 
         wf = json.loads(json.dumps(SAMPLE_WF))
         embed_workflow(wf)
 
-        code_node = [n for n in wf["nodes"] if n["type"] == "n8n-nodes-base.code"][0]
+        code_node = next(n for n in wf["nodes"] if n["type"] == "n8n-nodes-base.code")
         assert code_node["parameters"]["jsCode"] == SAMPLE_JSCODE
 
     def test_embed_raises_on_missing_file(self, temp_workspace, monkeypatch):
         """外部ファイルが見つからない場合はエラーになる."""
-        tmp_path, wf_dir, code_dir, wf_path = temp_workspace
+        _tmp_path, _wf_dir, code_dir, _wf_path = temp_workspace
         monkeypatch.setattr("scripts.embed_code.CODE_NODES_DIR", str(code_dir))
 
         wf = json.loads(json.dumps(SAMPLE_WF))
@@ -365,7 +365,7 @@ class TestRoundTrip:
 
     def test_roundtrip_preserves_semantics(self, temp_workspace, monkeypatch):
         """extract → embed で重要な識別子・値が保持される."""
-        tmp_path, wf_dir, code_dir, wf_path = temp_workspace
+        _tmp_path, wf_dir, code_dir, wf_path = temp_workspace
         monkeypatch.setattr("scripts.extract_code.WORKFLOWS_DIR", str(wf_dir))
         monkeypatch.setattr("scripts.extract_code.CODE_NODES_DIR", str(code_dir))
         monkeypatch.setattr("scripts.embed_code.CODE_NODES_DIR", str(code_dir))
@@ -384,7 +384,7 @@ class TestRoundTrip:
 
     def test_roundtrip_with_japanese(self, temp_workspace, monkeypatch):
         """日本語を含むjsCodeがラウンドトリップで保持される."""
-        tmp_path, wf_dir, code_dir, wf_path = temp_workspace
+        _tmp_path, wf_dir, code_dir, wf_path = temp_workspace
         monkeypatch.setattr("scripts.extract_code.WORKFLOWS_DIR", str(wf_dir))
         monkeypatch.setattr("scripts.extract_code.CODE_NODES_DIR", str(code_dir))
         monkeypatch.setattr("scripts.embed_code.CODE_NODES_DIR", str(code_dir))
@@ -409,7 +409,7 @@ class TestRoundTrip:
 
     def test_roundtrip_multiple_code_nodes(self, temp_workspace, monkeypatch):
         """複数のCode Nodeがすべてラウンドトリップで保持される."""
-        tmp_path, wf_dir, code_dir, wf_path = temp_workspace
+        _tmp_path, wf_dir, code_dir, wf_path = temp_workspace
         monkeypatch.setattr("scripts.extract_code.WORKFLOWS_DIR", str(wf_dir))
         monkeypatch.setattr("scripts.extract_code.CODE_NODES_DIR", str(code_dir))
         monkeypatch.setattr("scripts.embed_code.CODE_NODES_DIR", str(code_dir))

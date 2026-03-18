@@ -7,7 +7,7 @@ describe("FormatGet", () => {
   });
 
   it("paragraph ブロックから rich_text を抽出する", () => {
-    vi.stubGlobal("$", (name: string) => ({
+    vi.stubGlobal("$", (_name: string) => ({
       first: () => ({ json: { pageId: "page-1" } }),
     }));
     vi.stubGlobal("$input", {
@@ -35,7 +35,7 @@ describe("FormatGet", () => {
   });
 
   it("child_database を処理する", () => {
-    vi.stubGlobal("$", (name: string) => ({
+    vi.stubGlobal("$", (_name: string) => ({
       first: () => ({ json: { pageId: "page-2" } }),
     }));
     vi.stubGlobal("$input", {
@@ -57,7 +57,7 @@ describe("FormatGet", () => {
   });
 
   it("image と divider を処理する", () => {
-    vi.stubGlobal("$", (name: string) => ({
+    vi.stubGlobal("$", (_name: string) => ({
       first: () => ({ json: { pageId: "page-3" } }),
     }));
     vi.stubGlobal("$input", {
@@ -79,7 +79,7 @@ describe("FormatGet", () => {
   });
 
   it("テキストが空のブロックをフィルタする", () => {
-    vi.stubGlobal("$", (name: string) => ({
+    vi.stubGlobal("$", (_name: string) => ({
       first: () => ({ json: { pageId: "page-4" } }),
     }));
     vi.stubGlobal("$input", {
@@ -102,8 +102,8 @@ describe("FormatGet", () => {
   });
 
   it("PrepGet ノードから pageId を取得する", () => {
-    vi.stubGlobal("$", (name: string) => {
-      expect(name).toBe("PrepGet");
+    vi.stubGlobal("$", (_name: string) => {
+      expect(_name).toBe("PrepGet");
       return { first: () => ({ json: { pageId: "page-from-prep" } }) };
     });
     vi.stubGlobal("$input", {

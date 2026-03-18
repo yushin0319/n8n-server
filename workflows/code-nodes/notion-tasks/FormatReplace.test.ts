@@ -7,7 +7,7 @@ describe("FormatReplace", () => {
   });
 
   it("success=true と正しい pageId を返す", () => {
-    vi.stubGlobal("$", (name: string) => ({
+    vi.stubGlobal("$", (_name: string) => ({
       first: () => ({ json: { pageId: "abc-def-123" } }),
     }));
 
@@ -19,7 +19,7 @@ describe("FormatReplace", () => {
   });
 
   it("url にダッシュが含まれない", () => {
-    vi.stubGlobal("$", (name: string) => ({
+    vi.stubGlobal("$", (_name: string) => ({
       first: () => ({ json: { pageId: "abc-def-123" } }),
     }));
 

@@ -12,7 +12,7 @@ describe("gdrive-move/FormatMove", () => {
       name: "test.txt",
       webViewLink: "https://drive.google.com/file/123",
     });
-    vi.stubGlobal("$", (name: string) => ({
+    vi.stubGlobal("$", (_name: string) => ({
       first: () => ({ json: { folderId: "folder456" } }),
     }));
 
