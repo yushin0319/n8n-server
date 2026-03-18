@@ -1,3 +1,10 @@
+import {
+  notionDate,
+  notionRichText,
+  notionSelect,
+  notionTitle,
+} from "../_shared/notionProps";
+
 export default function (): CodeNodeReturn {
   const results = ($input.first().json.results as IDataObject[]) || [];
   const importantEmails: IDataObject[] = [];
@@ -6,28 +13,12 @@ export default function (): CodeNodeReturn {
 
   for (const page of results) {
     const props = page.properties as IDataObject;
-    const subject =
-      (((props["件名"] as IDataObject)?.title as IDataObject[]) || [])
-        .map((t: IDataObject) => t.plain_text)
-        .join("") || "(無題)";
-    const from =
-      (((props["差出人"] as IDataObject)?.rich_text as IDataObject[]) || [])
-        .map((t: IDataObject) => t.plain_text)
-        .join("") || "";
-    const date = (props["日時"] as IDataObject)?.date
-      ? ((props["日時"] as IDataObject).date as IDataObject)?.start || ""
-      : "";
-    const importance =
-      ((props["重要度"] as IDataObject)?.select as IDataObject)?.name ||
-      "未設定";
-    const snippet =
-      (((props["スニペット"] as IDataObject)?.rich_text as IDataObject[]) || [])
-        .map((t: IDataObject) => t.plain_text)
-        .join("") || "";
-    const reason =
-      (((props["理由"] as IDataObject)?.rich_text as IDataObject[]) || [])
-        .map((t: IDataObject) => t.plain_text)
-        .join("") || "";
+    const subject = notionTitle(props, "件名", "(無題)");
+    const from = notionRichText(props, "差出人");
+    const date = notionDate(props, "日時");
+    const importance = notionSelect(props, "重要度", "未設定");
+    const snippet = notionRichText(props, "スニペット");
+    const reason = notionRichText(props, "理由");
     const emailData = {
       id: page.id,
       subject,
