@@ -11,15 +11,27 @@ Oracle Cloud 上の n8n ワークフロー管理リポジトリ。全ワーク�
 
 ## ディレクトリ構成
 
-- `workflows/` - n8n ワークフロー JSON（11ファイル）
+- `workflows/*.json` - n8n ワークフロー JSON
+- `workflows/code-nodes/` - 外部化した Code Node（TypeScript）
+- `workflows/code-nodes/_shared/` - 複数WFで共有するユーティリティ
 - `scripts/deploy.sh` - n8n API デプロイスクリプト
-- `tests/validate_workflows.py` - ワークフロー静的解析
+- `scripts/embed_code.py` - .ts → JSON 埋め戻し（デプロイ時に実行）
+- `scripts/extract_code.py` - JSON → .ts 抽出
+- `scripts/smoke_test.py` - デプロイ後の疎通確認
+- `tests/` - バリデーション・ビルドパイプラインのテスト
+- `types/n8n-code-node.d.ts` - n8n グローバル変数の型定義
 - `server-config/` - docker-compose.yml, nginx 設定
 
 ## コマンド
 
 ```bash
-# テスト
+# Code Node ユニットテスト（vitest）
+npm test
+
+# TypeScript 型チェック
+npm run typecheck
+
+# WF 静的解析（孤立ノード検出等）
 python tests/validate_workflows.py
 
 # 緊急全デプロイ
@@ -40,14 +52,10 @@ gh workflow run deploy.yml --repo yushin0319/n8n-server --field deploy_all=true
 | jsCode 内の `split('\n')` | JSON では `split('\\n')` にする |
 | HTTP Request → Respond to Webhook 直結 | 間に Code Node を挟む |
 | Code Node で `fetch`, `require` 使用不可 | HTTP Request ノードを使う |
+| SplitInBatches v3 output 逆転 | [0]=done, [1]=loop |
 
 ## CI/CD
 
-- `deploy.yml`: workflows/ 変更時に自動デプロイ（変更ファイルのみ）
+- `ci.yml`: PR 時に typecheck + vitest + Biome + Ruff + validate_workflows
+- `deploy.yml`: workflows/ 変更時に自動デプロイ（embed_code.py → n8n API → smoke_test.py）
 - `gemini-review.yml`: shared-workflows 経由の PR レビュー
-- pre-commit hook: `validate_workflows.py` 実行（コミット時にゲート）
-
-## テスト方針
-
-- `validate_workflows.py` による静的解析（8チェック項目）
-- TDD ポリシー適用範囲外（テストフレームワークなし）
