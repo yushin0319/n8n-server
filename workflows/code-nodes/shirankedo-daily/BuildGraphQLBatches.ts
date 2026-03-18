@@ -13,6 +13,9 @@ export default function (): CodeNodeReturn {
     return [{ json: { releases: [], count: 0, empty: true } }];
   }
 
+  // GitHub owner/name のサニタイズ（許可文字のみ残す）
+  const safe = (s: string) => s.replace(/[^a-zA-Z0-9._-]/g, "");
+
   const BATCH_SIZE = 40;
   const batches: INodeExecutionData[] = [];
   for (let i = 0; i < valid.length; i += BATCH_SIZE) {
@@ -21,7 +24,7 @@ export default function (): CodeNodeReturn {
     const parts = batch.map((repo, idx) => {
       const [owner, name] = repo.split("/");
       const alias = `r${batchIndex}_${idx}`;
-      return `${alias}: repository(owner: "${owner}", name: "${name}") { nameWithOwner releases(first: 5, orderBy: {field: CREATED_AT, direction: DESC}) { nodes { tagName isPrerelease publishedAt name } } }`;
+      return `${alias}: repository(owner: "${safe(owner)}", name: "${safe(name)}") { nameWithOwner releases(first: 5, orderBy: {field: CREATED_AT, direction: DESC}) { nodes { tagName isPrerelease publishedAt name } } }`;
     });
     batches.push({
       json: { query: `{${parts.join(" ")}}`, batchIndex },
