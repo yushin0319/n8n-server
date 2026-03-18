@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import parseReleases from "./ParseReleases";
 
 function callAndGetItems() {
@@ -18,7 +18,12 @@ describe("ParseReleases", () => {
 
   it("蓄積されたリリースを返す", () => {
     staticData.releases = [
-      { repo: "facebook/react", tag: "v19.0.0", version: "19.0.0", type: "major" },
+      {
+        repo: "facebook/react",
+        tag: "v19.0.0",
+        version: "19.0.0",
+        type: "major",
+      },
       { repo: "vuejs/core", tag: "v3.5.0", version: "3.5.0", type: "minor" },
     ];
 
@@ -33,7 +38,12 @@ describe("ParseReleases", () => {
 
   it("読み取り後にstaticDataをクリアする", () => {
     staticData.releases = [
-      { repo: "facebook/react", tag: "v19.0.0", version: "19.0.0", type: "major" },
+      {
+        repo: "facebook/react",
+        tag: "v19.0.0",
+        version: "19.0.0",
+        type: "major",
+      },
     ];
 
     callAndGetItems();

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import prepSearch from "./PrepSearch";
 
 describe("gdrive-search/PrepSearch", () => {
@@ -28,9 +28,7 @@ describe("gdrive-search/PrepSearch", () => {
     });
 
     const result = prepSearch() as INodeExecutionData[];
-    expect(result[0].json.q).toContain(
-      "mimeType = 'application/pdf'",
-    );
+    expect(result[0].json.q).toContain("mimeType = 'application/pdf'");
   });
 
   it("page_sizeを指定するとpageSizeに反映する", () => {

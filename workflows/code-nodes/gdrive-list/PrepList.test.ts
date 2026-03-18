@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import prepList from "./PrepList";
 
 describe("gdrive-list/PrepList", () => {
@@ -22,9 +22,7 @@ describe("gdrive-list/PrepList", () => {
     });
 
     const result = prepList() as INodeExecutionData[];
-    expect(result[0].json.q).toBe(
-      "'folder123' in parents and trashed = false",
-    );
+    expect(result[0].json.q).toBe("'folder123' in parents and trashed = false");
     expect(result[0].json.pageSize).toBe(50);
     expect(result[0].json.pageToken).toBe("token1");
   });

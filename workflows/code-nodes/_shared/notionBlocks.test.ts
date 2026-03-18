@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseRichText, mdToBlocks } from "./notionBlocks";
+import { mdToBlocks, parseRichText } from "./notionBlocks";
 
 describe("parseRichText", () => {
   it("プレーンテキストをそのまま返す", () => {

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import prepUpdate from "./PrepUpdate";
 
 describe("PrepUpdate", () => {
@@ -11,9 +11,7 @@ describe("PrepUpdate", () => {
       first: () => ({ json: { body: {} } }),
     });
 
-    expect(() => prepUpdate()).toThrow(
-      "page_id is required for update action"
-    );
+    expect(() => prepUpdate()).toThrow("page_id is required for update action");
   });
 
   it("name プロパティを設定する", () => {

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import extractTexts from "./ExtractTexts";
 
 function callAndGetItems() {
@@ -17,7 +17,7 @@ describe("ExtractTexts", () => {
       all: () => [
         {
           json: {
-            data: '<p>This is a long enough paragraph text for testing extraction.</p>',
+            data: "<p>This is a long enough paragraph text for testing extraction.</p>",
           },
         },
       ],
@@ -83,7 +83,7 @@ describe("ExtractTexts", () => {
       all: () => [
         {
           json: {
-            data: '<p>Short text</p><p>This paragraph is definitely long enough to pass the filter check.</p>',
+            data: "<p>Short text</p><p>This paragraph is definitely long enough to pass the filter check.</p>",
           },
         },
       ],
@@ -111,6 +111,8 @@ describe("ExtractTexts", () => {
     const combined = items[0].json.items as IDataObject[];
 
     expect(combined[0].fulltext).not.toContain("Short text");
-    expect(combined[0].fulltext).toContain("This paragraph is definitely long enough");
+    expect(combined[0].fulltext).toContain(
+      "This paragraph is definitely long enough",
+    );
   });
 });

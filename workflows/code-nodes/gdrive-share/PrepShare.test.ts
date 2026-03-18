@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import prepShare from "./PrepShare";
 
 describe("gdrive-share/PrepShare", () => {
@@ -33,6 +33,8 @@ describe("gdrive-share/PrepShare", () => {
       body: { role: "reader" },
     });
 
-    expect(prepShare()).toEqual([{ json: { _error: true, message: "file_id is required" } }]);
+    expect(prepShare()).toEqual([
+      { json: { _error: true, message: "file_id is required" } },
+    ]);
   });
 });

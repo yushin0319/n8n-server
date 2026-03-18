@@ -8,10 +8,7 @@ export default function (): CodeNodeReturn {
   const msg = discordMessage({
     label: "TrackingRepo更新",
     isError: errors > 0,
-    detail:
-      errors > 0
-        ? `${total}件追加, ${errors}件エラー`
-        : `${total}件追加`,
+    detail: errors > 0 ? `${total}件追加, ${errors}件エラー` : `${total}件追加`,
   });
   return [{ json: { message: msg } }];
 }

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import formatSearch from "./FormatSearch";
 
 describe("FormatSearch", () => {
@@ -16,9 +16,9 @@ describe("FormatSearch", () => {
               url: "https://notion.so/page-1",
               properties: {
                 "": { title: [{ plain_text: "検索タスク" }] },
-                "ステータス": { status: { name: "進行中" } },
-                "ID": { unique_id: { number: 10 } },
-                "最終更新日時": { last_edited_time: "2026-01-15T00:00:00Z" },
+                ステータス: { status: { name: "進行中" } },
+                ID: { unique_id: { number: 10 } },
+                最終更新日時: { last_edited_time: "2026-01-15T00:00:00Z" },
               },
             },
           ],
@@ -44,9 +44,9 @@ describe("FormatSearch", () => {
               url: "https://notion.so/page-1",
               properties: {
                 "": { title: [{ plain_text: "タスク" }] },
-                "ステータス": { status: { name: "完了" } },
-                "ID": { unique_id: { number: 1 } },
-                "最終更新日時": { last_edited_time: "" },
+                ステータス: { status: { name: "完了" } },
+                ID: { unique_id: { number: 1 } },
+                最終更新日時: { last_edited_time: "" },
               },
             },
           ],

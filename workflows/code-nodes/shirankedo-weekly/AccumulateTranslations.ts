@@ -24,9 +24,7 @@ export default function (): CodeNodeReturn {
           (r.repo as string).split("/")[1] ||
           (r.repo as string);
     const desc =
-      parts.length >= 2
-        ? parts[1]
-        : lineContent || (r.description as string);
+      parts.length >= 2 ? parts[1] : lineContent || (r.description as string);
     (staticData.translations as IDataObject[]).push({
       repo: r.repo,
       displayName,

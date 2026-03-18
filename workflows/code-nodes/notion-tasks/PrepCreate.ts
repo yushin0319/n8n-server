@@ -1,4 +1,4 @@
-import { parseRichText, mdToBlocks } from "../_shared/notionBlocks";
+import { mdToBlocks, parseRichText } from "../_shared/notionBlocks";
 
 /** カバー画像URL候補 */
 const COVERS = [
@@ -24,7 +24,7 @@ const COVERS = [
   "https://images.unsplash.com/photo-1518770660439-4636190af475?w=1600&h=900&fit=crop",
 ];
 
-export { parseRichText, mdToBlocks };
+export { mdToBlocks, parseRichText };
 
 export default function (): CodeNodeReturn {
   const input = $input.first().json.body || $input.first().json;

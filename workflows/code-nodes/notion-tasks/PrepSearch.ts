@@ -1,5 +1,6 @@
 export default function (): CodeNodeReturn {
-  const input = ($input.first().json.body as IDataObject) || $input.first().json;
+  const input =
+    ($input.first().json.body as IDataObject) || $input.first().json;
   const filters: IDataObject[] = [];
   if (input.status) {
     filters.push({ property: "ステータス", status: { equals: input.status } });

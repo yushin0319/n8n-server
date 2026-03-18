@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import prepareSummaryPrompt from "./PrepareSummaryPrompt";
 
 function callAndGetItems() {
@@ -17,7 +17,11 @@ describe("PrepareSummaryPrompt", () => {
       first: () => ({
         json: {
           items: [
-            { title: "React 19 Released", fulltext: "React 19 is a major update...", impact: 8 },
+            {
+              title: "React 19 Released",
+              fulltext: "React 19 is a major update...",
+              impact: 8,
+            },
           ],
         },
       }),

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import formatAIApiComment from "./FormatAIApiComment";
 
 function callAndGetItems() {
@@ -62,9 +62,7 @@ describe("FormatAIApiComment", () => {
     vi.stubGlobal("$input", {
       first: () => ({
         json: {
-          candidates: [
-            { content: { parts: [{ text: "text" }] } },
-          ],
+          candidates: [{ content: { parts: [{ text: "text" }] } }],
         },
       }),
     });
