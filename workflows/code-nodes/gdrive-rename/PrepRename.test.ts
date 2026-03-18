@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import prepRename from "./PrepRename";
 
 describe("gdrive-rename/PrepRename", () => {
@@ -22,7 +22,9 @@ describe("gdrive-rename/PrepRename", () => {
       body: { name: "new-name.txt" },
     });
 
-    expect(prepRename()).toEqual([{ json: { _error: true, message: "file_id is required" } }]);
+    expect(prepRename()).toEqual([
+      { json: { _error: true, message: "file_id is required" } },
+    ]);
   });
 
   it("nameがない場合エラーオブジェクトを返す", () => {
@@ -30,6 +32,8 @@ describe("gdrive-rename/PrepRename", () => {
       body: { file_id: "file123" },
     });
 
-    expect(prepRename()).toEqual([{ json: { _error: true, message: "name is required" } }]);
+    expect(prepRename()).toEqual([
+      { json: { _error: true, message: "name is required" } },
+    ]);
   });
 });

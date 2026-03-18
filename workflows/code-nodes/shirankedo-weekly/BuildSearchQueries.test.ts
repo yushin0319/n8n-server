@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import buildSearchQueries from "./BuildSearchQueries";
 
 function callAndGetItems() {
@@ -31,8 +31,8 @@ describe("BuildSearchQueries", () => {
 
   it("Tier1のクエリにstars:>50000が含まれる", () => {
     const items = callAndGetItems();
-    const tier1 = items.filter(
-      (i) => (i.json.label as string).includes("Tier1"),
+    const tier1 = items.filter((i) =>
+      (i.json.label as string).includes("Tier1"),
     );
     expect(tier1).toHaveLength(2);
     expect(tier1[0].json.url).toContain("stars%3A%3E50000");
@@ -40,8 +40,8 @@ describe("BuildSearchQueries", () => {
 
   it("Tier5のクエリに30日前の日付が含まれる", () => {
     const items = callAndGetItems();
-    const tier5 = items.filter(
-      (i) => (i.json.label as string).includes("Tier5"),
+    const tier5 = items.filter((i) =>
+      (i.json.label as string).includes("Tier5"),
     );
     // 2026-03-17 の30日前 = 2026-02-15
     expect(tier5[0].json.url).toContain("2026-02-15");

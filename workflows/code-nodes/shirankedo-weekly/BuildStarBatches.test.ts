@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import buildStarBatches from "./BuildStarBatches";
 
 function callAndGetItems() {
@@ -57,6 +57,6 @@ describe("BuildStarBatches", () => {
     expect(items[0].json.batchIndex).toBe(0);
     expect(items[1].json.batchIndex).toBe(1);
     // 2番目のバッチのalias番号は50から始まる
-    expect((items[1].json.query as string)).toContain("r50:");
+    expect(items[1].json.query as string).toContain("r50:");
   });
 });

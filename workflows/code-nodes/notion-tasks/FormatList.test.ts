@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import formatList from "./FormatList";
 
 describe("FormatList", () => {
@@ -16,11 +16,11 @@ describe("FormatList", () => {
               url: "https://notion.so/page-1",
               properties: {
                 "": { title: [{ plain_text: "タスク1" }] },
-                "ステータス": { status: { name: "進行中" } },
-                "ID": { unique_id: { number: 42 } },
-                "親タスク": { relation: [{ id: "parent-1" }] },
-                "子タスク": { relation: [{ id: "child-1" }, { id: "child-2" }] },
-                "最終更新日時": { last_edited_time: "2026-01-01T00:00:00Z" },
+                ステータス: { status: { name: "進行中" } },
+                ID: { unique_id: { number: 42 } },
+                親タスク: { relation: [{ id: "parent-1" }] },
+                子タスク: { relation: [{ id: "child-1" }, { id: "child-2" }] },
+                最終更新日時: { last_edited_time: "2026-01-01T00:00:00Z" },
               },
             },
           ],
@@ -62,11 +62,11 @@ describe("FormatList", () => {
               url: "https://notion.so/page-2",
               properties: {
                 "": { title: [] },
-                "ステータス": { status: { name: "未着手" } },
-                "ID": { unique_id: { number: 1 } },
-                "親タスク": { relation: [] },
-                "子タスク": { relation: [] },
-                "最終更新日時": { last_edited_time: "" },
+                ステータス: { status: { name: "未着手" } },
+                ID: { unique_id: { number: 1 } },
+                親タスク: { relation: [] },
+                子タスク: { relation: [] },
+                最終更新日時: { last_edited_time: "" },
               },
             },
           ],
@@ -89,11 +89,11 @@ describe("FormatList", () => {
               url: "https://notion.so/page-3",
               properties: {
                 "": { title: [{ plain_text: "タスク" }] },
-                "ステータス": { status: { name: "完了" } },
-                "ID": { unique_id: { number: 5 } },
-                "親タスク": { relation: [{ id: "p1" }, { id: "p2" }] },
-                "子タスク": { relation: [] },
-                "最終更新日時": { last_edited_time: "" },
+                ステータス: { status: { name: "完了" } },
+                ID: { unique_id: { number: 5 } },
+                親タスク: { relation: [{ id: "p1" }, { id: "p2" }] },
+                子タスク: { relation: [] },
+                最終更新日時: { last_edited_time: "" },
               },
             },
           ],

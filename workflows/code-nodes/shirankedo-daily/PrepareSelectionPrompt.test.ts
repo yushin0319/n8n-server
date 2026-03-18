@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import prepareSelectionPrompt from "./PrepareSelectionPrompt";
 
 function callAndGetItems() {
@@ -17,10 +17,20 @@ describe("PrepareSelectionPrompt", () => {
       first: () => ({
         json: {
           articles: [
-            { title: "React 19 Released", url: "https://a.com", source: "hackernews", description: "Major update" },
+            {
+              title: "React 19 Released",
+              url: "https://a.com",
+              source: "hackernews",
+              description: "Major update",
+            },
           ],
           papers: [
-            { title: "LLM Scaling Laws", url: "https://arxiv.org/1", source: "arxiv", description: "New research" },
+            {
+              title: "LLM Scaling Laws",
+              url: "https://arxiv.org/1",
+              source: "arxiv",
+              description: "New research",
+            },
           ],
         },
       }),

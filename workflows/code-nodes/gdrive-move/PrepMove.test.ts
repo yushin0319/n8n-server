@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import prepMove from "./PrepMove";
 
 describe("gdrive-move/PrepMove", () => {
@@ -22,7 +22,9 @@ describe("gdrive-move/PrepMove", () => {
       body: { folder_id: "folder456" },
     });
 
-    expect(prepMove()).toEqual([{ json: { _error: true, message: "file_id is required" } }]);
+    expect(prepMove()).toEqual([
+      { json: { _error: true, message: "file_id is required" } },
+    ]);
   });
 
   it("folder_idがない場合エラーオブジェクトを返す", () => {
@@ -30,6 +32,8 @@ describe("gdrive-move/PrepMove", () => {
       body: { file_id: "file123" },
     });
 
-    expect(prepMove()).toEqual([{ json: { _error: true, message: "folder_id is required" } }]);
+    expect(prepMove()).toEqual([
+      { json: { _error: true, message: "folder_id is required" } },
+    ]);
   });
 });

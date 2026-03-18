@@ -104,7 +104,11 @@ declare const $binary: Record<string, IBinaryData> | undefined;
 declare const $itemIndex: number;
 declare const $runIndex: number;
 declare const $node: Record<string, INodeReference>;
-declare const $prevNode: { name: string; outputIndex: number; runIndex: number };
+declare const $prevNode: {
+  name: string;
+  outputIndex: number;
+  runIndex: number;
+};
 declare const $workflow: IWorkflowData;
 declare const $execution: IExecutionData;
 declare const $env: Record<string, string>;
@@ -115,9 +119,7 @@ declare const $today: Date;
 declare function $(nodeName: string): INodeReference;
 
 /** ワークフロー実行間で共有される静的データを取得する */
-declare function $getWorkflowStaticData(
-  scope: "global" | "node",
-): IDataObject;
+declare function $getWorkflowStaticData(scope: "global" | "node"): IDataObject;
 
 // --- Node.js built-ins available in n8n Code Node ---
 
@@ -130,7 +132,10 @@ declare const Buffer: {
     toString(encoding?: BufferEncoding): string;
     length: number;
   };
-  alloc(size: number): { toString(encoding?: BufferEncoding): string; length: number };
+  alloc(size: number): {
+    toString(encoding?: BufferEncoding): string;
+    length: number;
+  };
 };
 
 type BufferEncoding =

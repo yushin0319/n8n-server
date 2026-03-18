@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import parseArXiv from "./ParseArXiv";
 
 function callAndGetItems() {
@@ -36,9 +36,7 @@ describe("ParseArXiv", () => {
     expect(items[0].json.title).toBe("Attention Is All You Need");
     expect(items[0].json.url).toBe("http://arxiv.org/abs/1706.03762v1");
     expect(items[0].json.source).toBe("arxiv");
-    expect(items[0].json.description).toBe(
-      "We propose a new architecture...",
-    );
+    expect(items[0].json.description).toBe("We propose a new architecture...");
     expect(items[1].json.title).toBe(
       "BERT: Pre-training of Deep Bidirectional Transformers",
     );

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import formatUpdate from "./FormatUpdate";
 
 describe("FormatUpdate", () => {
@@ -45,6 +45,8 @@ describe("FormatUpdate", () => {
       first: () => ({ json: {} }),
     });
 
-    expect(() => formatUpdate()).toThrow("PrepAppend取得エラー: node not found");
+    expect(() => formatUpdate()).toThrow(
+      "PrepAppend取得エラー: node not found",
+    );
   });
 });

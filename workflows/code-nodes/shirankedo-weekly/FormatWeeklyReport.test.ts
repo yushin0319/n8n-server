@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import formatWeeklyReport from "./FormatWeeklyReport";
 
 function callAndGetItems() {
@@ -15,9 +15,7 @@ describe("FormatWeeklyReport", () => {
     vi.stubGlobal("$input", {
       first: () => ({
         json: {
-          candidates: [
-            { content: { parts: [{ text: "週次レポート本文" }] } },
-          ],
+          candidates: [{ content: { parts: [{ text: "週次レポート本文" }] } }],
         },
       }),
     });

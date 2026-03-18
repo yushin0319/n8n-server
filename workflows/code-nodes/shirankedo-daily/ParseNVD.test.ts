@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import parseNVD from "./ParseNVD";
 
 function callAndGetItems() {
@@ -14,8 +14,7 @@ function makeNvdEntry(
   description = "Test vulnerability",
   metricVersion: "v31" | "v30" = "v31",
 ) {
-  const metricKey =
-    metricVersion === "v31" ? "cvssMetricV31" : "cvssMetricV30";
+  const metricKey = metricVersion === "v31" ? "cvssMetricV31" : "cvssMetricV30";
   return {
     cve: {
       id,
@@ -86,9 +85,9 @@ describe("ParseNVD", () => {
 
     const items = callAndGetItems();
     expect(items[0].json.count).toBe(1);
-    expect(
-      (items[0].json.vulnerabilities as IDataObject[])[0].cveId,
-    ).toBe("CVE-2026-0002");
+    expect((items[0].json.vulnerabilities as IDataObject[])[0].cveId).toBe(
+      "CVE-2026-0002",
+    );
   });
 
   it("CVSS V3.0 メトリクスもサポートする", () => {
@@ -97,7 +96,9 @@ describe("ParseNVD", () => {
         return {
           first: () => ({
             json: {
-              vulnerabilities: [makeNvdEntry("CVE-2026-0001", 8.5, "test", "v30")],
+              vulnerabilities: [
+                makeNvdEntry("CVE-2026-0001", 8.5, "test", "v30"),
+              ],
             },
           }),
         };

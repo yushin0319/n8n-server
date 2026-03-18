@@ -4,7 +4,7 @@ export default function (): CodeNodeReturn {
   const repos = response.data || response || [];
   const repoList: string[] = Array.isArray(repos)
     ? repos.map((r: IDataObject) =>
-        typeof r === "string" ? r : ((r.repo as string) || ""),
+        typeof r === "string" ? r : (r.repo as string) || "",
       )
     : [];
   const valid = repoList.filter((r) => r && r.includes("/"));
