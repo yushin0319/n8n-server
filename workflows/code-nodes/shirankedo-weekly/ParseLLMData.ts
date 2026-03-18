@@ -95,7 +95,9 @@ export default function (): CodeNodeReturn {
   const aaResp = $("FetchAAModels").first().json;
   const rateResp = $("FetchExchangeRate").first().json;
   const aaData = (aaResp.data || []) as IDataObject[];
-  const jpyRate = (rateResp?.rates as IDataObject)?.JPY || 150;
+  const rates = (rateResp?.rates || {}) as IDataObject;
+  const jpyRate = (rates.JPY as number) || 150;
+  const eurRate = (rates.EUR as number) || 1;
 
   // Provider mapping
   const PROVIDERS: Record<string, string> = {
@@ -185,6 +187,7 @@ export default function (): CodeNodeReturn {
       json: {
         requestBody: JSON.stringify({
           jpyPerUsd: jpyRate,
+          jpyPerEur: jpyRate / eurRate,
           updatedAt: new Date().toISOString(),
         }),
         type: "exchange-rate",

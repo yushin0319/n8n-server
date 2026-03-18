@@ -49,8 +49,8 @@ describe("ParseLLMData", () => {
             },
           };
         }
-        // FetchExchangeRate
-        return { json: { rates: { JPY: 150 } } };
+        // FetchExchangeRate (USD base: EUR=0.92, JPY=150)
+        return { json: { rates: { JPY: 150, EUR: 0.92 } } };
       },
     }));
 
@@ -65,6 +65,8 @@ describe("ParseLLMData", () => {
 
     const rate = JSON.parse(items[1].json.requestBody as string);
     expect(rate.jpyPerUsd).toBe(150);
+    // jpyPerEur = JPY / EUR = 150 / 0.92 ≈ 163.04
+    expect(rate.jpyPerEur).toBeCloseTo(150 / 0.92, 1);
     expect(items[1].json.type).toBe("exchange-rate");
   });
 
