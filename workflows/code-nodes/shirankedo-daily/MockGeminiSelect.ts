@@ -1,3 +1,5 @@
+import { mockGeminiResponse } from "../_shared/gemini";
+
 /**
  * GeminiSelect のモック.
  * テストモード時にGemini APIを呼ばず、記事選定結果を返す。
@@ -22,15 +24,7 @@ export function mockGeminiSelect(): IDataObject {
       reason: "テスト用",
     },
   };
-  return {
-    candidates: [
-      {
-        content: {
-          parts: [{ text: JSON.stringify(selection) }],
-        },
-      },
-    ],
-  };
+  return mockGeminiResponse(JSON.stringify(selection));
 }
 
 export default function (): CodeNodeReturn {

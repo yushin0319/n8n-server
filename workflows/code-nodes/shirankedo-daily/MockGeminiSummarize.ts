@@ -1,3 +1,5 @@
+import { mockGeminiResponse } from "../_shared/gemini";
+
 /**
  * GeminiSummarize のモック.
  * テストモード時にGemini APIを呼ばず、記事要約結果を返す。
@@ -13,15 +15,7 @@ export function mockGeminiSummarize(): IDataObject {
       comment: "テストコメント",
     },
   ];
-  return {
-    candidates: [
-      {
-        content: {
-          parts: [{ text: JSON.stringify(summaries) }],
-        },
-      },
-    ],
-  };
+  return mockGeminiResponse(JSON.stringify(summaries));
 }
 
 export default function (): CodeNodeReturn {

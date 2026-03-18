@@ -1,3 +1,5 @@
+import { notionMultiSelectFirst, notionRichText } from "../_shared/notionProps";
+
 export default function (): CodeNodeReturn {
   const results = ($input.first().json.results || []) as IDataObject[];
   if (results.length === 0) {
@@ -13,12 +15,8 @@ export default function (): CodeNodeReturn {
       titleArr.length > 0
         ? titleArr.map((t: IDataObject) => t.plain_text).join("")
         : "(無題)";
-    const freqSelect = props["頻度"]?.multi_select as IDataObject[] | undefined;
-    const frequency = (freqSelect?.[0]?.name as string) || "monthly";
-    const richText = (props["テンプレ本文"]?.rich_text || []) as IDataObject[];
-    const templateText = richText
-      .map((t: IDataObject) => t.plain_text)
-      .join("");
+    const frequency = notionMultiSelectFirst(props, "頻度", "monthly");
+    const templateText = notionRichText(props, "テンプレ本文");
     const defPageId = page.id;
     return {
       json: { hasDue: true, defPageId, taskName, frequency, templateText },

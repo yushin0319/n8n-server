@@ -23,6 +23,23 @@ export function buildGeminiRequest(params: {
   });
 }
 
+/** Geminiレスポンスからプレーンテキストを取得する（JSONパースしない） */
+export function parseGeminiText(
+  response: IDataObject,
+  fallback?: string,
+): string {
+  const text =
+    (response as any)?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+  return text || (fallback ?? "");
+}
+
+/** Geminiモックレスポンスを生成する */
+export function mockGeminiResponse(text: string): IDataObject {
+  return {
+    candidates: [{ content: { parts: [{ text }] } }],
+  } as unknown as IDataObject;
+}
+
 /** Geminiレスポンスからテキストを取得してJSONパースする */
 export function parseGeminiJson<T = unknown>(response: IDataObject): T {
   const text =
