@@ -1,10 +1,9 @@
+import { sanitizeGitHubName as safe } from "../_shared/sanitizeGitHubName";
+
 export default function (): CodeNodeReturn {
   // tracking-reposからstar取得用GraphQLバッチを構築（50リポ/バッチ）
   const repos = ($input.first().json.data || []) as IDataObject[];
   if (!repos.length) return [{ json: { batches: [], count: 0 } }];
-
-  // GitHub owner/name のサニタイズ（許可文字のみ残す）
-  const safe = (s: string) => s.replace(/[^a-zA-Z0-9._-]/g, "");
 
   const batchSize = 50;
   const batches: INodeExecutionData[] = [];
