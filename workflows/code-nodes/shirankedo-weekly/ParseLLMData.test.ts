@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import parseLLMData, { shouldSkip, familyKey } from "./ParseLLMData";
-import type { FilteredModel } from "./ParseLLMData";
+import type { FilteredModel as _FilteredModel } from "./ParseLLMData";
 
 /** テスト用のAAモデルデータを生成 */
 function makeModel(

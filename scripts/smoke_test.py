@@ -58,7 +58,8 @@ WEBHOOK_ENDPOINTS = [
     {"path": "gdrive-mkdir", "name": "GDrive Mkdir", "timeout": 30,
      "body": {"folderName": "__smoke_test__"}, "allow_error": True},
     {"path": "gdrive-share", "name": "GDrive Share", "timeout": 30,
-     "body": {"fileId": "__smoke_test__", "email": "test@test.com", "role": "reader"}, "allow_error": True},
+     "body": {"fileId": "__smoke_test__", "email": "test@test.com", "role": "reader"},
+     "allow_error": True},
 ]
 
 
@@ -98,7 +99,11 @@ def post_test(endpoint: dict) -> dict:
             return {"status_code": e.code, "body": body_text, "error": str(e)}
         except urllib.error.URLError as e:
             # DNS解決失敗等のネットワークエラーのみリトライ
-            if attempt < max_retries and "name resolution" in str(e).lower():
+            err_msg = str(e).lower()
+            is_transient = (
+                "name resolution" in err_msg or "timed out" in err_msg
+            )
+            if attempt < max_retries and is_transient:
                 print(f"retry({attempt})...", end=" ", flush=True)
                 time.sleep(3)
                 continue
@@ -121,9 +126,7 @@ def verify_webhook_response(result: dict, allow_error: bool = False) -> bool:
     """Webhook WF: HTTP 200でレスポンスが返ればOK. allow_errorならエラー応答も疎通成功扱い."""
     if result["status_code"] == 200:
         return True
-    if allow_error and result["status_code"] in (400, 404, 500):
-        return True
-    return False
+    return allow_error and result["status_code"] in (400, 404, 500)
 
 
 def send_discord_summary(results: list[dict]) -> None:

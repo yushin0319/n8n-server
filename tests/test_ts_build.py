@@ -8,12 +8,9 @@ TDD: RED → GREEN → REFACTOR
   4. 型エラーのある .ts は tsc で検出される
 """
 
-import json
 import os
 import subprocess
 import sys
-
-import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -106,7 +103,8 @@ class TestEmbedWithTsCompilation:
 
         ts_code = (
             "export default function (): CodeNodeReturn {\n"
-            "  const now: string = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });\n"
+            "  const now: string = new Date()"
+            ".toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });\n"
             "  return [{ json: { embed: { title: 'Test', description: now } } }];\n"
             "}\n"
         )

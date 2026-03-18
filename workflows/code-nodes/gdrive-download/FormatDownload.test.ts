@@ -8,7 +8,7 @@ describe("gdrive-download/FormatDownload", () => {
 
   it("data付きレスポンスからcontentを抽出する", () => {
     vi.stubGlobal("$json", { data: "file content here" });
-    vi.stubGlobal("$", (name: string) => ({
+    vi.stubGlobal("$", (_name: string) => ({
       first: () => ({ json: { file_id: "abc123" } }),
     }));
 
@@ -23,7 +23,7 @@ describe("gdrive-download/FormatDownload", () => {
 
   it("dataがない場合JSONをstringifyする", () => {
     vi.stubGlobal("$json", { foo: "bar" });
-    vi.stubGlobal("$", (name: string) => ({
+    vi.stubGlobal("$", (_name: string) => ({
       first: () => ({ json: { file_id: "abc123" } }),
     }));
 

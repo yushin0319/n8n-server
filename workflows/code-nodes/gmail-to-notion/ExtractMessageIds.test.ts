@@ -7,7 +7,7 @@ describe("ExtractMessageIds", () => {
   });
 
   it("BuildNotionBodyの出力からmessageIdを抽出する", () => {
-    vi.stubGlobal("$", (name: string) => ({
+    vi.stubGlobal("$", (_name: string) => ({
       all: () => [
         { json: { requestBody: "{}", messageId: "msg-1" } },
         { json: { requestBody: "{}", messageId: "msg-2" } },

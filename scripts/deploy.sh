@@ -46,7 +46,6 @@ deploy_workflow() {
   local file="$1"
   local filename
   filename=$(basename "$file")
-
   echo "----------------------------------------"
   echo "Deploying: $filename"
 
@@ -71,9 +70,10 @@ deploy_workflow() {
   local bodyfile embedded_file
   bodyfile=$(mktemp)
   embedded_file=$(mktemp)
+  # shellcheck disable=SC2064
+  trap "rm -f '$bodyfile' '$embedded_file'" RETURN
   python3 "$(dirname "$0")/embed_code.py" "$file" > "$embedded_file"
   jq "$BODY_FILTER" "$embedded_file" > "$bodyfile"
-  rm -f "$embedded_file"
 
   # 既存ワークフローの存在確認 → PUT(更新) or POST(新規)
   local check_code
@@ -99,7 +99,6 @@ deploy_workflow() {
     *)
       echo "  FAIL: Could not check workflow (HTTP $check_code)"
       FAIL=$((FAIL + 1))
-      rm -f "$bodyfile"
       return
       ;;
   esac
@@ -108,7 +107,6 @@ deploy_workflow() {
   result=$(call_api "$method" "$url" "$bodyfile")
   resp_code=$(echo "$result" | tail -1)
   resp_body=$(echo "$result" | sed '$d')
-  rm -f "$bodyfile"
 
   # shellcheck disable=SC2076
   if [[ " $ok_codes " =~ " $resp_code " ]]; then

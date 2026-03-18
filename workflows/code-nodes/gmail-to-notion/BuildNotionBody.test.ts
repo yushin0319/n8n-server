@@ -44,7 +44,7 @@ describe("BuildNotionBody", () => {
         },
       }),
     });
-    vi.stubGlobal("$", (name: string) => ({
+    vi.stubGlobal("$", (_name: string) => ({
       first: () => ({ json: { emails } }),
     }));
 

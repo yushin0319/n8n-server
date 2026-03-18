@@ -7,7 +7,7 @@ describe("PrepReplaceAppend", () => {
   });
 
   it("PrepReplaceのデータからcontentBodyを生成する", () => {
-    vi.stubGlobal("$", (name: string) => ({
+    vi.stubGlobal("$", (_name: string) => ({
       first: () => ({
         json: { pageId: "page-789", taskContent: "- item1\n- item2" },
       }),
