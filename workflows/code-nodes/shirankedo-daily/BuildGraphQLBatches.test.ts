@@ -108,8 +108,9 @@ describe("BuildGraphQLBatches", () => {
 
     const items = callAndGetItems();
     const query = items[0].json.query as string;
-    // ダブルクォートがエスケープされていること
-    expect(query).toContain('\\"');
-    expect(query).not.toMatch(/owner: "evil"owner"/);
+    // 特殊文字が除去されていること
+    expect(query).toContain('owner: "evilowner"');
+    expect(query).toContain('name: "reponame"');
+    expect(query).not.toContain('"owner"');
   });
 });
