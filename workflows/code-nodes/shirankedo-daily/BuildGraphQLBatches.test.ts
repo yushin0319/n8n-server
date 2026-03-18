@@ -96,4 +96,20 @@ describe("BuildGraphQLBatches", () => {
     const query = items[0].json.query as string;
     expect(query).toContain("owner");
   });
+
+  it("リポ名に特殊文字があってもGraphQLインジェクションしない", () => {
+    vi.stubGlobal("$input", {
+      first: () => ({
+        json: {
+          data: [{ repo: 'evil"owner/repo"name' }],
+        },
+      }),
+    });
+
+    const items = callAndGetItems();
+    const query = items[0].json.query as string;
+    // ダブルクォートがエスケープされていること
+    expect(query).toContain('\\"');
+    expect(query).not.toMatch(/owner: "evil"owner"/);
+  });
 });
