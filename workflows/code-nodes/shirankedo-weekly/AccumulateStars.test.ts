@@ -62,4 +62,48 @@ describe("AccumulateStars", () => {
     accumulateStars();
     expect(staticData.stars).toHaveLength(0);
   });
+
+  it("初回バッチで前回失敗時のゴミデータをクリアする", () => {
+    // 前回失敗時のゴミデータが残っている状態をシミュレート
+    staticData.stars = [{ repo: "stale/data", stars: 999 }];
+    // _starsInitializedフラグなし = 新しいWF実行の初回バッチ
+
+    vi.stubGlobal("$input", {
+      first: () => ({
+        json: {
+          data: {
+            repo0: { nameWithOwner: "owner/fresh", stargazerCount: 10 },
+          },
+        },
+      }),
+      all: () => [{ json: {} }],
+    });
+
+    accumulateStars();
+    const stars = staticData.stars as IDataObject[];
+    // ゴミデータがクリアされ、新しいデータのみ
+    expect(stars).toHaveLength(1);
+    expect(stars[0]).toEqual({ repo: "owner/fresh", stars: 10 });
+  });
+
+  it("2回目以降のバッチではデータを蓄積する", () => {
+    // 初回バッチ済み
+    staticData._starsInitialized = true;
+    staticData.stars = [{ repo: "owner/batch1", stars: 100 }];
+
+    vi.stubGlobal("$input", {
+      first: () => ({
+        json: {
+          data: {
+            repo0: { nameWithOwner: "owner/batch2", stargazerCount: 200 },
+          },
+        },
+      }),
+      all: () => [{ json: {} }],
+    });
+
+    accumulateStars();
+    const stars = staticData.stars as IDataObject[];
+    expect(stars).toHaveLength(2);
+  });
 });
