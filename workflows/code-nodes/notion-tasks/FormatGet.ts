@@ -22,7 +22,9 @@ export default function (): CodeNodeReturn {
       return { type: bType, text };
     })
     .filter((b: { type: string; text: string }) => b.text);
-  const textLines = blocks.map((b: { type: string; text: string }) => b.text).join("\n");
+  const textLines = blocks
+    .map((b: { type: string; text: string }) => b.text)
+    .join("\n");
   return [
     {
       json: {

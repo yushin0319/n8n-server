@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import prepareUpdate from "./PrepareUpdate";
 
 describe("PrepareUpdate (notion-emails)", () => {
@@ -37,7 +37,7 @@ describe("PrepareUpdate (notion-emails)", () => {
     const result = prepareUpdate() as INodeExecutionData[];
     const body = JSON.parse(result[0].json.requestBody as string);
     expect(body.properties.理由.rich_text[0].text.content).toBe(
-      "重要な案件のため"
+      "重要な案件のため",
     );
   });
 

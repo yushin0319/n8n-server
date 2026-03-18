@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import formatPageComments from "./FormatPageComments";
 
 function callAndGetItems() {
@@ -15,9 +15,7 @@ describe("FormatPageComments", () => {
     vi.stubGlobal("$input", {
       first: () => ({
         json: {
-          candidates: [
-            { content: { parts: [{ text: "サブコメント" }] } },
-          ],
+          candidates: [{ content: { parts: [{ text: "サブコメント" }] } }],
         },
       }),
     });
@@ -45,9 +43,7 @@ describe("FormatPageComments", () => {
     vi.stubGlobal("$input", {
       first: () => ({
         json: {
-          candidates: [
-            { content: { parts: [{ text: "sub text" }] } },
-          ],
+          candidates: [{ content: { parts: [{ text: "sub text" }] } }],
         },
       }),
     });

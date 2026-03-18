@@ -36,9 +36,7 @@ describe("buildGeminiRequest", () => {
 describe("parseGeminiJson", () => {
   it("正常なGeminiレスポンスからJSONをパースする", () => {
     const response = {
-      candidates: [
-        { content: { parts: [{ text: '{"result": "ok"}' }] } },
-      ],
+      candidates: [{ content: { parts: [{ text: '{"result": "ok"}' }] } }],
     };
     const result = parseGeminiJson<{ result: string }>(response);
     expect(result).toEqual({ result: "ok" });

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import parseTranslations from "./ParseTranslations";
 
 function callAndGetItems() {
@@ -18,7 +18,13 @@ describe("ParseTranslations", () => {
   it("50件ずつチャンクに分割して返す", () => {
     const repos: IDataObject[] = [];
     for (let i = 0; i < 75; i++) {
-      repos.push({ repo: `owner/repo-${i}`, displayName: `Repo ${i}`, description: "desc", language: "TS", stars: 100 });
+      repos.push({
+        repo: `owner/repo-${i}`,
+        displayName: `Repo ${i}`,
+        description: "desc",
+        language: "TS",
+        stars: 100,
+      });
     }
     staticData.translations = repos;
 

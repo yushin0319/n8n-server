@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import prepDelete from "./PrepDelete";
 
 describe("gdrive-delete/PrepDelete", () => {
@@ -17,6 +17,8 @@ describe("gdrive-delete/PrepDelete", () => {
   it("file_idがない場合エラーオブジェクトを返す", () => {
     vi.stubGlobal("$json", { body: {} });
 
-    expect(prepDelete()).toEqual([{ json: { _error: true, message: "file_id is required" } }]);
+    expect(prepDelete()).toEqual([
+      { json: { _error: true, message: "file_id is required" } },
+    ]);
   });
 });

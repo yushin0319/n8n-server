@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import prepareWeeklyPrompt from "./PrepareWeeklyPrompt";
 
 function callAndGetItems() {
@@ -16,8 +16,18 @@ describe("PrepareWeeklyPrompt", () => {
       first: () => ({
         json: {
           data: [
-            { source: "TechCrunch", title: "AI News", summary: "AI進化", tags: "AI" },
-            { source: "Verge", title: "New Tool", summary: "ツール紹介", tags: "Dev" },
+            {
+              source: "TechCrunch",
+              title: "AI News",
+              summary: "AI進化",
+              tags: "AI",
+            },
+            {
+              source: "Verge",
+              title: "New Tool",
+              summary: "ツール紹介",
+              tags: "Dev",
+            },
           ],
         },
       }),

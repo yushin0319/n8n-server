@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import formatVulnerabilities from "./FormatVulnerabilities";
 
 function callAndGetItems() {
@@ -10,9 +10,7 @@ function callAndGetItems() {
 /** Geminiレスポンスのヘルパー */
 function geminiResponse(data: unknown) {
   return {
-    candidates: [
-      { content: { parts: [{ text: JSON.stringify(data) }] } },
-    ],
+    candidates: [{ content: { parts: [{ text: JSON.stringify(data) }] } }],
   };
 }
 
@@ -57,14 +55,19 @@ describe("FormatVulnerabilities", () => {
     const vulns = [
       {
         cveId: "CVE-2026-5678",
-        description: "A very long description of a vulnerability that exceeds fifty characters limit",
+        description:
+          "A very long description of a vulnerability that exceeds fifty characters limit",
         cvssScore: 7.5,
         publishedAt: "2026-03-17",
       },
     ];
 
     vi.stubGlobal("$input", {
-      first: () => ({ json: { candidates: [{ content: { parts: [{ text: "invalid json" }] } }] } }),
+      first: () => ({
+        json: {
+          candidates: [{ content: { parts: [{ text: "invalid json" }] } }],
+        },
+      }),
     });
     vi.stubGlobal("$", (nodeName: string) => {
       if (nodeName === "PrepareNVDTranslation") {

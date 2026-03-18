@@ -8,7 +8,7 @@ export default function (): CodeNodeReturn {
   };
   const res = $input.first().json;
   if (res && res.ok) {
-    counter.total += ((res.inserted as number) || 0);
+    counter.total += (res.inserted as number) || 0;
   } else {
     counter.errors += 1;
   }

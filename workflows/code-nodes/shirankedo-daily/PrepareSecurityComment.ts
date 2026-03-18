@@ -35,8 +35,7 @@ export default function (): CodeNodeReturn {
     vulns.length > 0
       ? vulns
           .map(
-            (v) =>
-              `- ${v.cve_id}: ${v.title} (CVSS: ${v.cvss_score ?? "N/A"})`,
+            (v) => `- ${v.cve_id}: ${v.title} (CVSS: ${v.cvss_score ?? "N/A"})`,
           )
           .join("\n")
       : "（本日のCRITICAL脆弱性はなし）";

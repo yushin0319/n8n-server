@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import prepMkdir from "./PrepMkdir";
 
 describe("gdrive-mkdir/PrepMkdir", () => {
@@ -12,9 +12,7 @@ describe("gdrive-mkdir/PrepMkdir", () => {
     const result = prepMkdir() as INodeExecutionData[];
     expect(result).toHaveLength(1);
     expect(result[0].json.name).toBe("new-folder");
-    expect(result[0].json.mimeType).toBe(
-      "application/vnd.google-apps.folder",
-    );
+    expect(result[0].json.mimeType).toBe("application/vnd.google-apps.folder");
     expect(result[0].json.parents).toEqual(["root"]);
   });
 
@@ -30,6 +28,8 @@ describe("gdrive-mkdir/PrepMkdir", () => {
   it("nameがない場合エラーオブジェクトを返す", () => {
     vi.stubGlobal("$json", { body: {} });
 
-    expect(prepMkdir()).toEqual([{ json: { _error: true, message: "name is required" } }]);
+    expect(prepMkdir()).toEqual([
+      { json: { _error: true, message: "name is required" } },
+    ]);
   });
 });

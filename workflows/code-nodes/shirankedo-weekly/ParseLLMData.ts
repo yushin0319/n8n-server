@@ -36,9 +36,15 @@ function shouldSkip(name: string): boolean {
     return true;
   if (name.includes("Magistral Small")) return true;
   if (
-    ["Qwen3 VL", "Qwen3.5 VL", "Coder", "Omni", "QwQ", "Qwen2", "Qwen Chat"].some(
-      (x) => name.includes(x),
-    )
+    [
+      "Qwen3 VL",
+      "Qwen3.5 VL",
+      "Coder",
+      "Omni",
+      "QwQ",
+      "Qwen2",
+      "Qwen Chat",
+    ].some((x) => name.includes(x))
   )
     return true;
   if (/Qwen3\.?5?\s+[0-4](?:\.\d+)?B\b/.test(name)) return true;
@@ -81,8 +87,8 @@ function familyKey(n: string): string {
   return c.trim();
 }
 
-export { shouldSkip, familyKey };
 export type { FilteredModel };
+export { familyKey, shouldSkip };
 
 export default function (): CodeNodeReturn {
   // AA APIデータからモデルをフィルタ・デデュプ
