@@ -1,8 +1,9 @@
+import { parseGeminiText } from "../_shared/gemini";
+
 export default function (): CodeNodeReturn {
   // Geminiレスポンスからレポートテキストを抽出
   const resp = $input.first().json;
-  const reportContent: string =
-    (resp as any).candidates?.[0]?.content?.parts?.[0]?.text || "";
+  const reportContent: string = parseGeminiText(resp);
   if (!reportContent) {
     return [
       {

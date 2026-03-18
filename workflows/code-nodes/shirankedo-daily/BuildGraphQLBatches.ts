@@ -1,3 +1,5 @@
+import { sanitizeGitHubName as safe } from "../_shared/sanitizeGitHubName";
+
 export default function (): CodeNodeReturn {
   // tracking-reposからGraphQLバッチクエリを構築（40リポ/バッチ）
   const response = $input.first().json;
@@ -12,9 +14,6 @@ export default function (): CodeNodeReturn {
   if (valid.length === 0) {
     return [{ json: { releases: [], count: 0, empty: true } }];
   }
-
-  // GitHub owner/name のサニタイズ（許可文字のみ残す）
-  const safe = (s: string) => s.replace(/[^a-zA-Z0-9._-]/g, "");
 
   const BATCH_SIZE = 40;
   const batches: INodeExecutionData[] = [];

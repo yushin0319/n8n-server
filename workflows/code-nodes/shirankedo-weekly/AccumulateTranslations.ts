@@ -1,3 +1,5 @@
+import { parseGeminiText } from "../_shared/gemini";
+
 export default function (): CodeNodeReturn {
   // Gemini結果を解析してstaticDataに蓄積（stars含む）
   // フォーマット: 番号. display_name | description
@@ -9,8 +11,7 @@ export default function (): CodeNodeReturn {
   }
 
   const resp = $input.first().json;
-  const text: string =
-    (resp as any).candidates?.[0]?.content?.parts?.[0]?.text || "";
+  const text: string = parseGeminiText(resp);
   const repos = ($("SplitTranslateBatches").first().json.repos ||
     []) as IDataObject[];
 

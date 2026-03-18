@@ -1,11 +1,12 @@
+import { parseGeminiText } from "../_shared/gemini";
+
 export default function (): CodeNodeReturn {
   const geminiResponse = $input.first().json;
   const emailData = $("PrepareClassify").first().json.emails as IDataObject[];
 
   let classifications: IDataObject[] = [];
   try {
-    const responseText =
-      (geminiResponse as any)?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    const responseText = parseGeminiText(geminiResponse);
     const jsonMatch = (responseText as string).match(/\[[\s\S]*\]/);
     if (jsonMatch) {
       classifications = JSON.parse(jsonMatch[0]);

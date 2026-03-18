@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { buildGeminiRequest, parseGeminiJson } from "./gemini";
+import {
+  buildGeminiRequest,
+  mockGeminiResponse,
+  parseGeminiJson,
+  parseGeminiText,
+} from "./gemini";
 
 describe("buildGeminiRequest", () => {
   it("プロンプトからGemini APIリクエストJSONを生成する", () => {
@@ -59,5 +64,47 @@ describe("parseGeminiJson", () => {
     };
     const result = parseGeminiJson<number[]>(response);
     expect(result).toEqual([1, 2, 3]);
+  });
+});
+
+describe("parseGeminiText", () => {
+  it("正常なレスポンスからテキストを取得する", () => {
+    const response = {
+      candidates: [{ content: { parts: [{ text: "こんにちは" }] } }],
+    };
+    expect(parseGeminiText(response)).toBe("こんにちは");
+  });
+
+  it("空レスポンスはデフォルトで空文字を返す", () => {
+    expect(parseGeminiText({})).toBe("");
+  });
+
+  it("fallback指定時は空レスポンスでfallbackを返す", () => {
+    expect(parseGeminiText({}, "生成失敗")).toBe("生成失敗");
+  });
+
+  it("テキストが存在する場合はfallbackを無視する", () => {
+    const response = {
+      candidates: [{ content: { parts: [{ text: "OK" }] } }],
+    };
+    expect(parseGeminiText(response, "生成失敗")).toBe("OK");
+  });
+});
+
+describe("mockGeminiResponse", () => {
+  it("Geminiレスポンス構造を生成する", () => {
+    const resp = mockGeminiResponse("hello");
+    expect(resp.candidates).toBeDefined();
+    expect((resp as any).candidates[0].content.parts[0].text).toBe("hello");
+  });
+
+  it("parseGeminiTextで読み取れる", () => {
+    const resp = mockGeminiResponse("テスト");
+    expect(parseGeminiText(resp as IDataObject)).toBe("テスト");
+  });
+
+  it("parseGeminiJsonで読み取れる", () => {
+    const resp = mockGeminiResponse('{"key": "value"}');
+    expect(parseGeminiJson(resp as IDataObject)).toEqual({ key: "value" });
   });
 });
