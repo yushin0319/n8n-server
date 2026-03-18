@@ -1,7 +1,6 @@
 /**
  * 外部入力テキストをAIプロンプトに埋め込む前にサニタイズする。
  * - 改行・制御文字を除去（プロンプト構造の破壊を防ぐ）
- * - 指示っぽいパターンをエスケープ（"Ignore above instructions" 等）
  * - 長さ制限（デフォルト500文字）
  */
 export function sanitizeForPrompt(
