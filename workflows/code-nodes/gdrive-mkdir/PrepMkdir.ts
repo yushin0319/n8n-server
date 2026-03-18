@@ -5,6 +5,7 @@ export default function (): CodeNodeReturn {
     required: ["name"],
     optional: { parent_id: "root" },
   });
+  if (params._error) return [{ json: params }];
   return [
     {
       json: {

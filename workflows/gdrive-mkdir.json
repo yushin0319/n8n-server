@@ -20,7 +20,7 @@
       "name": "Webhook",
       "webhookId": "4f7afbef-0738-4833-a653-38bdb2f976f8"
     },
-{
+    {
       "parameters": {
         "jsCode": "// @external gdrive-mkdir/PrepMkdir.ts"
       },
@@ -47,7 +47,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        680,
+        920,
         0
       ],
       "id": "1be9f98e-1c6f-4816-bc07-939425daaa86",
@@ -67,7 +67,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        920,
+        1160,
         0
       ],
       "name": "FormatMkdir",
@@ -82,11 +82,59 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        1160,
+        1400,
         0
       ],
       "id": "1f933a8b-5320-4e50-822c-f9b54ae19cd7",
       "name": "RespondMkdir"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": ""
+          },
+          "conditions": [
+            {
+              "id": "a7fa3f16-0840-42ca-8da7-3025e1a9d607",
+              "leftValue": "={{ $json._error }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        680,
+        0
+      ],
+      "id": "e40ec2d7-b9b4-453d-b75c-b782ce94f0a6",
+      "name": "CheckError"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ error: true, message: $json.message }) }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        920,
+        200
+      ],
+      "id": "dc455879-73e2-4426-a125-380ffc478512",
+      "name": "RespondError"
     }
   ],
   "connections": {
@@ -105,7 +153,7 @@
       "main": [
         [
           {
-            "node": "MkdirRequest",
+            "node": "CheckError",
             "type": "main",
             "index": 0
           }
@@ -128,6 +176,24 @@
         [
           {
             "node": "RespondMkdir",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CheckError": {
+      "main": [
+        [
+          {
+            "node": "RespondError",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "MkdirRequest",
             "type": "main",
             "index": 0
           }

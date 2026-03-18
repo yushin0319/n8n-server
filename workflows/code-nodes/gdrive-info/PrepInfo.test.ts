@@ -11,12 +11,12 @@ describe("gdrive-info/PrepInfo", () => {
 
     const result = prepInfo() as INodeExecutionData[];
     expect(result).toHaveLength(1);
-    expect(result[0].json.file_id).toBe("abc123");
+    expect(result[0].json.fileId).toBe("abc123");
   });
 
-  it("file_idがない場合エラーを投げる", () => {
+  it("file_idがない場合エラーオブジェクトを返す", () => {
     vi.stubGlobal("$json", { body: {} });
 
-    expect(() => prepInfo()).toThrow("file_id is required");
+    expect(prepInfo()).toEqual([{ json: { _error: true, message: "file_id is required" } }]);
   });
 });
