@@ -1,4 +1,5 @@
 import { buildGeminiRequest } from "../_shared/gemini";
+import { sanitizeForPrompt } from "../_shared/sanitizeForPrompt";
 
 /** 選定済み記事の型 */
 interface SelectedItem {
@@ -14,7 +15,7 @@ export default function (): CodeNodeReturn {
   const itemsText = items
     .map(
       (a, i) =>
-        `=== 記事${i + 1}: ${a.title} (impact: ${a.impact}) ===\n${(a.fulltext || "(本文なし)").substring(0, 2000)}`,
+        `=== 記事${i + 1}: ${sanitizeForPrompt(a.title, 200)} (impact: ${a.impact}) ===\n${sanitizeForPrompt(a.fulltext || "(本文なし)", 2000)}`,
     )
     .join("\n\n");
 
