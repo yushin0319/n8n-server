@@ -1,3 +1,5 @@
+import { mockGeminiResponse } from "../_shared/gemini";
+
 /**
  * GeminiSecurityComment のモック.
  * テストモード時にGemini APIを呼ばず、セキュリティ日次コメントを返す。
@@ -9,15 +11,7 @@ export function mockGeminiSecurityComment(): IDataObject {
     vuln_ids: [] as string[],
     release_ids: [] as string[],
   };
-  return {
-    candidates: [
-      {
-        content: {
-          parts: [{ text: JSON.stringify(comment) }],
-        },
-      },
-    ],
-  };
+  return mockGeminiResponse(JSON.stringify(comment));
 }
 
 export default function (): CodeNodeReturn {
