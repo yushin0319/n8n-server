@@ -155,7 +155,35 @@ elif [ -n "${DEPLOY_FILES:-}" ]; then
   CHANGED_FILES="$DEPLOY_FILES"
 else
   echo "Mode: Deploy changed files (git diff)"
-  CHANGED_FILES=$(git diff --name-only HEAD~1 -- 'workflows/*.json' 2>/dev/null || true)
+  # 変更された .json を取得
+  JSON_CHANGES=$(git diff --name-only HEAD~1 -- 'workflows/*.json' 2>/dev/null || true)
+
+  # 変更された .ts から対応する .json を特定
+  TS_CHANGES=$(git diff --name-only HEAD~1 -- 'workflows/code-nodes/' 2>/dev/null || true)
+  TS_JSON_TARGETS=""
+  if [ -n "$TS_CHANGES" ]; then
+    HAS_SHARED=false
+    for ts_file in $TS_CHANGES; do
+      # code-nodes/{wf-name}/Node.ts → workflows/{wf-name}.json
+      wf_dir=$(echo "$ts_file" | sed 's|workflows/code-nodes/||' | cut -d'/' -f1)
+      if [ "$wf_dir" = "_shared" ]; then
+        HAS_SHARED=true
+      elif [ -f "workflows/${wf_dir}.json" ]; then
+        TS_JSON_TARGETS="${TS_JSON_TARGETS} workflows/${wf_dir}.json"
+      fi
+    done
+    # _shared 変更時: @external を含む全WFを対象にする
+    if [ "$HAS_SHARED" = true ]; then
+      for json in workflows/*.json; do
+        if grep -q '@external' "$json" 2>/dev/null; then
+          TS_JSON_TARGETS="${TS_JSON_TARGETS} ${json}"
+        fi
+      done
+    fi
+  fi
+
+  # マージして重複除去
+  CHANGED_FILES=$(printf '%s\n%s' "$JSON_CHANGES" "$TS_JSON_TARGETS" | tr ' ' '\n' | sort -u | grep -v '^$' || true)
 fi
 
 if [ -z "$CHANGED_FILES" ]; then
