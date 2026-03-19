@@ -35,85 +35,8 @@ WEBHOOK_ENDPOINTS = [
     {"path": "status", "name": "Server Status", "timeout": 10, "body": {}},
     {"path": "notion-tasks", "name": "Notion Tasks", "timeout": 30, "body": {"action": "list"}},
     {"path": "notion-emails", "name": "Notion Emails", "timeout": 30, "body": {"action": "search"}},
-    # GDrive 統合WF（全アクション）
+    # GDrive: searchのみ（書き込み系はE2Eテストで別途実行）
     {"path": "gdrive", "name": "GDrive Search", "timeout": 30, "body": {"action": "search"}},
-    {
-        "path": "gdrive",
-        "name": "GDrive Upload",
-        "timeout": 30,
-        "body": {"action": "upload"},
-        "allow_error": True,
-    },
-    {
-        "path": "gdrive",
-        "name": "GDrive Download",
-        "timeout": 30,
-        "body": {"action": "download", "file_id": "__smoke_test__"},
-        "allow_error": True,
-    },
-    {
-        "path": "gdrive",
-        "name": "GDrive Copy",
-        "timeout": 30,
-        "body": {"action": "copy", "file_id": "__smoke_test__"},
-        "allow_error": True,
-    },
-    {
-        "path": "gdrive",
-        "name": "GDrive CreateFromText",
-        "timeout": 30,
-        "body": {"action": "createFromText", "content": "__smoke_test__"},
-        "allow_error": True,
-    },
-    {
-        "path": "gdrive",
-        "name": "GDrive DeleteFile",
-        "timeout": 30,
-        "body": {"action": "deleteFile", "file_id": "__smoke_test__"},
-        "allow_error": True,
-    },
-    {
-        "path": "gdrive",
-        "name": "GDrive Move",
-        "timeout": 30,
-        "body": {"action": "move", "file_id": "__smoke_test__", "folder_id": "__test__"},
-        "allow_error": True,
-    },
-    {
-        "path": "gdrive",
-        "name": "GDrive Update",
-        "timeout": 30,
-        "body": {"action": "update", "file_id": "__smoke_test__", "name": "test"},
-        "allow_error": True,
-    },
-    {
-        "path": "gdrive",
-        "name": "GDrive Share",
-        "timeout": 30,
-        "body": {"action": "share", "file_id": "__smoke_test__"},
-        "allow_error": True,
-    },
-    {
-        "path": "gdrive",
-        "name": "GDrive CreateFolder",
-        "timeout": 30,
-        "body": {"action": "createFolder", "name": "__smoke_test__"},
-        "allow_error": True,
-    },
-    {
-        "path": "gdrive",
-        "name": "GDrive DeleteFolder",
-        "timeout": 30,
-        "body": {"action": "deleteFolder", "folder_id": "__smoke_test__"},
-        "allow_error": True,
-    },
-    {
-        "path": "gdrive",
-        "name": "GDrive ShareFolder",
-        "timeout": 30,
-        "body": {"action": "shareFolder", "folder_id": "__smoke_test__"},
-        "allow_error": True,
-    },
 ]
 
 
@@ -219,6 +142,132 @@ def send_discord_summary(results: list[dict]) -> None:
         print(f"Discord通知失敗: {e}", file=sys.stderr)
 
 
+def gdrive_request(action: str, body: dict | None = None, timeout: int = 30) -> dict:
+    """GDrive統合WFにリクエストを送信. 失敗時は例外."""
+    ep = {
+        "path": "gdrive",
+        "name": action,
+        "timeout": timeout,
+        "body": {"action": action, **(body or {})},
+    }
+    result = post_test(ep)
+    if result["status_code"] != 200:
+        error = result.get("error") or f"HTTP {result['status_code']}"
+        raise RuntimeError(f"{action}: {error}")
+    return result["body"]
+
+
+def _make_result(name: str, ok: bool, resp=None, error=None) -> dict:
+    """E2Eテスト結果を統一フォーマットで返す."""
+    code = 200 if ok else 0
+    return {
+        "endpoint": {"name": name},
+        "result": {
+            "status_code": code,
+            "body": resp,
+            "error": error,
+        },
+        "ok": ok,
+    }
+
+
+def run_gdrive_e2e() -> list[dict]:
+    """GDrive統合WFの実データE2Eテスト."""
+    results = []
+    file_id = None
+    copy_id = None
+    folder_id = None
+
+    # (名前, アクション, パラメータ生成関数)
+    def _steps():
+        """各ステップを順番に yield する."""
+        nonlocal file_id, copy_id, folder_id
+
+        # ファイル操作
+        yield (
+            "CreateFromText",
+            "createFromText",
+            {
+                "content": "smoke test",
+                "name": "smoke_test.txt",
+            },
+        )
+        yield "Download", "download", {"file_id": file_id}
+        yield "Copy", "copy", {"file_id": file_id}
+        yield (
+            "Update",
+            "update",
+            {
+                "file_id": file_id,
+                "name": "smoke_renamed.txt",
+            },
+        )
+        yield (
+            "Share",
+            "share",
+            {
+                "file_id": file_id,
+                "type": "anyone",
+                "role": "reader",
+            },
+        )
+        yield "Search", "search", {"query": "smoke_test"}
+        # フォルダ操作
+        yield (
+            "CreateFolder",
+            "createFolder",
+            {
+                "name": "smoke_test_folder",
+            },
+        )
+        yield (
+            "Move",
+            "move",
+            {
+                "file_id": copy_id,
+                "folder_id": folder_id,
+            },
+        )
+        yield (
+            "ShareFolder",
+            "shareFolder",
+            {
+                "folder_id": folder_id,
+                "type": "anyone",
+                "role": "reader",
+            },
+        )
+        # 掃除
+        yield "DeleteFile (orig)", "deleteFile", {"file_id": file_id}
+        yield "DeleteFile (copy)", "deleteFile", {"file_id": copy_id}
+        yield "DeleteFolder", "deleteFolder", {"folder_id": folder_id}
+
+    for label, action, params in _steps():
+        name = f"GDrive {label}"
+        print(f"  {name}...", end=" ", flush=True)
+        try:
+            resp = gdrive_request(action, params)
+            # 作成系レスポンスからIDを抽出
+            if action == "createFromText" and isinstance(resp, dict):
+                file_id = resp.get("file_id") or resp.get("id")
+            elif action == "copy" and isinstance(resp, dict):
+                copy_id = resp.get("file_id") or resp.get("id")
+            elif action == "createFolder" and isinstance(resp, dict):
+                folder_id = resp.get("folder_id") or resp.get("id")
+            print("OK")
+            results.append(_make_result(name, True, resp=resp))
+        except Exception as e:
+            print(f"FAIL ({e})")
+            results.append(_make_result(name, False, error=str(e)))
+            # 掃除ステップ以外で作成系が失敗したらスキップ
+            is_cleanup = name.startswith("GDrive Delete")
+            is_create = action in ("createFromText", "createFolder")
+            if not is_cleanup and is_create:
+                break
+
+    return results
+
+
 def main() -> int:
     """スモークテストを実行し、結果を返す."""
     results = []
@@ -239,6 +288,10 @@ def main() -> int:
         ok = verify_webhook_response(result, allow_error=ep.get("allow_error", False))
         print("OK" if ok else f"FAIL ({result.get('error') or result['status_code']})")
         results.append({"endpoint": ep, "result": result, "ok": ok})
+
+    print("\n=== GDrive E2E (real data flow) ===")
+    gdrive_results = run_gdrive_e2e()
+    results.extend(gdrive_results)
 
     send_discord_summary(results)
 
