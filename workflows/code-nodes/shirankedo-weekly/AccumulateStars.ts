@@ -2,7 +2,7 @@ export default function (): CodeNodeReturn {
   // 各バッチのGraphQL結果からstar数をstaticDataに蓄積
   const staticData = $getWorkflowStaticData("global");
   // 初回バッチで明示クリア（前回失敗時のゴミデータ防止）
-  if (!staticData._starsInitialized) {
+  if (!staticData._starsInitialized || !staticData.stars) {
     staticData.stars = [];
     staticData._starsInitialized = true;
   }
