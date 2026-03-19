@@ -5,7 +5,7 @@ export default function (): CodeNodeReturn {
   // フォーマット: 番号. display_name | description
   const staticData = $getWorkflowStaticData("global");
   // 初回バッチで明示クリア（前回失敗時のゴミデータ防止）
-  if (!staticData._translationsInitialized) {
+  if (!staticData._translationsInitialized || !staticData.translations) {
     staticData.translations = [];
     staticData._translationsInitialized = true;
   }
