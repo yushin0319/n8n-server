@@ -168,8 +168,12 @@ else
       wf_dir=$(echo "$ts_file" | sed 's|workflows/code-nodes/||' | cut -d'/' -f1)
       if [ "$wf_dir" = "_shared" ]; then
         HAS_SHARED=true
-      elif [ -f "workflows/${wf_dir}.json" ]; then
-        TS_JSON_TARGETS="${TS_JSON_TARGETS} workflows/${wf_dir}.json"
+      else
+        # code-nodes/{wf-dir}/ の変更 → workflows/{wf-dir}*.json を全て対象にする
+        # 例: shirankedo-daily/ → shirankedo-daily.json, shirankedo-daily-articles.json, ...
+        for json in workflows/${wf_dir}*.json; do
+          [ -f "$json" ] && TS_JSON_TARGETS="${TS_JSON_TARGETS} ${json}"
+        done
       fi
     done
     # _shared 変更時: @external を含む全WFを対象にする

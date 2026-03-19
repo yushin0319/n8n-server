@@ -1,0 +1,599 @@
+{
+  "id": "Txnzz6v7lM6RMTmf",
+  "name": "shirankedo 日次Releases",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "triggerAtHour": 15,
+              "triggerAtMinute": 10
+            }
+          ]
+        }
+      },
+      "id": "a1000002-0001-0001-0001-000000000001",
+      "name": "Schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://shirankedo.y-fudo.workers.dev/api/ingest/tracking-repos",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "a1000002-0001-0001-0001-000000000055",
+      "name": "FetchTrackingRepos",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        2200
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "CdkfLkdZEMFfnx8h",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external shirankedo-daily/BuildGraphQLBatches.ts"
+      },
+      "id": "a1000002-0001-0001-0001-000000000056",
+      "name": "BuildGraphQLBatches",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        500,
+        2200
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "empty-check",
+              "leftValue": "={{ $json.empty }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "a1000002-0001-0001-0001-000000000057",
+      "name": "HasTrackingRepos",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        720,
+        2200
+      ]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "a1000002-0001-0001-0001-000000000058",
+      "name": "SplitReleaseBatches",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        940,
+        2100
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.github.com/graphql",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ query: $json.query }) }}"
+      },
+      "id": "a1000002-0001-0001-0001-000000000059",
+      "name": "FetchReleaseBatch",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1160,
+        1950
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "GMg4fnokNoF4q4MU",
+          "name": "GitHub account"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external shirankedo-daily/AccumulateReleases.ts"
+      },
+      "id": "a1000002-0001-0001-0001-000000000079",
+      "name": "AccumulateReleases",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1160,
+        2200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external shirankedo-daily/ParseReleases.ts"
+      },
+      "id": "a1000002-0001-0001-0001-000000000061",
+      "name": "ParseReleases",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1380,
+        2100
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external shirankedo-daily/EmptyReleaseResult.ts"
+      },
+      "id": "a1000002-0001-0001-0001-000000000062",
+      "name": "EmptyReleaseResult",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        940,
+        2350
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "append",
+        "numberOfInputs": 2
+      },
+      "id": "a1000002-0001-0001-0001-000000000063",
+      "name": "MergeReleasePaths",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [
+        1380,
+        2200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://shirankedo.y-fudo.workers.dev/api/ingest/releases",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.requestBody }}",
+        "options": {}
+      },
+      "id": "a1000002-0001-0001-0001-000000000064",
+      "name": "PostReleases",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1600,
+        2200
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "CdkfLkdZEMFfnx8h",
+          "name": "Header Auth account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external shirankedo-daily/PrepareDiscordReleases.ts"
+      },
+      "id": "a1000002-0001-0001-0001-000000000065",
+      "name": "PrepareDiscordReleases",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1820,
+        2200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:5678/webhook/discord-notify",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ message: $json.message }) }}",
+        "options": {}
+      },
+      "id": "a1000002-0001-0001-0001-000000000066",
+      "name": "DiscordNotifyReleases",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2040,
+        2200
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "test-shirankedo-daily-releases",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        200
+      ],
+      "name": "WebhookTest",
+      "id": "sd-0010-4000-8000-000000000010",
+      "webhookId": "sd-0010-4000-8000-000000000010"
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external shirankedo-daily/CheckTestMode.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -110,
+        100
+      ],
+      "name": "CheckTestMode",
+      "id": "sd-0011-4000-8000-000000000011"
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external shirankedo-daily/TestResponse.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -110,
+        300
+      ],
+      "name": "TestResponse",
+      "id": "sd-0012-4000-8000-000000000012"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        110,
+        300
+      ],
+      "name": "RespondTest",
+      "id": "sd-0013-4000-8000-000000000013"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "sd-cond-skip-post-releases",
+              "leftValue": "={{ $execution.customData.get('isTest') }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1490,
+        2200
+      ],
+      "name": "IfSkipPostReleases",
+      "id": "sd-0044-4000-8000-000000000044"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "sd-cond-skip-discord-notify-releases",
+              "leftValue": "={{ $execution.customData.get('isTest') }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1930,
+        2200
+      ],
+      "name": "IfSkipDiscordNotifyReleases",
+      "id": "sd-0045-4000-8000-000000000045"
+    }
+  ],
+  "connections": {
+    "Schedule": {
+      "main": [
+        [
+          {
+            "node": "CheckTestMode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FetchTrackingRepos": {
+      "main": [
+        [
+          {
+            "node": "BuildGraphQLBatches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "BuildGraphQLBatches": {
+      "main": [
+        [
+          {
+            "node": "HasTrackingRepos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HasTrackingRepos": {
+      "main": [
+        [
+          {
+            "node": "SplitReleaseBatches",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "EmptyReleaseResult",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SplitReleaseBatches": {
+      "main": [
+        [
+          {
+            "node": "ParseReleases",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "FetchReleaseBatch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FetchReleaseBatch": {
+      "main": [
+        [
+          {
+            "node": "AccumulateReleases",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AccumulateReleases": {
+      "main": [
+        [
+          {
+            "node": "SplitReleaseBatches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ParseReleases": {
+      "main": [
+        [
+          {
+            "node": "MergeReleasePaths",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "EmptyReleaseResult": {
+      "main": [
+        [
+          {
+            "node": "MergeReleasePaths",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "MergeReleasePaths": {
+      "main": [
+        [
+          {
+            "node": "IfSkipPostReleases",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PostReleases": {
+      "main": [
+        [
+          {
+            "node": "PrepareDiscordReleases",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PrepareDiscordReleases",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepareDiscordReleases": {
+      "main": [
+        [
+          {
+            "node": "IfSkipDiscordNotifyReleases",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WebhookTest": {
+      "main": [
+        [
+          {
+            "node": "CheckTestMode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CheckTestMode": {
+      "main": [
+        [
+          {
+            "node": "FetchTrackingRepos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TestResponse": {
+      "main": [
+        [
+          {
+            "node": "RespondTest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IfSkipPostReleases": {
+      "main": [
+        [
+          {
+            "node": "PrepareDiscordReleases",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PostReleases",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IfSkipDiscordNotifyReleases": {
+      "main": [
+        [
+          {
+            "node": "TestResponse",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "DiscordNotifyReleases",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "aHM9O6mSwMNPTwdI"
+  }
+}
