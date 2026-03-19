@@ -56,6 +56,22 @@ describe("gdrive/PrepShareFolder", () => {
     ]);
   });
 
+  it("type=groupでemail_addressがない場合エラー", () => {
+    vi.stubGlobal("$json", {
+      body: { folder_id: "folder123", type: "group" },
+    });
+
+    const result = prepShareFolder() as INodeExecutionData[];
+    expect(result).toEqual([
+      {
+        json: {
+          _error: true,
+          message: "email_address is required when type is user or group",
+        },
+      },
+    ]);
+  });
+
   it("type=domainでdomainがない場合エラー", () => {
     vi.stubGlobal("$json", {
       body: { folder_id: "folder123", type: "domain" },
