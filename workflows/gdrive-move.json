@@ -42,7 +42,12 @@
           "mode": "id",
           "value": "={{ $json.fileId }}"
         },
-        "parentFolder": {
+        "driveId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "root"
+        },
+        "folderId": {
           "__rl": true,
           "mode": "id",
           "value": "={{ $json.folderId }}"
