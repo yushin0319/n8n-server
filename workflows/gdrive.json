@@ -484,12 +484,29 @@
     },
     {
       "parameters": {
+        "mode": "binaryToJson",
+        "sourceKey": "data",
+        "options": {
+          "encoding": "utf-8"
+        }
+      },
+      "type": "n8n-nodes-base.moveBinaryData",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        200
+      ],
+      "id": "c4a1b2d3-e5f6-4890-abcd-ef1234567890",
+      "name": "BinaryToText"
+    },
+    {
+      "parameters": {
         "jsCode": "// @external gdrive/FormatDownload.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1320,
+        1440,
         200
       ],
       "id": "30fe50ab-ab76-4286-9dfc-ee33d543c656",
@@ -1751,6 +1768,17 @@
       ]
     },
     "DownloadFile": {
+      "main": [
+        [
+          {
+            "node": "BinaryToText",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "BinaryToText": {
       "main": [
         [
           {
