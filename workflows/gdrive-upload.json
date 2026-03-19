@@ -20,7 +20,7 @@
       "name": "Webhook",
       "webhookId": "530d9f84-b674-413a-825d-e0abfb0b55b0"
     },
-{
+    {
       "parameters": {
         "jsCode": "// @external gdrive-upload/PrepUpload.ts"
       },
@@ -35,38 +35,12 @@
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "https://www.googleapis.com/drive/v3/files?fields=id,name,mimeType,webViewLink",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "googleDriveOAuth2Api",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ name: $json.name, parents: [$json.folderId], mimeType: $json.mimeType }) }}",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        680,
-        0
-      ],
-      "id": "bfda0fb8-3b14-4715-b090-80e949835dbd",
-      "name": "CreateEmpty",
-      "credentials": {
-        "googleDriveOAuth2Api": {
-          "id": "AeFJzyeByGcfTH8r",
-          "name": "Google Drive account"
-        }
-      }
-    },
-    {
-      "parameters": {
         "jsCode": "// @external gdrive-upload/PrepContent.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        920,
+        680,
         0
       ],
       "id": "8f6b5d08-f216-4768-a5a9-4516ec2e9b29",
@@ -74,23 +48,25 @@
     },
     {
       "parameters": {
-        "method": "PATCH",
-        "url": "=https://www.googleapis.com/upload/drive/v3/files/{{ $json.fileId }}?uploadType=media",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "googleDriveOAuth2Api",
-        "sendBody": true,
-        "options": {},
-        "contentType": "binaryData",
-        "inputDataFieldName": "file"
+        "resource": "file",
+        "operation": "upload",
+        "inputDataFieldName": "file",
+        "fileName": "={{ $json.name }}",
+        "parentFolder": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.folderId }}"
+        },
+        "options": {}
       },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
       "position": [
-        1160,
+        920,
         0
       ],
       "id": "9bcc2699-3017-4198-a748-83fae9a0edc7",
-      "name": "UpdateContent",
+      "name": "UploadFile",
       "credentials": {
         "googleDriveOAuth2Api": {
           "id": "AeFJzyeByGcfTH8r",
@@ -106,7 +82,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1400,
+        1160,
         0
       ],
       "name": "FormatUpload",
@@ -121,7 +97,7 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        1640,
+        1400,
         0
       ],
       "id": "7e9b9df4-605b-41e9-aa44-dac13eb411e8",
@@ -144,17 +120,6 @@
       "main": [
         [
           {
-            "node": "CreateEmpty",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "CreateEmpty": {
-      "main": [
-        [
-          {
             "node": "PrepContent",
             "type": "main",
             "index": 0
@@ -166,14 +131,14 @@
       "main": [
         [
           {
-            "node": "UpdateContent",
+            "node": "UploadFile",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "UpdateContent": {
+    "UploadFile": {
       "main": [
         [
           {

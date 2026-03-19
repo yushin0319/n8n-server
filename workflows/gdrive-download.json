@@ -35,20 +35,23 @@
     },
     {
       "parameters": {
-        "method": "GET",
-        "url": "=https://www.googleapis.com/drive/v3/files/{{ $json.fileId }}?alt=media",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "googleDriveOAuth2Api",
+        "resource": "file",
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.fileId }}"
+        },
         "options": {}
       },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
       "position": [
         920,
         0
       ],
       "id": "34c81017-9e73-46f3-955b-e6756d904397",
-      "name": "DownloadRequest",
+      "name": "DownloadFile",
       "credentials": {
         "googleDriveOAuth2Api": {
           "id": "AeFJzyeByGcfTH8r",
@@ -156,7 +159,7 @@
         ]
       ]
     },
-    "DownloadRequest": {
+    "DownloadFile": {
       "main": [
         [
           {
@@ -189,7 +192,7 @@
         ],
         [
           {
-            "node": "DownloadRequest",
+            "node": "DownloadFile",
             "type": "main",
             "index": 0
           }

@@ -1,14 +1,16 @@
 export default function (): CodeNodeReturn {
-  // n8n wraps raw text response in { data: "..." }
-  const raw = $json;
-  let content: unknown;
-  if (raw.data !== undefined) {
-    content = raw.data;
-  } else if (typeof raw === "string") {
-    content = raw;
-  } else {
-    content = JSON.stringify(raw);
-  }
+  const item = $input.first();
   const fileId = $("PrepDownload").first().json.file_id;
+
+  // ネイティブGoogle Driveノードはバイナリでファイル内容を返す
+  let content: unknown;
+  if (item.binary?.data?.data) {
+    content = Buffer.from(item.binary.data.data as string, "base64").toString(
+      "utf-8",
+    );
+  } else {
+    content = JSON.stringify(item.json);
+  }
+
   return [{ json: { action: "download", file_id: fileId, content } }];
 }
