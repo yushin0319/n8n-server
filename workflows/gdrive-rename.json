@@ -42,9 +42,7 @@
           "mode": "id",
           "value": "={{ $json.fileId }}"
         },
-        "updateFields": {
-          "fileName": "={{ $json.name }}"
-        },
+        "newUpdatedFileName": "={{ $json.name }}",
         "options": {}
       },
       "type": "n8n-nodes-base.googleDrive",

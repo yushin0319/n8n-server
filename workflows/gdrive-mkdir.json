@@ -37,8 +37,13 @@
       "parameters": {
         "resource": "folder",
         "operation": "create",
-        "folderName": "={{ $json.name }}",
-        "parentFolder": {
+        "name": "={{ $json.name }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "root"
+        },
+        "folderId": {
           "__rl": true,
           "mode": "id",
           "value": "={{ $json.parents[0] }}"
