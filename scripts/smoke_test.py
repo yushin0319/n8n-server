@@ -25,7 +25,10 @@ CRON_ENDPOINTS = [
     {"path": "test-github-summary", "name": "GitHub Summary", "timeout": 30},
     {"path": "test-gmail-to-notion", "name": "Gmail to Notion", "timeout": 30},
     {"path": "test-recurring-tasks", "name": "Recurring Tasks", "timeout": 30},
-    {"path": "test-shirankedo-daily", "name": "ShiranKedo Daily", "timeout": 60},
+    {"path": "test-shirankedo-daily-articles", "name": "ShiranKedo Articles", "timeout": 60},
+    {"path": "test-shirankedo-daily-vulns", "name": "ShiranKedo Vulns", "timeout": 60},
+    {"path": "test-shirankedo-daily-releases", "name": "ShiranKedo Releases", "timeout": 60},
+    {"path": "test-shirankedo-daily-security", "name": "ShiranKedo Security", "timeout": 60},
     {"path": "test-shirankedo-weekly", "name": "ShiranKedo Weekly", "timeout": 120},
 ]
 
