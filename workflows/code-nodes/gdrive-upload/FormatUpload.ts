@@ -1,14 +1,14 @@
 export default function (): CodeNodeReturn {
+  // ネイティブGoogle Drive Uploadノードの出力を直接読む
   const d = $input.first().json;
-  const prep = $("PrepContent").first().json;
   return [
     {
       json: {
         action: "upload",
         success: true,
-        id: d.id || prep.fileId,
-        name: d.name || prep.name,
-        url: prep.webViewLink,
+        id: d.id,
+        name: d.name,
+        url: d.webViewLink,
       },
     },
   ];

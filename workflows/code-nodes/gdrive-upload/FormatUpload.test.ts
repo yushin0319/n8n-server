@@ -7,20 +7,16 @@ describe("gdrive-upload/FormatUpload", () => {
   });
 
   it("アップロード結果を整形して返す", () => {
+    // ネイティブUploadノードの出力（id, name, webViewLink）
     vi.stubGlobal("$input", {
       first: () => ({
-        json: { id: "file123", name: "uploaded.txt" },
-      }),
-    });
-    vi.stubGlobal("$", (_name: string) => ({
-      first: () => ({
         json: {
-          fileId: "file123",
+          id: "file123",
           name: "uploaded.txt",
           webViewLink: "https://drive.google.com/file/123",
         },
       }),
-    }));
+    });
 
     const result = formatUpload() as INodeExecutionData[];
     expect(result).toEqual([
@@ -34,24 +30,5 @@ describe("gdrive-upload/FormatUpload", () => {
         },
       },
     ]);
-  });
-
-  it("UpdateContentの応答にidがない場合PrepContentのfileIdを使う", () => {
-    vi.stubGlobal("$input", {
-      first: () => ({ json: {} }),
-    });
-    vi.stubGlobal("$", (_name: string) => ({
-      first: () => ({
-        json: {
-          fileId: "fallback123",
-          name: "fallback.txt",
-          webViewLink: "https://drive.google.com/file/fallback",
-        },
-      }),
-    }));
-
-    const result = formatUpload() as INodeExecutionData[];
-    expect(result[0].json.id).toBe("fallback123");
-    expect(result[0].json.name).toBe("fallback.txt");
   });
 });

@@ -1,10 +1,10 @@
 export default function (): CodeNodeReturn {
-  const fileContent = $("PrepUpload").first().json.fileContent;
-  const fileId = $json.id;
-  const name = $json.name;
-  const webViewLink = $json.webViewLink;
-  const mimeType = $("PrepUpload").first().json.mimeType;
-  const encoding = $("PrepUpload").first().json.encoding || "utf-8";
+  // PrepUploadの出力を直接受け取る（CreateEmpty廃止）
+  const name = $json.name as string;
+  const fileContent = $json.fileContent as string;
+  const folderId = $json.folderId as string;
+  const mimeType = $json.mimeType as string;
+  const encoding = ($json.encoding as string) || "utf-8";
 
   // Size limit check (5MB) to prevent memory exhaustion
   const MAX_SIZE = 5 * 1024 * 1024;
@@ -21,11 +21,11 @@ export default function (): CodeNodeReturn {
   }
 
   // Create binary data from content (supports utf-8 for text, base64 for binary)
-  const binaryData = Buffer.from(fileContent, encoding);
+  const binaryData = Buffer.from(fileContent, encoding as BufferEncoding);
 
   return [
     {
-      json: { fileId, name, webViewLink, mimeType },
+      json: { name, folderId, mimeType },
       binary: {
         file: {
           data: binaryData.toString("base64"),

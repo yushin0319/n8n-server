@@ -35,52 +35,28 @@
     },
     {
       "parameters": {
-        "method": "GET",
-        "url": "=https://www.googleapis.com/drive/v3/files/{{ $json.fileId }}",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "googleDriveOAuth2Api",
-        "options": {},
-        "sendQuery": true,
-        "queryParameters": {
-          "parameters": [
-            {
-              "name": "fields",
-              "value": "id,name,parents"
-            }
-          ]
-        }
+        "resource": "file",
+        "operation": "move",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.fileId }}"
+        },
+        "parentFolder": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.folderId }}"
+        },
+        "options": {}
       },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
       "position": [
         920,
         0
       ],
       "id": "gdrive-move-002",
-      "name": "GetParents",
-      "credentials": {
-        "googleDriveOAuth2Api": {
-          "id": "AeFJzyeByGcfTH8r",
-          "name": "Google Drive account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "method": "PATCH",
-        "url": "=https://www.googleapis.com/drive/v3/files/{{ $('PrepMove').first().json.fileId }}?addParents={{ $('PrepMove').first().json.folderId }}&fields=id,name,webViewLink{{ $json.parents && $json.parents.length ? '&removeParents=' + $json.parents.join(',') : '' }}",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "googleDriveOAuth2Api",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        1160,
-        0
-      ],
-      "id": "gdrive-move-003",
-      "name": "MoveRequest",
+      "name": "MoveFile",
       "credentials": {
         "googleDriveOAuth2Api": {
           "id": "AeFJzyeByGcfTH8r",
@@ -95,7 +71,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1400,
+        1160,
         0
       ],
       "id": "gdrive-move-004",
@@ -110,7 +86,7 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        1640,
+        1400,
         0
       ],
       "id": "gdrive-move-005",
@@ -188,18 +164,7 @@
         ]
       ]
     },
-    "GetParents": {
-      "main": [
-        [
-          {
-            "node": "MoveRequest",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "MoveRequest": {
+    "MoveFile": {
       "main": [
         [
           {
@@ -232,7 +197,7 @@
         ],
         [
           {
-            "node": "GetParents",
+            "node": "MoveFile",
             "type": "main",
             "index": 0
           }
