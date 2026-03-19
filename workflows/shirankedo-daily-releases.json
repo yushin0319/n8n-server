@@ -574,7 +574,13 @@
     },
     "IfSkipDiscordNotifyReleases": {
       "main": [
-        [],
+        [
+          {
+            "node": "TestResponse",
+            "type": "main",
+            "index": 0
+          }
+        ],
         [
           {
             "node": "DiscordNotifyReleases",
