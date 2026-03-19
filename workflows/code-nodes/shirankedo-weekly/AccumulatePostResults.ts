@@ -7,8 +7,10 @@ export default function (): CodeNodeReturn {
     staticData._postInitialized = true;
   }
   const counter = staticData.postResults as { total: number; errors: number };
-  const res = $input.first().json;
-  if (res && res.ok) {
+  const res = $input.first()?.json;
+  if (!res) {
+    counter.errors += 1;
+  } else if (res.ok) {
     counter.total += (res.inserted as number) || 0;
   } else {
     counter.errors += 1;

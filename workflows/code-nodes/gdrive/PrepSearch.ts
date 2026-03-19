@@ -7,13 +7,22 @@ export default function (): CodeNodeReturn {
     optional: { query: "", folder_id: "", mime_type: "", limit: 50 },
   });
 
+  const query = params.query as string;
+  const folderId = params.folder_id as string;
+  const mimeType = params.mime_type as string;
+
+  // Google Drive API クエリを組み立て
+  const conditions: string[] = [];
+  if (query) conditions.push(`name contains '${query}'`);
+  if (folderId) conditions.push(`'${folderId}' in parents`);
+  if (mimeType) conditions.push(`mimeType = '${mimeType}'`);
+  conditions.push("trashed = false");
+
   return [
     {
       json: {
         searchMethod: "query",
-        queryString: params.query as string,
-        folderId: params.folder_id || undefined,
-        mimeType: params.mime_type || undefined,
+        queryString: conditions.join(" and "),
         limit: params.limit,
       },
     },
