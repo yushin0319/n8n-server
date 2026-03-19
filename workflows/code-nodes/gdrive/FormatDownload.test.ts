@@ -6,10 +6,12 @@ describe("gdrive-download/FormatDownload", () => {
     vi.unstubAllGlobals();
   });
 
-  it("BinaryToTextで変換済みのテキストをcontentとして返す", () => {
+  it("バイナリデータからcontentを抽出する", () => {
+    const base64Content = Buffer.from("file content here").toString("base64");
     vi.stubGlobal("$input", {
       first: () => ({
-        json: { data: "file content here" },
+        json: { id: "abc123", name: "test.txt" },
+        binary: { data: { data: base64Content, mimeType: "text/plain" } },
       }),
     });
     vi.stubGlobal("$", (_name: string) => ({
@@ -25,10 +27,12 @@ describe("gdrive-download/FormatDownload", () => {
     });
   });
 
-  it("日本語テキストを正しく返す", () => {
+  it("日本語テキストを正しくデコードする", () => {
+    const base64Content = Buffer.from("こんにちは世界").toString("base64");
     vi.stubGlobal("$input", {
       first: () => ({
-        json: { data: "こんにちは世界" },
+        json: { id: "abc123", name: "test.txt" },
+        binary: { data: { data: base64Content, mimeType: "text/plain" } },
       }),
     });
     vi.stubGlobal("$", (_name: string) => ({
@@ -39,10 +43,11 @@ describe("gdrive-download/FormatDownload", () => {
     expect(result[0].json.content).toBe("こんにちは世界");
   });
 
-  it("dataがない場合JSONをstringifyする", () => {
+  it("バイナリがない場合JSONをstringifyする", () => {
     vi.stubGlobal("$input", {
       first: () => ({
         json: { foo: "bar" },
+        binary: undefined,
       }),
     });
     vi.stubGlobal("$", (_name: string) => ({
