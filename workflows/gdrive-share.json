@@ -42,13 +42,11 @@
           "mode": "id",
           "value": "={{ $json.fileId }}"
         },
-        "permissions": {
-          "permission": [
-            {
-              "role": "={{ $json.role }}",
-              "type": "={{ $json.shareType }}"
-            }
-          ]
+        "permissionsUi": {
+          "permissionsValues": {
+            "role": "={{ $json.role }}",
+            "type": "={{ $json.shareType }}"
+          }
         },
         "options": {}
       },

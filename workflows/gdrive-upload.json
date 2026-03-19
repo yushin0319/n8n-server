@@ -51,8 +51,13 @@
         "resource": "file",
         "operation": "upload",
         "inputDataFieldName": "file",
-        "fileName": "={{ $json.name }}",
-        "parentFolder": {
+        "name": "={{ $json.name }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "root"
+        },
+        "folderId": {
           "__rl": true,
           "mode": "id",
           "value": "={{ $json.folderId }}"
