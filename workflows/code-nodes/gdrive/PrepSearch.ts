@@ -7,12 +7,11 @@ export default function (): CodeNodeReturn {
     optional: { query: "", folder_id: "", mime_type: "", limit: 50 },
   });
 
-  const hasQuery = params.query !== "";
   return [
     {
       json: {
-        searchMethod: hasQuery ? "name" : "query",
-        queryString: hasQuery ? params.query : "",
+        searchMethod: "query",
+        queryString: params.query as string,
         folderId: params.folder_id || undefined,
         mimeType: params.mime_type || undefined,
         limit: params.limit,

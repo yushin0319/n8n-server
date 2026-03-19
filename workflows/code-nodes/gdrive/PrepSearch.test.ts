@@ -19,7 +19,7 @@ describe("gdrive/PrepSearch", () => {
 
     const result = prepSearch() as INodeExecutionData[];
     expect(result[0].json.queryString).toBe("test");
-    expect(result[0].json.searchMethod).toBe("name");
+    expect(result[0].json.searchMethod).toBe("query");
   });
 
   it("folder_id指定時はフォルダフィルタを設定する", () => {
