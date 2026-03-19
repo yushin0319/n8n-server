@@ -35,23 +35,31 @@
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "=https://www.googleapis.com/drive/v3/files/{{ $json.fileId }}/permissions",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "googleDriveOAuth2Api",
-        "options": {},
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ role: $json.role, type: $json.shareType }) }}"
+        "resource": "file",
+        "operation": "share",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.fileId }}"
+        },
+        "permissions": {
+          "permission": [
+            {
+              "role": "={{ $json.role }}",
+              "type": "={{ $json.shareType }}"
+            }
+          ]
+        },
+        "options": {}
       },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
       "position": [
         920,
         0
       ],
       "id": "gdrive-share-002",
-      "name": "ShareRequest",
+      "name": "ShareFile",
       "credentials": {
         "googleDriveOAuth2Api": {
           "id": "AeFJzyeByGcfTH8r",
@@ -159,7 +167,7 @@
         ]
       ]
     },
-    "ShareRequest": {
+    "ShareFile": {
       "main": [
         [
           {
@@ -192,7 +200,7 @@
         ],
         [
           {
-            "node": "ShareRequest",
+            "node": "ShareFile",
             "type": "main",
             "index": 0
           }

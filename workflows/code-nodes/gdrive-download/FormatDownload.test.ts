@@ -6,8 +6,14 @@ describe("gdrive-download/FormatDownload", () => {
     vi.unstubAllGlobals();
   });
 
-  it("data付きレスポンスからcontentを抽出する", () => {
-    vi.stubGlobal("$json", { data: "file content here" });
+  it("バイナリデータからcontentを抽出する", () => {
+    const base64Content = Buffer.from("file content here").toString("base64");
+    vi.stubGlobal("$input", {
+      first: () => ({
+        json: { id: "abc123", name: "test.txt" },
+        binary: { data: { data: base64Content, mimeType: "text/plain" } },
+      }),
+    });
     vi.stubGlobal("$", (_name: string) => ({
       first: () => ({ json: { file_id: "abc123" } }),
     }));
@@ -21,8 +27,13 @@ describe("gdrive-download/FormatDownload", () => {
     });
   });
 
-  it("dataがない場合JSONをstringifyする", () => {
-    vi.stubGlobal("$json", { foo: "bar" });
+  it("バイナリがない場合JSONをstringifyする", () => {
+    vi.stubGlobal("$input", {
+      first: () => ({
+        json: { foo: "bar" },
+        binary: undefined,
+      }),
+    });
     vi.stubGlobal("$", (_name: string) => ({
       first: () => ({ json: { file_id: "abc123" } }),
     }));

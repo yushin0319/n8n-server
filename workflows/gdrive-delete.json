@@ -35,23 +35,23 @@
     },
     {
       "parameters": {
-        "method": "PATCH",
-        "url": "=https://www.googleapis.com/drive/v3/files/{{ $json.fileId }}",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "googleDriveOAuth2Api",
-        "options": {},
-        "sendBody": true,
-        "jsonBody": "={{ JSON.stringify({ trashed: true }) }}",
-        "specifyBody": "json"
+        "resource": "file",
+        "operation": "delete",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.fileId }}"
+        },
+        "options": {}
       },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
       "position": [
         920,
         0
       ],
       "id": "708d2dac-2860-46e8-896a-5f1f1152c1a2",
-      "name": "DeleteRequest",
+      "name": "DeleteFile",
       "credentials": {
         "googleDriveOAuth2Api": {
           "id": "AeFJzyeByGcfTH8r",
@@ -160,7 +160,7 @@
         ]
       ]
     },
-    "DeleteRequest": {
+    "DeleteFile": {
       "main": [
         [
           {
@@ -193,7 +193,7 @@
         ],
         [
           {
-            "node": "DeleteRequest",
+            "node": "DeleteFile",
             "type": "main",
             "index": 0
           }

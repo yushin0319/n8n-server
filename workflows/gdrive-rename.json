@@ -35,32 +35,26 @@
     },
     {
       "parameters": {
-        "method": "PATCH",
-        "url": "=https://www.googleapis.com/drive/v3/files/{{ $json.fileId }}",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "googleDriveOAuth2Api",
-        "options": {},
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ name: $json.name }) }}",
-        "sendQuery": true,
-        "queryParameters": {
-          "parameters": [
-            {
-              "name": "fields",
-              "value": "id,name,webViewLink"
-            }
-          ]
-        }
+        "resource": "file",
+        "operation": "update",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.fileId }}"
+        },
+        "updateFields": {
+          "fileName": "={{ $json.name }}"
+        },
+        "options": {}
       },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
       "position": [
         920,
         0
       ],
       "id": "gdrive-rename-002",
-      "name": "RenameRequest",
+      "name": "UpdateFile",
       "credentials": {
         "googleDriveOAuth2Api": {
           "id": "AeFJzyeByGcfTH8r",
@@ -168,7 +162,7 @@
         ]
       ]
     },
-    "RenameRequest": {
+    "UpdateFile": {
       "main": [
         [
           {
@@ -201,7 +195,7 @@
         ],
         [
           {
-            "node": "RenameRequest",
+            "node": "UpdateFile",
             "type": "main",
             "index": 0
           }

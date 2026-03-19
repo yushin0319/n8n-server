@@ -35,23 +35,24 @@
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "https://www.googleapis.com/drive/v3/files?fields=id,name,mimeType,webViewLink",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "googleDriveOAuth2Api",
-        "options": {},
-        "sendBody": true,
-        "jsonBody": "={{ JSON.stringify({ name: $json.name, mimeType: $json.mimeType, parents: $json.parents }) }}",
-        "specifyBody": "json"
+        "resource": "folder",
+        "operation": "create",
+        "folderName": "={{ $json.name }}",
+        "parentFolder": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.parents[0] }}"
+        },
+        "options": {}
       },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
       "position": [
         920,
         0
       ],
       "id": "1be9f98e-1c6f-4816-bc07-939425daaa86",
-      "name": "MkdirRequest",
+      "name": "CreateFolder",
       "credentials": {
         "googleDriveOAuth2Api": {
           "id": "AeFJzyeByGcfTH8r",
@@ -160,7 +161,7 @@
         ]
       ]
     },
-    "MkdirRequest": {
+    "CreateFolder": {
       "main": [
         [
           {
@@ -193,7 +194,7 @@
         ],
         [
           {
-            "node": "MkdirRequest",
+            "node": "CreateFolder",
             "type": "main",
             "index": 0
           }
