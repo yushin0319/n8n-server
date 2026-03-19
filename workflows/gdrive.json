@@ -1,0 +1,2363 @@
+{
+  "id": "8ECPzKGnWs7bKESG",
+  "name": "Google Drive",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "gdrive",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        1200
+      ],
+      "name": "Webhook",
+      "id": "aab19905-a92a-4556-93be-84897cf6698d",
+      "webhookId": "gdrive-unified-001"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": ""
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.action }}",
+                    "rightValue": "upload",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "upload"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": ""
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.action }}",
+                    "rightValue": "download",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "download"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": ""
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.action }}",
+                    "rightValue": "copy",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "copy"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": ""
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.action }}",
+                    "rightValue": "createFromText",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "createFromText"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": ""
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.action }}",
+                    "rightValue": "deleteFile",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "deleteFile"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": ""
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.action }}",
+                    "rightValue": "move",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "move"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": ""
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.action }}",
+                    "rightValue": "update",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "update"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": ""
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.action }}",
+                    "rightValue": "share",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "share"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": ""
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.action }}",
+                    "rightValue": "createFolder",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "createFolder"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": ""
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.action }}",
+                    "rightValue": "deleteFolder",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "deleteFolder"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": ""
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.action }}",
+                    "rightValue": "shareFolder",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "shareFolder"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": ""
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.action }}",
+                    "rightValue": "search",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "search"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        300,
+        1200
+      ],
+      "name": "Switch",
+      "id": "27084927-0017-4b41-94b6-4dd8fa48c860"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ error: true, message: $json.message }) }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        600,
+        3600
+      ],
+      "id": "dc743fcd-bd37-42ef-a571-c36a2f9a378d",
+      "name": "RespondUnknownAction"
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external gdrive/PrepUpload.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        600,
+        0
+      ],
+      "id": "7b51e08f-c08f-47be-984b-81380be10726",
+      "name": "PrepUpload"
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external gdrive/PrepContent.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        840,
+        0
+      ],
+      "id": "64c0f1c4-ffe6-40df-8a0e-37e26183faee",
+      "name": "PrepContent"
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "upload",
+        "inputDataFieldName": "file",
+        "name": "={{ $json.name }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "root"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.folderId }}"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1080,
+        0
+      ],
+      "id": "96f62596-2995-40cb-95ff-245d9a3e32c4",
+      "name": "UploadFile",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "AeFJzyeByGcfTH8r",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external gdrive/FormatUpload.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1320,
+        0
+      ],
+      "id": "b953c5db-08c4-4ba1-94a4-c0e52a205166",
+      "name": "FormatUpload"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1560,
+        0
+      ],
+      "id": "1ae5b406-c48c-44b0-ba5e-b4e22b7e640d",
+      "name": "RespondUpload"
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external gdrive/PrepDownload.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        600,
+        200
+      ],
+      "id": "6d4bd997-b046-4c1c-ad4d-761279f1c7fd",
+      "name": "PrepDownload"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": ""
+          },
+          "conditions": [
+            {
+              "id": "0887f2d7-d95e-4c3b-9eef-9391cbb69bc3",
+              "leftValue": "={{ $json._error }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        840,
+        200
+      ],
+      "id": "b86f345b-1a29-49c2-8637-6bffdcd69b17",
+      "name": "CheckErrorDownload"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ error: true, message: $json.message }) }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1080,
+        320
+      ],
+      "id": "b9919dfd-c0ed-4a1f-9d10-e8a42883e9d7",
+      "name": "RespondErrorDownload"
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.fileId }}"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1080,
+        200
+      ],
+      "id": "736215e9-b00d-42fc-8963-3d7c945d5aaa",
+      "name": "DownloadFile",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "AeFJzyeByGcfTH8r",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external gdrive/FormatDownload.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1320,
+        200
+      ],
+      "id": "30fe50ab-ab76-4286-9dfc-ee33d543c656",
+      "name": "FormatDownload"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1560,
+        200
+      ],
+      "id": "470d4b34-e581-4d11-8b69-f2eba53cdd14",
+      "name": "RespondDownload"
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external gdrive/PrepCopy.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        600,
+        400
+      ],
+      "id": "3c874f24-a9b9-488d-b253-9df2b612aa86",
+      "name": "PrepCopy"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": ""
+          },
+          "conditions": [
+            {
+              "id": "59ead5a9-3341-40a1-a5f6-464a291a19b3",
+              "leftValue": "={{ $json._error }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        840,
+        400
+      ],
+      "id": "8848595a-7bdb-4268-829e-046438bfdbef",
+      "name": "CheckErrorCopy"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ error: true, message: $json.message }) }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1080,
+        520
+      ],
+      "id": "8302ffc5-beef-4cdb-8b93-cb974f88b58d",
+      "name": "RespondErrorCopy"
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "copy",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.fileId }}"
+        },
+        "name": "={{ $json.name }}",
+        "sameFolder": "={{ $json.sameFolder }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "root"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.folderId }}"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1080,
+        400
+      ],
+      "id": "44ad1f2e-4919-4def-827a-e25b7b4ac4a2",
+      "name": "CopyFile",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "AeFJzyeByGcfTH8r",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external gdrive/FormatCopy.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1320,
+        400
+      ],
+      "id": "86d5039f-21e9-4292-88bd-96679b50f2c9",
+      "name": "FormatCopy"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1560,
+        400
+      ],
+      "id": "24dace3a-1d2b-4d19-8283-2b6c78d01d04",
+      "name": "RespondCopy"
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external gdrive/PrepCreateText.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        600,
+        600
+      ],
+      "id": "aaea669d-028b-4c0f-8926-6253ed3f0f41",
+      "name": "PrepCreateText"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": ""
+          },
+          "conditions": [
+            {
+              "id": "c705105e-f13d-415b-b2d3-48266885ef04",
+              "leftValue": "={{ $json._error }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        840,
+        600
+      ],
+      "id": "0704b5a3-913e-47da-8e36-10d386620721",
+      "name": "CheckErrorCreateFromText"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ error: true, message: $json.message }) }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1080,
+        720
+      ],
+      "id": "4755e33c-bf18-4d04-b756-efabd516fa1e",
+      "name": "RespondErrorCreateFromText"
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "createFromText",
+        "content": "={{ $json.content }}",
+        "name": "={{ $json.name }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "root"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.folderId }}"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1080,
+        600
+      ],
+      "id": "a97d6bfb-07a4-48c2-84e4-90a72f8ca239",
+      "name": "CreateFromText",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "AeFJzyeByGcfTH8r",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external gdrive/FormatCreateText.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1320,
+        600
+      ],
+      "id": "6ed014ba-a469-4d90-a7d7-3ff502e43e64",
+      "name": "FormatCreateText"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1560,
+        600
+      ],
+      "id": "0ae3875e-c99f-4eeb-8448-35063cad9c32",
+      "name": "RespondCreateFromText"
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external gdrive/PrepDeleteFile.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        600,
+        800
+      ],
+      "id": "0cfe4643-7d26-45ec-ba05-0af01d264e83",
+      "name": "PrepDeleteFile"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": ""
+          },
+          "conditions": [
+            {
+              "id": "45f4313f-b320-4481-aa5c-bdd30ab76b77",
+              "leftValue": "={{ $json._error }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        840,
+        800
+      ],
+      "id": "bbb232c1-234c-4d51-b4c3-de9336b40f43",
+      "name": "CheckErrorDeleteFile"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ error: true, message: $json.message }) }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1080,
+        920
+      ],
+      "id": "a147bc9f-afcc-484d-804d-060f7a135b46",
+      "name": "RespondErrorDeleteFile"
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "deleteFile",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.fileId }}"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1080,
+        800
+      ],
+      "id": "d942957f-601c-4dcc-b926-aba5811102f4",
+      "name": "DeleteFile",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "AeFJzyeByGcfTH8r",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external gdrive/FormatDeleteFile.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1320,
+        800
+      ],
+      "id": "68e76917-b36d-46e1-8ea5-6c3997a0f97e",
+      "name": "FormatDeleteFile"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1560,
+        800
+      ],
+      "id": "9a051aad-0d4f-4989-8188-d19e44cc540c",
+      "name": "RespondDeleteFile"
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external gdrive/PrepMove.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        600,
+        1000
+      ],
+      "id": "ffa824f1-50d3-481d-817e-ad42e970611b",
+      "name": "PrepMove"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": ""
+          },
+          "conditions": [
+            {
+              "id": "fb11295e-c0f6-4462-af9b-f5108255f55d",
+              "leftValue": "={{ $json._error }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        840,
+        1000
+      ],
+      "id": "fe98017b-aeb3-485e-8586-478627827873",
+      "name": "CheckErrorMove"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ error: true, message: $json.message }) }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1080,
+        1120
+      ],
+      "id": "7da69e9c-051b-4e39-b326-c954ea62e969",
+      "name": "RespondErrorMove"
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "move",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.fileId }}"
+        },
+        "driveId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "root"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.folderId }}"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1080,
+        1000
+      ],
+      "id": "d6167950-95b3-47e9-8e70-710bfc6fad43",
+      "name": "MoveFile",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "AeFJzyeByGcfTH8r",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external gdrive/FormatMove.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1320,
+        1000
+      ],
+      "id": "ead08bb0-0f1a-42a4-b8f3-63f4fe9b9c6b",
+      "name": "FormatMove"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1560,
+        1000
+      ],
+      "id": "013e62d0-ce1f-40d6-823e-a893f4ee4116",
+      "name": "RespondMove"
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external gdrive/PrepUpdate.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        600,
+        1200
+      ],
+      "id": "ada0a815-d138-4239-abec-61c5abd82b83",
+      "name": "PrepUpdate"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": ""
+          },
+          "conditions": [
+            {
+              "id": "9cfdc0d8-d41d-4a63-a734-5fd2f71c70c0",
+              "leftValue": "={{ $json._error }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        840,
+        1200
+      ],
+      "id": "04a3642d-b2b8-4a59-adc2-8bda42c3e13b",
+      "name": "CheckErrorUpdate"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ error: true, message: $json.message }) }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1080,
+        1320
+      ],
+      "id": "b8431ad0-f7a1-42ab-8398-3debb890372b",
+      "name": "RespondErrorUpdate"
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "update",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.fileId }}"
+        },
+        "newUpdatedFileName": "={{ $json.name }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1080,
+        1200
+      ],
+      "id": "68a53c21-8221-408a-8abe-8bf83858351b",
+      "name": "UpdateFile",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "AeFJzyeByGcfTH8r",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external gdrive/FormatUpdate.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1320,
+        1200
+      ],
+      "id": "a62e3fa0-12a6-45ba-aadc-3a9deef0e124",
+      "name": "FormatUpdate"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1560,
+        1200
+      ],
+      "id": "88c51706-67c4-40e8-bbca-63328e1f654d",
+      "name": "RespondUpdate"
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external gdrive/PrepShare.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        600,
+        1400
+      ],
+      "id": "89373b57-dd74-420f-b192-62a761f85c0e",
+      "name": "PrepShare"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": ""
+          },
+          "conditions": [
+            {
+              "id": "68092c4f-c015-4c54-976e-a53a3a15b0c6",
+              "leftValue": "={{ $json._error }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        840,
+        1400
+      ],
+      "id": "d858de98-5041-45b0-b7f6-0d894f7581c0",
+      "name": "CheckErrorShare"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ error: true, message: $json.message }) }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1080,
+        1520
+      ],
+      "id": "64bb02d9-a23e-45b6-9538-c9abc087cfd7",
+      "name": "RespondErrorShare"
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "share",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.fileId }}"
+        },
+        "permissionsUi": {
+          "permissionsValues": {
+            "role": "={{ $json.role }}",
+            "type": "={{ $json.shareType }}"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1080,
+        1400
+      ],
+      "id": "74303a9b-1a23-49a5-83b3-37a96808a800",
+      "name": "ShareFile",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "AeFJzyeByGcfTH8r",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external gdrive/FormatShare.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1320,
+        1400
+      ],
+      "id": "03803d69-31a2-434b-8e39-629d250c5d23",
+      "name": "FormatShare"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1560,
+        1400
+      ],
+      "id": "751db1c4-73cd-410f-9b21-129cc8e76b49",
+      "name": "RespondShare"
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external gdrive/PrepCreateFolder.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        600,
+        1600
+      ],
+      "id": "d983394c-206c-420f-af77-974e7cbf4590",
+      "name": "PrepCreateFolder"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": ""
+          },
+          "conditions": [
+            {
+              "id": "c6fb8c69-c74b-401c-aa31-0419040c5eb0",
+              "leftValue": "={{ $json._error }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        840,
+        1600
+      ],
+      "id": "14c64134-2762-48c9-835c-112169b9e91e",
+      "name": "CheckErrorCreateFolder"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ error: true, message: $json.message }) }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1080,
+        1720
+      ],
+      "id": "f5f95f1e-7c08-4038-83a2-3448cf9dedcc",
+      "name": "RespondErrorCreateFolder"
+    },
+    {
+      "parameters": {
+        "resource": "folder",
+        "operation": "create",
+        "name": "={{ $json.name }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "root"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.parents[0] }}"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1080,
+        1600
+      ],
+      "id": "71ef6d78-690a-43a9-ad84-8a9751c917fb",
+      "name": "CreateFolder",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "AeFJzyeByGcfTH8r",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external gdrive/FormatCreateFolder.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1320,
+        1600
+      ],
+      "id": "6d796fbd-f0c7-4f57-9c07-bb5217e75a24",
+      "name": "FormatCreateFolder"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1560,
+        1600
+      ],
+      "id": "cb4ad97d-98d5-4375-8932-566b629edb1a",
+      "name": "RespondCreateFolder"
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external gdrive/PrepDeleteFolder.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        600,
+        1800
+      ],
+      "id": "b7282acf-4ad2-4eae-8404-3639edae6f8a",
+      "name": "PrepDeleteFolder"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": ""
+          },
+          "conditions": [
+            {
+              "id": "3ff0ffa3-29fa-4c9b-962f-e54b3871da2d",
+              "leftValue": "={{ $json._error }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        840,
+        1800
+      ],
+      "id": "acfb2054-28b4-4384-9d0e-b648ecd1b656",
+      "name": "CheckErrorDeleteFolder"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ error: true, message: $json.message }) }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1080,
+        1920
+      ],
+      "id": "5cb23677-e598-4e6d-ac97-645a3b28effd",
+      "name": "RespondErrorDeleteFolder"
+    },
+    {
+      "parameters": {
+        "resource": "folder",
+        "operation": "deleteFolder",
+        "folderNoRootId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.folderId }}"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1080,
+        1800
+      ],
+      "id": "e90a31b4-dfbe-4332-a1ab-7f0f9915ca7c",
+      "name": "DeleteFolder",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "AeFJzyeByGcfTH8r",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external gdrive/FormatDeleteFolder.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1320,
+        1800
+      ],
+      "id": "628f7335-2cdb-46a4-a9cf-e267c72023a4",
+      "name": "FormatDeleteFolder"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1560,
+        1800
+      ],
+      "id": "34a4ca8e-b776-4196-9c39-e3e45f29eb6c",
+      "name": "RespondDeleteFolder"
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external gdrive/PrepShareFolder.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        600,
+        2000
+      ],
+      "id": "cc01b08f-66ad-450a-81d6-f66488d56871",
+      "name": "PrepShareFolder"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": ""
+          },
+          "conditions": [
+            {
+              "id": "05fcfb58-d2bf-40b7-a4bc-dfbfb476fc4e",
+              "leftValue": "={{ $json._error }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        840,
+        2000
+      ],
+      "id": "1687a519-93c4-472a-a32f-d93c2b14b83c",
+      "name": "CheckErrorShareFolder"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ error: true, message: $json.message }) }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1080,
+        2120
+      ],
+      "id": "36827634-2bbe-48a0-919e-71f4474d24ed",
+      "name": "RespondErrorShareFolder"
+    },
+    {
+      "parameters": {
+        "resource": "folder",
+        "operation": "share",
+        "folderNoRootId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.folderId }}"
+        },
+        "permissionsUi": {
+          "permissionsValues": {
+            "role": "={{ $json.role }}",
+            "type": "={{ $json.shareType }}"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1080,
+        2000
+      ],
+      "id": "bfbd2091-e1cc-43bb-8504-6672a3062f93",
+      "name": "ShareFolder",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "AeFJzyeByGcfTH8r",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external gdrive/FormatShareFolder.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1320,
+        2000
+      ],
+      "id": "db289ed4-6390-4f78-b02f-920c3c8caafe",
+      "name": "FormatShareFolder"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1560,
+        2000
+      ],
+      "id": "e8b189b8-c387-496f-b01d-1bdadacabf3a",
+      "name": "RespondShareFolder"
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external gdrive/PrepSearch.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        600,
+        2200
+      ],
+      "id": "2cb855c1-3f99-4fe9-85c3-c46e145ebddd",
+      "name": "PrepSearch"
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "operation": "search",
+        "searchMethod": "={{ $json.searchMethod }}",
+        "queryString": "={{ $json.queryString }}",
+        "returnAll": false,
+        "limit": "={{ $json.limit }}",
+        "filter": {},
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        840,
+        2200
+      ],
+      "id": "b46043e7-9935-4255-a262-46e2af4b7294",
+      "name": "SearchFiles",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "AeFJzyeByGcfTH8r",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external gdrive/FormatSearch.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1080,
+        2200
+      ],
+      "id": "4072ab9e-1656-4c7d-8874-f6d8d0a89ca1",
+      "name": "FormatSearch"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1320,
+        2200
+      ],
+      "id": "131b255f-2b3b-410c-87d5-20b021d8c912",
+      "name": "RespondSearch"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepUpload": {
+      "main": [
+        [
+          {
+            "node": "PrepContent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepContent": {
+      "main": [
+        [
+          {
+            "node": "UploadFile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "UploadFile": {
+      "main": [
+        [
+          {
+            "node": "FormatUpload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FormatUpload": {
+      "main": [
+        [
+          {
+            "node": "RespondUpload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepDownload": {
+      "main": [
+        [
+          {
+            "node": "CheckErrorDownload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CheckErrorDownload": {
+      "main": [
+        [
+          {
+            "node": "RespondErrorDownload",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "DownloadFile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DownloadFile": {
+      "main": [
+        [
+          {
+            "node": "FormatDownload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FormatDownload": {
+      "main": [
+        [
+          {
+            "node": "RespondDownload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepCopy": {
+      "main": [
+        [
+          {
+            "node": "CheckErrorCopy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CheckErrorCopy": {
+      "main": [
+        [
+          {
+            "node": "RespondErrorCopy",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CopyFile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CopyFile": {
+      "main": [
+        [
+          {
+            "node": "FormatCopy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FormatCopy": {
+      "main": [
+        [
+          {
+            "node": "RespondCopy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepCreateText": {
+      "main": [
+        [
+          {
+            "node": "CheckErrorCreateFromText",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CheckErrorCreateFromText": {
+      "main": [
+        [
+          {
+            "node": "RespondErrorCreateFromText",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CreateFromText",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CreateFromText": {
+      "main": [
+        [
+          {
+            "node": "FormatCreateText",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FormatCreateText": {
+      "main": [
+        [
+          {
+            "node": "RespondCreateFromText",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepDeleteFile": {
+      "main": [
+        [
+          {
+            "node": "CheckErrorDeleteFile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CheckErrorDeleteFile": {
+      "main": [
+        [
+          {
+            "node": "RespondErrorDeleteFile",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "DeleteFile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DeleteFile": {
+      "main": [
+        [
+          {
+            "node": "FormatDeleteFile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FormatDeleteFile": {
+      "main": [
+        [
+          {
+            "node": "RespondDeleteFile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepMove": {
+      "main": [
+        [
+          {
+            "node": "CheckErrorMove",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CheckErrorMove": {
+      "main": [
+        [
+          {
+            "node": "RespondErrorMove",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "MoveFile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MoveFile": {
+      "main": [
+        [
+          {
+            "node": "FormatMove",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FormatMove": {
+      "main": [
+        [
+          {
+            "node": "RespondMove",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepUpdate": {
+      "main": [
+        [
+          {
+            "node": "CheckErrorUpdate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CheckErrorUpdate": {
+      "main": [
+        [
+          {
+            "node": "RespondErrorUpdate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "UpdateFile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "UpdateFile": {
+      "main": [
+        [
+          {
+            "node": "FormatUpdate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FormatUpdate": {
+      "main": [
+        [
+          {
+            "node": "RespondUpdate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepShare": {
+      "main": [
+        [
+          {
+            "node": "CheckErrorShare",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CheckErrorShare": {
+      "main": [
+        [
+          {
+            "node": "RespondErrorShare",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "ShareFile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ShareFile": {
+      "main": [
+        [
+          {
+            "node": "FormatShare",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FormatShare": {
+      "main": [
+        [
+          {
+            "node": "RespondShare",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepCreateFolder": {
+      "main": [
+        [
+          {
+            "node": "CheckErrorCreateFolder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CheckErrorCreateFolder": {
+      "main": [
+        [
+          {
+            "node": "RespondErrorCreateFolder",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CreateFolder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CreateFolder": {
+      "main": [
+        [
+          {
+            "node": "FormatCreateFolder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FormatCreateFolder": {
+      "main": [
+        [
+          {
+            "node": "RespondCreateFolder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepDeleteFolder": {
+      "main": [
+        [
+          {
+            "node": "CheckErrorDeleteFolder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CheckErrorDeleteFolder": {
+      "main": [
+        [
+          {
+            "node": "RespondErrorDeleteFolder",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "DeleteFolder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DeleteFolder": {
+      "main": [
+        [
+          {
+            "node": "FormatDeleteFolder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FormatDeleteFolder": {
+      "main": [
+        [
+          {
+            "node": "RespondDeleteFolder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepShareFolder": {
+      "main": [
+        [
+          {
+            "node": "CheckErrorShareFolder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CheckErrorShareFolder": {
+      "main": [
+        [
+          {
+            "node": "RespondErrorShareFolder",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "ShareFolder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ShareFolder": {
+      "main": [
+        [
+          {
+            "node": "FormatShareFolder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FormatShareFolder": {
+      "main": [
+        [
+          {
+            "node": "RespondShareFolder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepSearch": {
+      "main": [
+        [
+          {
+            "node": "SearchFiles",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SearchFiles": {
+      "main": [
+        [
+          {
+            "node": "FormatSearch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FormatSearch": {
+      "main": [
+        [
+          {
+            "node": "RespondSearch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "PrepUpload",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PrepDownload",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PrepCopy",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PrepCreateText",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PrepDeleteFile",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PrepMove",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PrepUpdate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PrepShare",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PrepCreateFolder",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PrepDeleteFolder",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PrepShareFolder",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PrepSearch",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "RespondUnknownAction",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "aHM9O6mSwMNPTwdI"
+  }
+}
