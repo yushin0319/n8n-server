@@ -6,12 +6,10 @@ describe("gdrive-download/FormatDownload", () => {
     vi.unstubAllGlobals();
   });
 
-  it("base64バイナリデータからcontentを抽出する", () => {
-    const base64Content = Buffer.from("file content here").toString("base64");
+  it("BinaryToTextで変換済みのテキストをcontentとして返す", () => {
     vi.stubGlobal("$input", {
       first: () => ({
-        json: { id: "abc123", name: "test.txt" },
-        binary: { data: { data: base64Content, mimeType: "text/plain" } },
+        json: { textContent: "file content here" },
       }),
     });
     vi.stubGlobal("$", (_name: string) => ({
@@ -27,29 +25,10 @@ describe("gdrive-download/FormatDownload", () => {
     });
   });
 
-  it("非base64テキストはそのまま返す", () => {
+  it("日本語テキストを正しく返す", () => {
     vi.stubGlobal("$input", {
       first: () => ({
-        json: { id: "abc123", name: "test.txt" },
-        binary: {
-          data: { data: "plain text content", mimeType: "text/plain" },
-        },
-      }),
-    });
-    vi.stubGlobal("$", (_name: string) => ({
-      first: () => ({ json: { fileId: "abc123" } }),
-    }));
-
-    const result = formatDownload() as INodeExecutionData[];
-    expect(result[0].json.content).toBe("plain text content");
-  });
-
-  it("日本語テキストを正しくデコードする", () => {
-    const base64Content = Buffer.from("こんにちは世界").toString("base64");
-    vi.stubGlobal("$input", {
-      first: () => ({
-        json: { id: "abc123", name: "test.txt" },
-        binary: { data: { data: base64Content, mimeType: "text/plain" } },
+        json: { textContent: "こんにちは世界" },
       }),
     });
     vi.stubGlobal("$", (_name: string) => ({
@@ -60,11 +39,10 @@ describe("gdrive-download/FormatDownload", () => {
     expect(result[0].json.content).toBe("こんにちは世界");
   });
 
-  it("バイナリがない場合JSONをstringifyする", () => {
+  it("textContentがない場合JSONをstringifyする", () => {
     vi.stubGlobal("$input", {
       first: () => ({
         json: { foo: "bar" },
-        binary: undefined,
       }),
     });
     vi.stubGlobal("$", (_name: string) => ({
