@@ -3,7 +3,7 @@ export default function (): CodeNodeReturn {
     {
       json: {
         status: "ok",
-        workflow: "shirankedo-daily",
+        workflow: $workflow.name,
         test: true,
         timestamp: new Date().toISOString(),
         message: "スモークテスト正常終了",
