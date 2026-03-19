@@ -6,17 +6,21 @@ describe("gdrive-download/FormatDownload", () => {
     vi.unstubAllGlobals();
   });
 
-  it("BinaryToTextで変換済みのテキストをcontentとして返す", () => {
+  it("getBinaryDataBufferでバイナリを読み取りUTF-8に変換する", async () => {
+    const mockBuffer = Buffer.from("file content here");
+    const context = {
+      helpers: {
+        getBinaryDataBuffer: vi.fn().mockResolvedValue(mockBuffer),
+      },
+    };
     vi.stubGlobal("$input", {
-      first: () => ({
-        json: { textContent: "file content here" },
-      }),
+      first: () => ({ json: {} }),
     });
     vi.stubGlobal("$", (_name: string) => ({
       first: () => ({ json: { fileId: "abc123" } }),
     }));
 
-    const result = formatDownload() as INodeExecutionData[];
+    const result = (await formatDownload.call(context)) as INodeExecutionData[];
     expect(result).toHaveLength(1);
     expect(result[0].json).toEqual({
       action: "download",
@@ -25,31 +29,22 @@ describe("gdrive-download/FormatDownload", () => {
     });
   });
 
-  it("日本語テキストを正しく返す", () => {
+  it("helpers失敗時はJSONフォールバック", async () => {
+    const context = {
+      helpers: {
+        getBinaryDataBuffer: vi
+          .fn()
+          .mockRejectedValue(new Error("not available")),
+      },
+    };
     vi.stubGlobal("$input", {
-      first: () => ({
-        json: { textContent: "こんにちは世界" },
-      }),
+      first: () => ({ json: { foo: "bar" } }),
     });
     vi.stubGlobal("$", (_name: string) => ({
       first: () => ({ json: { fileId: "abc123" } }),
     }));
 
-    const result = formatDownload() as INodeExecutionData[];
-    expect(result[0].json.content).toBe("こんにちは世界");
-  });
-
-  it("textContentがない場合JSONをstringifyする", () => {
-    vi.stubGlobal("$input", {
-      first: () => ({
-        json: { foo: "bar" },
-      }),
-    });
-    vi.stubGlobal("$", (_name: string) => ({
-      first: () => ({ json: { fileId: "abc123" } }),
-    }));
-
-    const result = formatDownload() as INodeExecutionData[];
+    const result = (await formatDownload.call(context)) as INodeExecutionData[];
     expect(result[0].json.content).toBe('{"foo":"bar"}');
   });
 });
