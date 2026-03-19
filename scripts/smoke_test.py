@@ -6,6 +6,7 @@
 - Cron WF: test:true でテストモード実行（副作用スキップ）
 - Webhook WF: 疎通確認（読み取り系は200、書き込み系はダミーIDでエラー応答も成功扱い）
 """
+
 import json
 import os
 import sys
@@ -14,9 +15,7 @@ import urllib.error
 import urllib.request
 
 # 本番環境URL（CI環境では SMOKE_TEST_URL 環境変数で上書き可能）
-BASE_URL = os.environ.get(
-    "SMOKE_TEST_URL", "https://yushin-n8n.duckdns.org/webhook"
-)
+BASE_URL = os.environ.get("SMOKE_TEST_URL", "https://yushin-n8n.duckdns.org/webhook")
 WEBHOOK_SECRET = os.environ.get("WEBHOOK_SECRET", "")
 DISCORD_WEBHOOK_URL = os.environ.get("DISCORD_WEBHOOK_URL", "")
 
@@ -33,33 +32,88 @@ CRON_ENDPOINTS = [
 # Webhook WF（読み取り専用リクエストで疎通確認）
 # GDrive書き込み系（upload/delete/rename/move/mkdir/share）は副作用があるため除外
 WEBHOOK_ENDPOINTS = [
-    {"path": "status", "name": "Server Status", "timeout": 10,
-     "body": {}},
-    {"path": "notion-tasks", "name": "Notion Tasks", "timeout": 30,
-     "body": {"action": "list"}},
-    {"path": "notion-emails", "name": "Notion Emails", "timeout": 30,
-     "body": {"action": "search"}},
-    {"path": "gdrive-list", "name": "GDrive List", "timeout": 30,
-     "body": {}},
-    {"path": "gdrive-search", "name": "GDrive Search", "timeout": 30,
-     "body": {"q": "name='__smoke_test_nonexistent__'"}},
-    {"path": "gdrive-info", "name": "GDrive Info", "timeout": 30,
-     "body": {"fileId": "__smoke_test__"}, "allow_error": True},
-    {"path": "gdrive-download", "name": "GDrive Download", "timeout": 30,
-     "body": {"fileId": "__smoke_test__"}, "allow_error": True},
-    {"path": "gdrive-upload", "name": "GDrive Upload", "timeout": 30,
-     "body": {"fileId": "__smoke_test__"}, "allow_error": True},
-    {"path": "gdrive-delete", "name": "GDrive Delete", "timeout": 30,
-     "body": {"fileId": "__smoke_test__"}, "allow_error": True},
-    {"path": "gdrive-rename", "name": "GDrive Rename", "timeout": 30,
-     "body": {"fileId": "__smoke_test__", "newName": "test"}, "allow_error": True},
-    {"path": "gdrive-move", "name": "GDrive Move", "timeout": 30,
-     "body": {"fileId": "__smoke_test__", "newFolderId": "__test__"}, "allow_error": True},
-    {"path": "gdrive-mkdir", "name": "GDrive Mkdir", "timeout": 30,
-     "body": {"folderName": "__smoke_test__"}, "allow_error": True},
-    {"path": "gdrive-share", "name": "GDrive Share", "timeout": 30,
-     "body": {"fileId": "__smoke_test__", "email": "test@test.com", "role": "reader"},
-     "allow_error": True},
+    {"path": "status", "name": "Server Status", "timeout": 10, "body": {}},
+    {"path": "notion-tasks", "name": "Notion Tasks", "timeout": 30, "body": {"action": "list"}},
+    {"path": "notion-emails", "name": "Notion Emails", "timeout": 30, "body": {"action": "search"}},
+    # GDrive 統合WF（全アクション）
+    {"path": "gdrive", "name": "GDrive Search", "timeout": 30, "body": {"action": "search"}},
+    {
+        "path": "gdrive",
+        "name": "GDrive Upload",
+        "timeout": 30,
+        "body": {"action": "upload"},
+        "allow_error": True,
+    },
+    {
+        "path": "gdrive",
+        "name": "GDrive Download",
+        "timeout": 30,
+        "body": {"action": "download", "file_id": "__smoke_test__"},
+        "allow_error": True,
+    },
+    {
+        "path": "gdrive",
+        "name": "GDrive Copy",
+        "timeout": 30,
+        "body": {"action": "copy", "file_id": "__smoke_test__"},
+        "allow_error": True,
+    },
+    {
+        "path": "gdrive",
+        "name": "GDrive CreateFromText",
+        "timeout": 30,
+        "body": {"action": "createFromText", "content": "__smoke_test__"},
+        "allow_error": True,
+    },
+    {
+        "path": "gdrive",
+        "name": "GDrive DeleteFile",
+        "timeout": 30,
+        "body": {"action": "deleteFile", "file_id": "__smoke_test__"},
+        "allow_error": True,
+    },
+    {
+        "path": "gdrive",
+        "name": "GDrive Move",
+        "timeout": 30,
+        "body": {"action": "move", "file_id": "__smoke_test__", "folder_id": "__test__"},
+        "allow_error": True,
+    },
+    {
+        "path": "gdrive",
+        "name": "GDrive Update",
+        "timeout": 30,
+        "body": {"action": "update", "file_id": "__smoke_test__", "name": "test"},
+        "allow_error": True,
+    },
+    {
+        "path": "gdrive",
+        "name": "GDrive Share",
+        "timeout": 30,
+        "body": {"action": "share", "file_id": "__smoke_test__"},
+        "allow_error": True,
+    },
+    {
+        "path": "gdrive",
+        "name": "GDrive CreateFolder",
+        "timeout": 30,
+        "body": {"action": "createFolder", "name": "__smoke_test__"},
+        "allow_error": True,
+    },
+    {
+        "path": "gdrive",
+        "name": "GDrive DeleteFolder",
+        "timeout": 30,
+        "body": {"action": "deleteFolder", "folder_id": "__smoke_test__"},
+        "allow_error": True,
+    },
+    {
+        "path": "gdrive",
+        "name": "GDrive ShareFolder",
+        "timeout": 30,
+        "body": {"action": "shareFolder", "folder_id": "__smoke_test__"},
+        "allow_error": True,
+    },
 ]
 
 
@@ -100,9 +154,7 @@ def post_test(endpoint: dict) -> dict:
         except urllib.error.URLError as e:
             # DNS解決失敗等のネットワークエラーのみリトライ
             err_msg = str(e).lower()
-            is_transient = (
-                "name resolution" in err_msg or "timed out" in err_msg
-            )
+            is_transient = "name resolution" in err_msg or "timed out" in err_msg
             if attempt < max_retries and is_transient:
                 print(f"retry({attempt})...", end=" ", flush=True)
                 time.sleep(3)
@@ -141,7 +193,7 @@ def send_discord_summary(results: list[dict]) -> None:
 
     lines = []
     for r in results:
-        icon = "\u2705" if r["ok"] else "\u274C"
+        icon = "\u2705" if r["ok"] else "\u274c"
         name = r["endpoint"]["name"]
         if r["ok"]:
             lines.append(f"{icon} {name}")
