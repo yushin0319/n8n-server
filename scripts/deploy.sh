@@ -9,6 +9,7 @@ N8N_API_KEY="${N8N_API_KEY:?N8N_API_KEY is required}"
 SUCCESS=0
 FAIL=0
 SKIPPED=0
+DEPLOYED_FILES=""
 
 # PUT API 許可フィールドのフィルター
 # settings 内の binaryMode, availableInMCP 等は 400 エラーになるため除外
@@ -139,6 +140,7 @@ deploy_workflow() {
   echo "  ${toggle^}: HTTP $toggle_code"
 
   SUCCESS=$((SUCCESS + 1))
+  DEPLOYED_FILES="${DEPLOYED_FILES}${file}"$'\n'
 }
 
 echo "========================================"
@@ -223,6 +225,11 @@ echo "  Success: $SUCCESS"
 echo "  Failed:  $FAIL"
 echo "  Skipped: $SKIPPED"
 echo "========================================"
+
+# デプロイ済みファイルリストを出力（smoke_test.py --only-file 用）
+DEPLOYED_LIST="${DEPLOYED_LIST:-deployed_files.txt}"
+printf '%s' "$DEPLOYED_FILES" > "$DEPLOYED_LIST"
+echo "Deployed files list: $DEPLOYED_LIST"
 
 if [ "$FAIL" -gt 0 ]; then
   exit 1

@@ -5,6 +5,10 @@
 全WFのWebhookエンドポイントにPOSTし、レスポンスを検証して結果をDiscordに通知する。
 - Cron WF: test:true でテストモード実行（副作用スキップ）
 - Webhook WF: 疎通確認（読み取り系は200、書き込み系はダミーIDでエラー応答も成功扱い）
+
+使い方:
+    python smoke_test.py                     # 全エンドポイントをテスト
+    python smoke_test.py --only-file FILE    # FILEに記載されたWFのみテスト
 """
 
 import json
@@ -19,38 +23,81 @@ BASE_URL = os.environ.get("SMOKE_TEST_URL", "https://yushin-n8n.duckdns.org/webh
 WEBHOOK_SECRET = os.environ.get("WEBHOOK_SECRET", "")
 DISCORD_WEBHOOK_URL = os.environ.get("DISCORD_WEBHOOK_URL", "")
 
-# Cron WF（テストモード: フロー全体を通すが副作用はスキップ）
+# wf: 対応するワークフローJSONファイル名（フィルタ用）
+
+# WFファイル名 → エンドポイントのマッピングを自動生成
+_CRON_WFS = {
+    "health-check": 30,
+    "github-summary": 30,
+    "gmail-to-notion": 30,
+    "recurring-tasks": 30,
+    "shirankedo-daily-articles": 60,
+    "shirankedo-daily-vulns": 60,
+    "shirankedo-daily-releases": 120,
+    "shirankedo-daily-security": 60,
+    "shirankedo-weekly-stars": 120,
+    "shirankedo-weekly-report": 120,
+    "shirankedo-weekly-comments": 120,
+    "shirankedo-weekly-llm": 120,
+    "shirankedo-weekly-repos": 120,
+}
 CRON_ENDPOINTS = [
-    {"path": "test-health-check", "name": "Health Check", "timeout": 30},
-    {"path": "test-github-summary", "name": "GitHub Summary", "timeout": 30},
-    {"path": "test-gmail-to-notion", "name": "Gmail to Notion", "timeout": 30},
-    {"path": "test-recurring-tasks", "name": "Recurring Tasks", "timeout": 30},
-    {"path": "test-shirankedo-daily-articles", "name": "ShiranKedo Articles", "timeout": 60},
-    {"path": "test-shirankedo-daily-vulns", "name": "ShiranKedo Vulns", "timeout": 60},
-    {"path": "test-shirankedo-daily-releases", "name": "ShiranKedo Releases", "timeout": 120},
-    {"path": "test-shirankedo-daily-security", "name": "ShiranKedo Security", "timeout": 60},
-    {"path": "test-shirankedo-weekly-stars", "name": "ShiranKedo Weekly Stars", "timeout": 120},
-    {"path": "test-shirankedo-weekly-report", "name": "ShiranKedo Weekly Report", "timeout": 120},
-    {"path": "test-shirankedo-weekly-comments", "name": "Weekly Comments", "timeout": 120},
-    {"path": "test-shirankedo-weekly-llm", "name": "ShiranKedo Weekly LLM", "timeout": 120},
-    {"path": "test-shirankedo-weekly-repos", "name": "ShiranKedo Weekly Repos", "timeout": 120},
+    {
+        "path": f"test-{name}",
+        "name": name,
+        "timeout": timeout,
+        "wf": f"{name}.json",
+    }
+    for name, timeout in _CRON_WFS.items()
 ]
 
 # Webhook WF（読み取り専用リクエストで疎通確認）
-# GDrive書き込み系（upload/delete/rename/move/mkdir/share）は副作用があるため除外
+# GDrive書き込み系は副作用があるため除外
 WEBHOOK_ENDPOINTS = [
-    {"path": "status", "name": "Server Status", "timeout": 10, "body": {}},
-    {"path": "notion-tasks", "name": "Notion Tasks", "timeout": 30, "body": {"action": "list"}},
-    {"path": "notion-emails", "name": "Notion Emails", "timeout": 30, "body": {"action": "search"}},
     {
-        "path": "notion-recurring-tasks",
-        "name": "Recurring Tasks",
+        "path": "status",
+        "name": "Server Status",
+        "timeout": 10,
+        "body": {},
+        "wf": "server-status.json",
+    },
+    {
+        "path": "notion-tasks",
+        "name": "Notion Tasks",
         "timeout": 30,
         "body": {"action": "list"},
+        "wf": "notion-tasks.json",
     },
-    # GDrive: searchのみ（書き込み系はE2Eテストで別途実行）
-    {"path": "gdrive", "name": "GDrive Search", "timeout": 30, "body": {"action": "search"}},
+    {
+        "path": "notion-emails",
+        "name": "Notion Emails",
+        "timeout": 30,
+        "body": {"action": "search"},
+        "wf": "notion-emails.json",
+    },
+    {
+        "path": "notion-recurring-tasks",
+        "name": "Recurring Tasks API",
+        "timeout": 30,
+        "body": {"action": "list"},
+        "wf": "notion-recurring-tasks.json",
+    },
+    {
+        "path": "gdrive",
+        "name": "GDrive Search",
+        "timeout": 30,
+        "body": {"action": "search"},
+        "wf": "gdrive.json",
+    },
 ]
+
+
+def parse_only_file(filepath: str) -> set[str]:
+    """--only-file から対象WFファイル名のセットを返す."""
+    with open(filepath, encoding="utf-8") as f:
+        lines = f.read().strip().splitlines()
+    # "workflows/xxx.json" → "xxx.json" に正規化
+    return {os.path.basename(line.strip()) for line in lines if line.strip()}
 
 
 def post_test(endpoint: dict) -> dict:
@@ -283,28 +330,55 @@ def run_gdrive_e2e() -> list[dict]:
 
 def main() -> int:
     """スモークテストを実行し、結果を返す."""
+    # --only-file オプション: 指定されたWFのみテスト
+    target_wfs: set[str] | None = None
+    if "--only-file" in sys.argv:
+        idx = sys.argv.index("--only-file")
+        if idx + 1 < len(sys.argv):
+            target_wfs = parse_only_file(sys.argv[idx + 1])
+            print(f"Mode: testing {len(target_wfs)} changed WF(s) only")
+            for wf in sorted(target_wfs):
+                print(f"  - {wf}")
+            print()
+
+    def should_test(ep: dict) -> bool:
+        if target_wfs is None:
+            return True
+        return ep.get("wf", "") in target_wfs
+
+    cron_targets = [ep for ep in CRON_ENDPOINTS if should_test(ep)]
+    webhook_targets = [ep for ep in WEBHOOK_ENDPOINTS if should_test(ep)]
+    run_gdrive = target_wfs is None or "gdrive.json" in (target_wfs or set())
+
     results = []
 
-    print("=== Cron WF (test mode) ===")
-    for ep in CRON_ENDPOINTS:
-        ep_with_body = {**ep, "body": {"test": True}}
-        print(f"  {ep['name']}...", end=" ", flush=True)
-        result = post_test(ep_with_body)
-        ok = verify_cron_response(result)
-        print("OK" if ok else f"FAIL ({result.get('error') or result['status_code']})")
-        results.append({"endpoint": ep, "result": result, "ok": ok})
+    if cron_targets:
+        print("=== Cron WF (test mode) ===")
+        for ep in cron_targets:
+            ep_with_body = {**ep, "body": {"test": True}}
+            print(f"  {ep['name']}...", end=" ", flush=True)
+            result = post_test(ep_with_body)
+            ok = verify_cron_response(result)
+            print("OK" if ok else f"FAIL ({result.get('error') or result['status_code']})")
+            results.append({"endpoint": ep, "result": result, "ok": ok})
 
-    print("\n=== Webhook WF (connectivity check) ===")
-    for ep in WEBHOOK_ENDPOINTS:
-        print(f"  {ep['name']}...", end=" ", flush=True)
-        result = post_test(ep)
-        ok = verify_webhook_response(result, allow_error=ep.get("allow_error", False))
-        print("OK" if ok else f"FAIL ({result.get('error') or result['status_code']})")
-        results.append({"endpoint": ep, "result": result, "ok": ok})
+    if webhook_targets:
+        print("\n=== Webhook WF (connectivity check) ===")
+        for ep in webhook_targets:
+            print(f"  {ep['name']}...", end=" ", flush=True)
+            result = post_test(ep)
+            ok = verify_webhook_response(result, allow_error=ep.get("allow_error", False))
+            print("OK" if ok else f"FAIL ({result.get('error') or result['status_code']})")
+            results.append({"endpoint": ep, "result": result, "ok": ok})
 
-    print("\n=== GDrive E2E (real data flow) ===")
-    gdrive_results = run_gdrive_e2e()
-    results.extend(gdrive_results)
+    if run_gdrive:
+        print("\n=== GDrive E2E (real data flow) ===")
+        gdrive_results = run_gdrive_e2e()
+        results.extend(gdrive_results)
+
+    if not results:
+        print("No matching endpoints to test (skipped)")
+        return 0
 
     send_discord_summary(results)
 
