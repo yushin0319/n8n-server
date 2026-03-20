@@ -21,6 +21,7 @@ export default function (): CodeNodeReturn {
     };
   }
 
+  // NOTE: 定期タスク定義DB ID（n8n Code Nodeでは環境変数不可のためハードコード）
   const requestBody = JSON.stringify({
     parent: { database_id: "3142570f-e49f-80cf-8383-cc62030339c9" },
     properties,
