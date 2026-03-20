@@ -41,6 +41,7 @@ jobs:
         env:
           N8N_API_KEY: ${{ secrets.N8N_API_KEY }}
           DEPLOY_ALL: ${{ github.event.inputs.deploy_all || 'false' }}
+          DEPLOYED_LIST: deployed_files.txt
         run: |
           chmod +x scripts/deploy.sh
           bash scripts/deploy.sh
@@ -52,4 +53,8 @@ jobs:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: |
           sleep 10
-          python scripts/smoke_test.py
+          if [ -s deployed_files.txt ]; then
+            python scripts/smoke_test.py --only-file deployed_files.txt
+          else
+            echo "No files deployed, skipping smoke test"
+          fi
