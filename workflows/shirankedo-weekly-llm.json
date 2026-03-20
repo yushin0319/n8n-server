@@ -361,6 +361,96 @@
       ],
       "name": "IfSkipDiscordNotifyLLM",
       "id": "sw-0048-4000-8000-000000000048"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "sw-cond-skip-fetch-aa-models",
+              "leftValue": "={{ $execution.customData.get('isTest') }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        370,
+        1200
+      ],
+      "name": "IfSkipFetchAAModels",
+      "id": "sw-llm-skip-aa"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { models: [] } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        370,
+        1100
+      ],
+      "name": "MockFetchAAModels",
+      "id": "sw-llm-mock-aa"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "sw-cond-skip-fetch-exchange-rate",
+              "leftValue": "={{ $execution.customData.get('isTest') }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        370,
+        1400
+      ],
+      "name": "IfSkipFetchExchangeRate",
+      "id": "sw-llm-skip-fx"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { rates: { JPY: 150.0 } } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        370,
+        1500
+      ],
+      "name": "MockFetchExchangeRate",
+      "id": "sw-llm-mock-fx"
     }
   ],
   "connections": {
@@ -499,12 +589,12 @@
       "main": [
         [
           {
-            "node": "FetchAAModels",
+            "node": "IfSkipFetchAAModels",
             "type": "main",
             "index": 0
           },
           {
-            "node": "FetchExchangeRate",
+            "node": "IfSkipFetchExchangeRate",
             "type": "main",
             "index": 0
           }
@@ -570,6 +660,64 @@
         [
           {
             "node": "DiscordNotifyLLM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IfSkipFetchAAModels": {
+      "main": [
+        [
+          {
+            "node": "MockFetchAAModels",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "FetchAAModels",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MockFetchAAModels": {
+      "main": [
+        [
+          {
+            "node": "MergeLLMInputs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IfSkipFetchExchangeRate": {
+      "main": [
+        [
+          {
+            "node": "MockFetchExchangeRate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "FetchExchangeRate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MockFetchExchangeRate": {
+      "main": [
+        [
+          {
+            "node": "MergeLLMInputs",
             "type": "main",
             "index": 0
           }
