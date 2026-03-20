@@ -719,7 +719,7 @@
           {
             "node": "MergeLLMInputs",
             "type": "main",
-            "index": 0
+            "index": 1
           }
         ]
       ]
