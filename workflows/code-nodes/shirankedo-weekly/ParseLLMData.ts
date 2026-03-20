@@ -92,21 +92,10 @@ export { familyKey, shouldSkip };
 
 export default function (): CodeNodeReturn {
   // AA APIデータからモデルをフィルタ・デデュプ
-  // テストモード時はMock経由のため $("FetchAAModels") が未実行エラーになる
-  // "hasn't been executed" を含むエラーのみフォールバック、それ以外は再throw
-  let aaResp: IDataObject;
-  let rateResp: IDataObject;
-  try {
-    aaResp = $("FetchAAModels").first().json;
-    rateResp = $("FetchExchangeRate").first().json;
-  } catch (e: unknown) {
-    if (e instanceof Error && e.message.includes("hasn't been executed")) {
-      aaResp = $("MockFetchAAModels").first().json;
-      rateResp = $("MockFetchExchangeRate").first().json;
-    } else {
-      throw e;
-    }
-  }
+  // MergeLLMInputs(combineAll)経由で$inputから取得（Mock経由でも動作する）
+  const items = $input.all();
+  const aaResp = items[0]?.json ?? {};
+  const rateResp = items[0]?.json ?? {};
   const aaData = (aaResp.data || []) as IDataObject[];
   const rates = (rateResp?.rates || {}) as IDataObject;
   const jpyRate = (rates.JPY as number) || 150;

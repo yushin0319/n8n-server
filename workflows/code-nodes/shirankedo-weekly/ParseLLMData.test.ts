@@ -25,6 +25,16 @@ function makeModel(
   };
 }
 
+/** MergeLLMInputs(combineAll)の出力をモック: AAデータと為替が1オブジェクトに統合 */
+function stubMergedInput(
+  aaData: IDataObject[],
+  rates: Record<string, number> = { JPY: 150 },
+) {
+  vi.stubGlobal("$input", {
+    all: () => [{ json: { data: aaData, rates } }],
+  });
+}
+
 function callAndGetItems() {
   const result = parseLLMData();
   const items = Array.isArray(result) ? result : [result];
@@ -37,22 +47,13 @@ describe("ParseLLMData", () => {
   });
 
   it("基本的なモデルデータをフィルタ・整形して出力する", () => {
-    vi.stubGlobal("$", (name: string) => ({
-      first: () => {
-        if (name === "FetchAAModels") {
-          return {
-            json: {
-              data: [
-                makeModel({ name: "Claude 4.5 Sonnet", score: 85 }),
-                makeModel({ name: "GPT-4o", creator: "OpenAI", score: 80 }),
-              ],
-            },
-          };
-        }
-        // FetchExchangeRate (USD base: EUR=0.92, JPY=150)
-        return { json: { rates: { JPY: 150, EUR: 0.92 } } };
-      },
-    }));
+    stubMergedInput(
+      [
+        makeModel({ name: "Claude 4.5 Sonnet", score: 85 }),
+        makeModel({ name: "GPT-4o", creator: "OpenAI", score: 80 }),
+      ],
+      { JPY: 150, EUR: 0.92 },
+    );
 
     const items = callAndGetItems();
     // [0] = LLMモデル, [1] = 為替レート
@@ -71,25 +72,14 @@ describe("ParseLLMData", () => {
   });
 
   it("pricing未設定のモデルは除外される", () => {
-    vi.stubGlobal("$", (name: string) => ({
-      first: () => {
-        if (name === "FetchAAModels") {
-          return {
-            json: {
-              data: [
-                {
-                  name: "No Price Model",
-                  model_creator: { name: "Anthropic" },
-                  pricing: {},
-                  evaluations: { artificial_analysis_intelligence_index: 80 },
-                },
-              ],
-            },
-          };
-        }
-        return { json: { rates: { JPY: 150 } } };
+    stubMergedInput([
+      {
+        name: "No Price Model",
+        model_creator: { name: "Anthropic" },
+        pricing: {},
+        evaluations: { artificial_analysis_intelligence_index: 80 },
       },
-    }));
+    ]);
 
     const items = callAndGetItems();
     const models = JSON.parse(items[0].json.requestBody as string);
@@ -97,18 +87,7 @@ describe("ParseLLMData", () => {
   });
 
   it("スコア15未満のモデルは除外される", () => {
-    vi.stubGlobal("$", (name: string) => ({
-      first: () => {
-        if (name === "FetchAAModels") {
-          return {
-            json: {
-              data: [makeModel({ name: "Weak Model", score: 10 })],
-            },
-          };
-        }
-        return { json: { rates: { JPY: 150 } } };
-      },
-    }));
+    stubMergedInput([makeModel({ name: "Weak Model", score: 10 })]);
 
     const items = callAndGetItems();
     const models = JSON.parse(items[0].json.requestBody as string);
@@ -116,29 +95,10 @@ describe("ParseLLMData", () => {
   });
 
   it("同一ファミリーの複数モデルはスコア最高のみ残る", () => {
-    vi.stubGlobal("$", (name: string) => ({
-      first: () => {
-        if (name === "FetchAAModels") {
-          return {
-            json: {
-              data: [
-                makeModel({
-                  name: "Gemini 3.1 Flash",
-                  creator: "Google",
-                  score: 70,
-                }),
-                makeModel({
-                  name: "Gemini 3.2 Flash",
-                  creator: "Google",
-                  score: 75,
-                }),
-              ],
-            },
-          };
-        }
-        return { json: { rates: { JPY: 150 } } };
-      },
-    }));
+    stubMergedInput([
+      makeModel({ name: "Gemini 3.1 Flash", creator: "Google", score: 70 }),
+      makeModel({ name: "Gemini 3.2 Flash", creator: "Google", score: 75 }),
+    ]);
 
     const items = callAndGetItems();
     const models = JSON.parse(items[0].json.requestBody as string);
@@ -148,18 +108,7 @@ describe("ParseLLMData", () => {
   });
 
   it("未知プロバイダのモデルは除外される", () => {
-    vi.stubGlobal("$", (name: string) => ({
-      first: () => {
-        if (name === "FetchAAModels") {
-          return {
-            json: {
-              data: [makeModel({ creator: "UnknownCorp" })],
-            },
-          };
-        }
-        return { json: { rates: { JPY: 150 } } };
-      },
-    }));
+    stubMergedInput([makeModel({ creator: "UnknownCorp" })]);
 
     const items = callAndGetItems();
     const models = JSON.parse(items[0].json.requestBody as string);
@@ -209,6 +158,7 @@ describe("familyKey", () => {
     ["Kimi K2.5 (2025-07)", "Kimi K2.5"],
     ["Kimi K2 (2025-05)", "Kimi K2"],
     ["MiniMax-M2.5", "MiniMax-M2"],
+    ["MiniMax M2", "MiniMax-M2"],
     ["Claude 4.5 Sonnet (2025-10-22)", "Claude 4.5 Sonnet"],
   ])("'%s' → '%s'", (input, expected) => {
     expect(familyKey(input)).toBe(expected);
