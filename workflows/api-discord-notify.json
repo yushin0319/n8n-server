@@ -22,7 +22,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external discord-notify/FormatDiscord.ts"
+        "jsCode": "// @external api-discord-notify/FormatDiscord.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -58,7 +58,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external discord-notify/FormatResponse.ts"
+        "jsCode": "// @external api-discord-notify/FormatResponse.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,

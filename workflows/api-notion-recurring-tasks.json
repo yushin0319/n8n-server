@@ -42,7 +42,7 @@
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "// @external notion-recurring-tasks/CheckTestMode.ts"
+        "jsCode": "// @external api-notion-recurring-tasks/CheckTestMode.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -226,7 +226,7 @@
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "// @external notion-recurring-tasks/FormatList.ts"
+        "jsCode": "// @external api-notion-recurring-tasks/FormatList.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -287,7 +287,7 @@
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "// @external notion-recurring-tasks/PrepCreate.ts"
+        "jsCode": "// @external api-notion-recurring-tasks/PrepCreate.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -336,7 +336,7 @@
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "// @external notion-recurring-tasks/FormatCreate.ts"
+        "jsCode": "// @external api-notion-recurring-tasks/FormatCreate.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -397,7 +397,7 @@
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "// @external notion-recurring-tasks/PrepUpdate.ts"
+        "jsCode": "// @external api-notion-recurring-tasks/PrepUpdate.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -446,7 +446,7 @@
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "// @external notion-recurring-tasks/FormatUpdate.ts"
+        "jsCode": "// @external api-notion-recurring-tasks/FormatUpdate.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -507,7 +507,7 @@
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "// @external notion-recurring-tasks/PrepDelete.ts"
+        "jsCode": "// @external api-notion-recurring-tasks/PrepDelete.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -556,7 +556,7 @@
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "// @external notion-recurring-tasks/FormatDelete.ts"
+        "jsCode": "// @external api-notion-recurring-tasks/FormatDelete.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -602,7 +602,7 @@
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "// @external notion-recurring-tasks/TestResponse.ts"
+        "jsCode": "// @external api-notion-recurring-tasks/TestResponse.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,

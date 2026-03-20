@@ -26,27 +26,28 @@ DISCORD_WEBHOOK_URL = os.environ.get("DISCORD_WEBHOOK_URL", "")
 # wf: 対応するワークフローJSONファイル名（フィルタ用）
 
 # WFファイル名 → エンドポイントのマッピングを自動生成
-_CRON_WFS = {
-    "health-check": 30,
-    "recurring-tasks": 30,
-    "shirankedo-daily-articles": 60,
-    "shirankedo-daily-vulns": 60,
-    "shirankedo-daily-releases": 120,
-    "shirankedo-daily-security": 60,
-    "shirankedo-weekly-stars": 120,
-    "shirankedo-weekly-report": 120,
-    "shirankedo-weekly-comments": 120,
-    "shirankedo-weekly-llm": 120,
-    "shirankedo-weekly-repos": 120,
-}
+# (wf_file_base, webhook_path_suffix, timeout)
+_CRON_WFS = [
+    ("cron-health-check", "health-check", 30),
+    ("cron-recurring-tasks", "recurring-tasks", 30),
+    ("cron-shirankedo-daily-articles", "shirankedo-daily-articles", 60),
+    ("cron-shirankedo-daily-vulns", "shirankedo-daily-vulns", 60),
+    ("cron-shirankedo-daily-releases", "shirankedo-daily-releases", 120),
+    ("cron-shirankedo-daily-security", "shirankedo-daily-security", 60),
+    ("cron-shirankedo-weekly-stars", "shirankedo-weekly-stars", 120),
+    ("cron-shirankedo-weekly-report", "shirankedo-weekly-report", 120),
+    ("cron-shirankedo-weekly-comments", "shirankedo-weekly-comments", 120),
+    ("cron-shirankedo-weekly-llm", "shirankedo-weekly-llm", 120),
+    ("cron-shirankedo-weekly-repos", "shirankedo-weekly-repos", 120),
+]
 CRON_ENDPOINTS = [
     {
-        "path": f"test-{name}",
-        "name": name,
+        "path": f"test-{path_suffix}",
+        "name": wf_base,
         "timeout": timeout,
-        "wf": f"{name}.json",
+        "wf": f"{wf_base}.json",
     }
-    for name, timeout in _CRON_WFS.items()
+    for wf_base, path_suffix, timeout in _CRON_WFS
 ]
 
 # Webhook WF（読み取り専用リクエストで疎通確認）
@@ -57,28 +58,28 @@ WEBHOOK_ENDPOINTS = [
         "name": "Notion Tasks",
         "timeout": 30,
         "body": {"action": "list"},
-        "wf": "notion-tasks.json",
+        "wf": "api-notion-tasks.json",
     },
     {
         "path": "notion-emails",
         "name": "Notion Emails",
         "timeout": 30,
         "body": {"action": "search"},
-        "wf": "notion-emails.json",
+        "wf": "api-notion-emails.json",
     },
     {
         "path": "notion-recurring-tasks",
         "name": "Recurring Tasks API",
         "timeout": 30,
         "body": {"action": "list"},
-        "wf": "notion-recurring-tasks.json",
+        "wf": "api-notion-recurring-tasks.json",
     },
     {
         "path": "gdrive",
         "name": "GDrive Search",
         "timeout": 30,
         "body": {"action": "search"},
-        "wf": "gdrive.json",
+        "wf": "api-gdrive.json",
     },
 ]
 
@@ -339,7 +340,7 @@ def main() -> int:
 
     cron_targets = [ep for ep in CRON_ENDPOINTS if should_test(ep)]
     webhook_targets = [ep for ep in WEBHOOK_ENDPOINTS if should_test(ep)]
-    run_gdrive = target_wfs is None or "gdrive.json" in target_wfs
+    run_gdrive = target_wfs is None or "api-gdrive.json" in target_wfs
 
     results = []
 

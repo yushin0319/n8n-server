@@ -52,7 +52,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external shirankedo-weekly/PrepareWeeklyPrompt.ts"
+        "jsCode": "// @external cron-shirankedo-weekly/PrepareWeeklyPrompt.ts"
       },
       "id": "c889ea26-d2d0-42c2-af26-61ba0b129625",
       "name": "PrepareWeeklyPrompt",
@@ -122,7 +122,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external shirankedo-weekly/FormatWeeklyReport.ts"
+        "jsCode": "// @external cron-shirankedo-weekly/FormatWeeklyReport.ts"
       },
       "id": "a243a595-89cb-4c4b-b997-7e3fd9574678",
       "name": "FormatWeeklyReport",
@@ -162,7 +162,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external shirankedo-weekly/EmptyWeeklyResult.ts"
+        "jsCode": "// @external cron-shirankedo-weekly/EmptyWeeklyResult.ts"
       },
       "id": "4e21a574-effd-4adc-98b9-8610f81a58a7",
       "name": "EmptyWeeklyResult",
@@ -189,7 +189,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external shirankedo-weekly/PrepareDiscordWeekly.ts"
+        "jsCode": "// @external cron-shirankedo-weekly/PrepareDiscordWeekly.ts"
       },
       "id": "40c7ff45-343e-4e05-a7e2-ae56104adbac",
       "name": "PrepareDiscordWeekly",
@@ -237,7 +237,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external shirankedo-weekly/CheckTestMode.ts"
+        "jsCode": "// @external cron-shirankedo-weekly/CheckTestMode.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -250,7 +250,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external shirankedo-weekly/TestResponse.ts"
+        "jsCode": "// @external cron-shirankedo-weekly/TestResponse.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -310,7 +310,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external shirankedo-weekly/MockGeminiWeeklyReport.ts"
+        "jsCode": "// @external cron-shirankedo-weekly/MockGeminiWeeklyReport.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
