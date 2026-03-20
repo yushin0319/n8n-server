@@ -42,7 +42,7 @@
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "// テストモード判定: body.test === true なら isTest フラグをセット\nconst body = $input.first().json.body;\nconst isTest = body?.test === true;\n$execution.customData.set('isTest', isTest ? 'true' : 'false');\nreturn $input.all();"
+        "jsCode": "// @external notion-recurring-tasks/CheckTestMode.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -226,7 +226,7 @@
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "// list結果をフォーマット\nconst results = $input.first().json.results || [];\nconst tasks = results.map(p => {\n  const props = p.properties;\n  return {\n    id: p.id,\n    name: props['']?.title?.[0]?.plain_text || '',\n    frequency: props['頻度']?.multi_select?.[0]?.name || null,\n    next_date: props['次回予定日']?.date?.start || null,\n    last_executed: props['最終実行日']?.date?.start || null,\n    taskTemplate: props['テンプレ本文']?.rich_text?.[0]?.plain_text || '',\n    enabled: props['有効']?.checkbox ?? true,\n    url: p.url,\n  };\n});\nreturn [{ json: { action: 'list', count: tasks.length, tasks } }];"
+        "jsCode": "// @external notion-recurring-tasks/FormatList.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -287,7 +287,7 @@
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "// create用リクエストボディを構築\nconst body = $input.first().json.body;\nconst name = body.name;\nconst frequency = body.frequency || '毎週';\nconst nextDate = body.next_date || null;\nconst taskTemplate = body.template || '';\nconst enabled = body.enabled !== undefined ? body.enabled : true;\n\nconst properties = {\n  '': { title: [{ text: { content: name } }] },\n  '頻度': { multi_select: [{ name: frequency }] },\n  '有効': { checkbox: enabled },\n};\nif (nextDate) {\n  properties['次回予定日'] = { date: { start: nextDate } };\n}\nif (taskTemplate) {\n  properties['テンプレ本文'] = { rich_text: [{ text: { content: taskTemplate } }] };\n}\n\nconst requestBody = JSON.stringify({\n  parent: { database_id: '3142570f-e49f-80cf-8383-cc62030339c9' },\n  properties,\n});\n\nreturn [{ json: { requestBody } }];"
+        "jsCode": "// @external notion-recurring-tasks/PrepCreate.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -336,7 +336,7 @@
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "// create結果をフォーマット\nconst page = $input.first().json;\nreturn [{ json: { action: 'create', success: true, id: page.id, url: page.url } }];"
+        "jsCode": "// @external notion-recurring-tasks/FormatCreate.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -397,7 +397,7 @@
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "// update用リクエストボディを構築\nconst body = $input.first().json.body;\nconst pageId = body.page_id;\n\nconst properties = {};\nif (body.name !== undefined) {\n  properties[''] = { title: [{ text: { content: body.name } }] };\n}\nif (body.frequency !== undefined) {\n  properties['頻度'] = { multi_select: [{ name: body.frequency }] };\n}\nif (body.next_date !== undefined) {\n  properties['次回予定日'] = { date: body.next_date ? { start: body.next_date } : null };\n}\nif (body.template !== undefined) {\n  properties['テンプレ本文'] = { rich_text: [{ text: { content: body.template } }] };\n}\nif (body.enabled !== undefined) {\n  properties['有効'] = { checkbox: body.enabled };\n}\n\nconst requestBody = JSON.stringify({ properties });\nreturn [{ json: { pageId, requestBody } }];"
+        "jsCode": "// @external notion-recurring-tasks/PrepUpdate.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -446,7 +446,7 @@
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "// update結果をフォーマット\nconst page = $input.first().json;\nreturn [{ json: { action: 'update', success: true, id: page.id, url: page.url } }];"
+        "jsCode": "// @external notion-recurring-tasks/FormatUpdate.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -507,7 +507,7 @@
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "// delete用: page_idを取得\nconst body = $input.first().json.body;\nreturn [{ json: { pageId: body.page_id } }];"
+        "jsCode": "// @external notion-recurring-tasks/PrepDelete.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -556,7 +556,7 @@
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "// delete結果をフォーマット\nconst page = $input.first().json;\nreturn [{ json: { action: 'delete', success: true, id: page.id } }];"
+        "jsCode": "// @external notion-recurring-tasks/FormatDelete.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -602,7 +602,7 @@
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "// テストモード: スキップされたアクションのレスポンス\nconst body = $input.first().json.body || {};\nreturn [{ json: { action: body.action || 'unknown', test: true, skipped: true, message: 'Test mode: API call skipped' } }];"
+        "jsCode": "// @external notion-recurring-tasks/TestResponse.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
