@@ -5,12 +5,9 @@
  */
 export function stripHtmlTags(html: string): string {
   if (!html || typeof html !== "string") return "";
-  const tagPattern = /<[^>]+>/g;
-  let prev = html;
-  let result = html.replace(tagPattern, "");
-  while (result !== prev) {
-    prev = result;
-    result = result.replace(tagPattern, "");
+  let result = html;
+  while (result !== (result = result.replace(/<[^>]+>/g, ""))) {
+    // ループで安定するまで繰り返す
   }
   return result;
 }
