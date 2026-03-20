@@ -52,7 +52,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external shirankedo-weekly/BuildStarBatches.ts"
+        "jsCode": "// @external cron-shirankedo-weekly/BuildStarBatches.ts"
       },
       "id": "2759a84d-5b14-4bfd-987e-152386d5920b",
       "name": "BuildStarBatches",
@@ -105,7 +105,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external shirankedo-weekly/AccumulateStars.ts"
+        "jsCode": "// @external cron-shirankedo-weekly/AccumulateStars.ts"
       },
       "id": "c155eb5d-634a-47b4-80e3-cf348393248f",
       "name": "AccumulateStars",
@@ -118,7 +118,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external shirankedo-weekly/ParseStars.ts"
+        "jsCode": "// @external cron-shirankedo-weekly/ParseStars.ts"
       },
       "id": "705aeb00-9f20-48ea-8884-1a38283ba81a",
       "name": "ParseStars",
@@ -172,7 +172,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external shirankedo-weekly/AccumulatePostResults.ts"
+        "jsCode": "// @external cron-shirankedo-weekly/AccumulatePostResults.ts"
       },
       "id": "1898f2c5-4d4d-4a09-af6e-16f97a52aa4e",
       "name": "AccumulatePostResults",
@@ -185,7 +185,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external shirankedo-weekly/ParsePostResults.ts"
+        "jsCode": "// @external cron-shirankedo-weekly/ParsePostResults.ts"
       },
       "id": "01e2f04c-3a6b-499c-a13f-869bdfd68e17",
       "name": "ParsePostResults",
@@ -198,7 +198,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external shirankedo-weekly/PrepareDiscordStars.ts"
+        "jsCode": "// @external cron-shirankedo-weekly/PrepareDiscordStars.ts"
       },
       "id": "c7676c8d-12a6-4e64-af0d-4b5a85f3acbd",
       "name": "PrepareDiscordStars",
@@ -246,7 +246,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external shirankedo-weekly/CheckTestMode.ts"
+        "jsCode": "// @external cron-shirankedo-weekly/CheckTestMode.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -259,7 +259,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external shirankedo-weekly/TestResponse.ts"
+        "jsCode": "// @external cron-shirankedo-weekly/TestResponse.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,

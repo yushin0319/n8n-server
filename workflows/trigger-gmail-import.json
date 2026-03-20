@@ -52,7 +52,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external gmail-to-notion/CheckTestMode.ts"
+        "jsCode": "// @external trigger-gmail-import/CheckTestMode.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -65,7 +65,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external gmail-to-notion/PrepareClassify.ts"
+        "jsCode": "// @external trigger-gmail-import/PrepareClassify.ts"
       },
       "id": "a3",
       "name": "PrepareClassify",
@@ -110,7 +110,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external gmail-to-notion/MockGeminiClassify.ts"
+        "jsCode": "// @external trigger-gmail-import/MockGeminiClassify.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -149,7 +149,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external gmail-to-notion/BuildNotionBody.ts"
+        "jsCode": "// @external trigger-gmail-import/BuildNotionBody.ts"
       },
       "id": "a3c",
       "name": "BuildNotionBody",
@@ -219,7 +219,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external gmail-to-notion/ExtractMessageIds.ts"
+        "jsCode": "// @external trigger-gmail-import/ExtractMessageIds.ts"
       },
       "id": "a5",
       "name": "ExtractMessageIds",
@@ -284,7 +284,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external gmail-to-notion/TestResponse.ts"
+        "jsCode": "// @external trigger-gmail-import/TestResponse.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,

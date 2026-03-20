@@ -49,7 +49,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external shirankedo-daily/BuildGraphQLBatches.ts"
+        "jsCode": "// @external cron-shirankedo-daily/BuildGraphQLBatches.ts"
       },
       "id": "a1000002-0001-0001-0001-000000000056",
       "name": "BuildGraphQLBatches",
@@ -135,7 +135,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external shirankedo-daily/AccumulateReleases.ts"
+        "jsCode": "// @external cron-shirankedo-daily/AccumulateReleases.ts"
       },
       "id": "a1000002-0001-0001-0001-000000000079",
       "name": "AccumulateReleases",
@@ -148,7 +148,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external shirankedo-daily/ParseReleases.ts"
+        "jsCode": "// @external cron-shirankedo-daily/ParseReleases.ts"
       },
       "id": "a1000002-0001-0001-0001-000000000061",
       "name": "ParseReleases",
@@ -161,7 +161,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external shirankedo-daily/EmptyReleaseResult.ts"
+        "jsCode": "// @external cron-shirankedo-daily/EmptyReleaseResult.ts"
       },
       "id": "a1000002-0001-0001-0001-000000000062",
       "name": "EmptyReleaseResult",
@@ -215,7 +215,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external shirankedo-daily/PrepareDiscordReleases.ts"
+        "jsCode": "// @external cron-shirankedo-daily/PrepareDiscordReleases.ts"
       },
       "id": "a1000002-0001-0001-0001-000000000065",
       "name": "PrepareDiscordReleases",
@@ -263,7 +263,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external shirankedo-daily/CheckTestMode.ts"
+        "jsCode": "// @external cron-shirankedo-daily/CheckTestMode.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -276,7 +276,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external shirankedo-daily/TestResponse.ts"
+        "jsCode": "// @external cron-shirankedo-daily/TestResponse.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,

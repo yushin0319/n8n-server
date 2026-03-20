@@ -104,7 +104,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external notion-emails/PrepareUpdate.ts"
+        "jsCode": "// @external api-notion-emails/PrepareUpdate.ts"
       },
       "id": "b6",
       "name": "PrepareUpdate",
@@ -142,7 +142,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external notion-emails/FormatUpdate.ts",
+        "jsCode": "// @external api-notion-emails/FormatUpdate.ts",
         "options": {}
       },
       "id": "b-format-update",
@@ -171,7 +171,7 @@
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "// @external notion-emails/PrepSearch.ts"
+        "jsCode": "// @external api-notion-emails/PrepSearch.ts"
       },
       "id": "b-prep-search",
       "name": "PrepSearch",
@@ -210,7 +210,7 @@
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "// @external notion-emails/FormatSearch.ts"
+        "jsCode": "// @external api-notion-emails/FormatSearch.ts"
       },
       "id": "b-format-search",
       "name": "FormatSearch",
@@ -237,7 +237,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external notion-emails/BuildBriefingQuery.ts"
+        "jsCode": "// @external api-notion-emails/BuildBriefingQuery.ts"
       },
       "id": "c1",
       "name": "BuildBriefingQuery",
@@ -275,7 +275,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external notion-emails/ProcessBriefing.ts"
+        "jsCode": "// @external api-notion-emails/ProcessBriefing.ts"
       },
       "id": "c3",
       "name": "ProcessBriefing",
@@ -302,7 +302,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external notion-emails/PrepareMarkRead.ts"
+        "jsCode": "// @external api-notion-emails/PrepareMarkRead.ts"
       },
       "id": "c5",
       "name": "PrepareMarkRead",

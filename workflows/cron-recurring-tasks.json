@@ -1,6 +1,6 @@
 {
-  "id": "242dVoV5dAhs4JMx",
-  "name": "cron/shirankedo-daily-security",
+  "id": "NKY960IvoIjpLH6m",
+  "name": "cron/recurring-tasks",
   "active": true,
   "nodes": [
     {
@@ -10,24 +10,24 @@
             {
               "field": "days",
               "triggerAtHour": 0,
-              "triggerAtMinute": 15
+              "triggerAtMinute": 0
             }
           ]
         }
       },
-      "id": "b2000001-0001-0001-0001-000000000001",
-      "name": "Schedule",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [
         0,
-        0
-      ]
+        300
+      ],
+      "name": "ScheduleTrigger",
+      "id": "rt-sched-001"
     },
     {
       "parameters": {
         "httpMethod": "POST",
-        "path": "test-shirankedo-daily-security",
+        "path": "test-recurring-tasks",
         "responseMode": "responseNode",
         "options": {}
       },
@@ -35,60 +35,87 @@
       "typeVersion": 2.1,
       "position": [
         0,
-        200
+        500
       ],
       "name": "WebhookTest",
-      "id": "b2000001-0001-0001-0001-000000000002",
-      "webhookId": "b2000001-0001-0001-0001-000000000002"
+      "id": "rt-0010-4000-8000-000000000010",
+      "webhookId": "rt-0010-4000-8000-000000000010"
     },
     {
       "parameters": {
-        "jsCode": "// @external shirankedo-daily/CheckTestMode.ts"
+        "jsCode": "// @external cron-recurring-tasks/CheckTestMode.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
         220,
-        0
+        400
       ],
       "name": "CheckTestMode",
-      "id": "b2000001-0001-0001-0001-000000000003"
+      "id": "rt-0011-4000-8000-000000000011"
     },
     {
       "parameters": {
-        "method": "GET",
-        "url": "https://shirankedo.y-fudo.workers.dev/api/ingest/security-top",
+        "mode": "runOnceForAllItems",
+        "jsCode": "// @external cron-recurring-tasks/PrepQuery.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        300
+      ],
+      "name": "PrepQuery",
+      "id": "rt-prep-query-001"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.notion.com/v1/databases/3142570f-e49f-80cf-8383-cc62030339c9/query",
         "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "httpHeaderAuth",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2022-06-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.requestBody }}",
         "options": {}
       },
-      "id": "b2000001-0001-0001-0001-000000000004",
-      "name": "FetchSecurityTop",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        440,
-        0
+        660,
+        300
       ],
+      "name": "QueryDB",
+      "id": "rt-query-db-001",
       "credentials": {
-        "httpHeaderAuth": {
-          "id": "CdkfLkdZEMFfnx8h",
-          "name": "Header Auth account"
+        "notionApi": {
+          "id": "StdChbKZz3co4jDO",
+          "name": "Notion account"
         }
       }
     },
     {
       "parameters": {
-        "jsCode": "// @external shirankedo-daily/PrepareSecurityPrompt.ts"
+        "mode": "runOnceForAllItems",
+        "jsCode": "// @external cron-recurring-tasks/ParseDueTasks.ts"
       },
-      "id": "b2000001-0001-0001-0001-000000000005",
-      "name": "PrepareSecurityComment",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        660,
-        0
-      ]
+        880,
+        300
+      ],
+      "name": "ParseDueTasks",
+      "id": "rt-parse-001"
     },
     {
       "parameters": {
@@ -100,78 +127,40 @@
           },
           "conditions": [
             {
-              "id": "b2-cond-skip-gemini-security-comment",
-              "leftValue": "={{ $execution.customData.get('isTest') }}",
-              "rightValue": "true",
+              "id": "rt-cond-001",
+              "leftValue": "={{ $json.hasDue }}",
+              "rightValue": true,
               "operator": {
-                "type": "string",
+                "type": "boolean",
                 "operation": "equals"
               }
             }
           ],
           "combinator": "and"
-        },
-        "options": {}
+        }
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        880,
-        0
-      ],
-      "name": "IfSkipGeminiSecurityComment",
-      "id": "b2000001-0001-0001-0001-000000000006"
-    },
-    {
-      "parameters": {
-        "jsCode": "// @external shirankedo-daily/MockGeminiSecurityComment.ts"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
         1100,
-        -100
+        300
       ],
-      "name": "MockGeminiSecurityComment",
-      "id": "b2000001-0001-0001-0001-000000000007"
+      "name": "HasDueTasks",
+      "id": "rt-if-001"
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "googlePalmApi",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ $json.geminiBody }}"
+        "mode": "runOnceForAllItems",
+        "jsCode": "// @external cron-recurring-tasks/PrepCreate.ts"
       },
-      "id": "b2000001-0001-0001-0001-000000000008",
-      "name": "GeminiSecurityComment",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        1100,
-        100
-      ],
-      "credentials": {
-        "googlePalmApi": {
-          "id": "rlflsmwVLnPi2SAN",
-          "name": "Google Gemini(PaLM) Api account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "jsCode": "// @external shirankedo-daily/FormatSecurityDaily.ts"
-      },
-      "id": "b2000001-0001-0001-0001-000000000009",
-      "name": "FormatSecurityDaily",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
         1320,
-        0
-      ]
+        300
+      ],
+      "name": "PrepCreate",
+      "id": "rt-prep-create-001"
     },
     {
       "parameters": {
@@ -183,7 +172,7 @@
           },
           "conditions": [
             {
-              "id": "b2-cond-skip-post-security-daily",
+              "id": "rt-cond-skip-create",
               "leftValue": "={{ $execution.customData.get('isTest') }}",
               "rightValue": "true",
               "operator": {
@@ -200,50 +189,59 @@
       "typeVersion": 2.2,
       "position": [
         1540,
-        0
+        300
       ],
-      "name": "IfSkipPostSecurityDaily",
-      "id": "b2000001-0001-0001-0001-000000000010"
+      "name": "IfSkipCreateTask",
+      "id": "rt-0012-4000-8000-000000000012"
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "https://shirankedo.y-fudo.workers.dev/api/ingest/security-daily",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
+        "url": "https://api.notion.com/v1/pages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2022-06-28"
+            }
+          ]
+        },
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ $json.requestBody }}",
         "options": {}
       },
-      "id": "b2000001-0001-0001-0001-000000000011",
-      "name": "PostSecurityDaily",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
         1760,
-        100
+        400
       ],
+      "name": "CreateTask",
+      "id": "rt-create-001",
       "credentials": {
-        "httpHeaderAuth": {
-          "id": "CdkfLkdZEMFfnx8h",
-          "name": "Header Auth account"
+        "notionApi": {
+          "id": "StdChbKZz3co4jDO",
+          "name": "Notion account"
         }
-      },
-      "onError": "continueErrorOutput"
+      }
     },
     {
       "parameters": {
-        "jsCode": "// @external shirankedo-daily/PrepareDiscordSecurity.ts"
+        "mode": "runOnceForAllItems",
+        "jsCode": "// @external cron-recurring-tasks/PrepUpdate.ts"
       },
-      "id": "b2000001-0001-0001-0001-000000000012",
-      "name": "PrepareDiscordSecurity",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
         1980,
-        0
-      ]
+        300
+      ],
+      "name": "PrepUpdate",
+      "id": "rt-prep-update-001"
     },
     {
       "parameters": {
@@ -255,7 +253,7 @@
           },
           "conditions": [
             {
-              "id": "b2-cond-skip-discord-notify-security",
+              "id": "rt-cond-skip-update",
               "leftValue": "={{ $execution.customData.get('isTest') }}",
               "rightValue": "true",
               "operator": {
@@ -272,41 +270,58 @@
       "typeVersion": 2.2,
       "position": [
         2200,
-        0
+        300
       ],
-      "name": "IfSkipDiscordNotifySecurity",
-      "id": "b2000001-0001-0001-0001-000000000013"
+      "name": "IfSkipUpdateDef",
+      "id": "rt-0013-4000-8000-000000000013"
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "http://localhost:5678/webhook/discord-notify",
+        "method": "PATCH",
+        "url": "=https://api.notion.com/v1/pages/{{ $json.pageId }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2022-06-28"
+            }
+          ]
+        },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ message: $json.message }) }}",
+        "jsonBody": "={{ $json.requestBody }}",
         "options": {}
       },
-      "id": "b2000001-0001-0001-0001-000000000014",
-      "name": "DiscordNotifySecurity",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
         2420,
-        100
-      ]
+        400
+      ],
+      "name": "UpdateDef",
+      "id": "rt-update-def-001",
+      "credentials": {
+        "notionApi": {
+          "id": "StdChbKZz3co4jDO",
+          "name": "Notion account"
+        }
+      }
     },
     {
       "parameters": {
-        "jsCode": "// @external shirankedo-daily/TestResponse.ts"
+        "jsCode": "// @external cron-recurring-tasks/TestResponse.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
         2420,
-        -100
+        200
       ],
       "name": "TestResponse",
-      "id": "b2000001-0001-0001-0001-000000000015"
+      "id": "rt-0014-4000-8000-000000000014"
     },
     {
       "parameters": {
@@ -318,14 +333,14 @@
       "typeVersion": 1.5,
       "position": [
         2640,
-        -100
+        200
       ],
       "name": "RespondTest",
-      "id": "b2000001-0001-0001-0001-000000000016"
+      "id": "rt-0015-4000-8000-000000000015"
     }
   ],
   "connections": {
-    "Schedule": {
+    "ScheduleTrigger": {
       "main": [
         [
           {
@@ -351,134 +366,116 @@
       "main": [
         [
           {
-            "node": "FetchSecurityTop",
+            "node": "PrepQuery",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "FetchSecurityTop": {
+    "PrepQuery": {
       "main": [
         [
           {
-            "node": "PrepareSecurityComment",
+            "node": "QueryDB",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "PrepareSecurityComment": {
+    "QueryDB": {
       "main": [
         [
           {
-            "node": "IfSkipGeminiSecurityComment",
+            "node": "ParseDueTasks",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "IfSkipGeminiSecurityComment": {
+    "ParseDueTasks": {
       "main": [
         [
           {
-            "node": "MockGeminiSecurityComment",
+            "node": "HasDueTasks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HasDueTasks": {
+      "main": [
+        [
+          {
+            "node": "PrepCreate",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "GeminiSecurityComment",
+            "node": "TestResponse",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "MockGeminiSecurityComment": {
+    "PrepCreate": {
       "main": [
         [
           {
-            "node": "FormatSecurityDaily",
+            "node": "IfSkipCreateTask",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "GeminiSecurityComment": {
+    "IfSkipCreateTask": {
       "main": [
         [
           {
-            "node": "FormatSecurityDaily",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "FormatSecurityDaily": {
-      "main": [
-        [
-          {
-            "node": "IfSkipPostSecurityDaily",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "IfSkipPostSecurityDaily": {
-      "main": [
-        [
-          {
-            "node": "PrepareDiscordSecurity",
+            "node": "PrepUpdate",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "PostSecurityDaily",
+            "node": "CreateTask",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "PostSecurityDaily": {
+    "CreateTask": {
       "main": [
         [
           {
-            "node": "PrepareDiscordSecurity",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "PrepareDiscordSecurity",
+            "node": "PrepUpdate",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "PrepareDiscordSecurity": {
+    "PrepUpdate": {
       "main": [
         [
           {
-            "node": "IfSkipDiscordNotifySecurity",
+            "node": "IfSkipUpdateDef",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "IfSkipDiscordNotifySecurity": {
+    "IfSkipUpdateDef": {
       "main": [
         [
           {
@@ -489,7 +486,18 @@
         ],
         [
           {
-            "node": "DiscordNotifySecurity",
+            "node": "UpdateDef",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "UpdateDef": {
+      "main": [
+        [
+          {
+            "node": "TestResponse",
             "type": "main",
             "index": 0
           }

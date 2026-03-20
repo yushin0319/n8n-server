@@ -16,7 +16,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external error-handler/FormatError.ts"
+        "jsCode": "// @external system-error-handler/FormatError.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -61,7 +61,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external error-handler/LogDiscordFailure.ts"
+        "jsCode": "// @external system-error-handler/LogDiscordFailure.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,

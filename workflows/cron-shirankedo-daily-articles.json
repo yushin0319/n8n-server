@@ -126,7 +126,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external shirankedo-daily/ParseArXiv.ts"
+        "jsCode": "// @external cron-shirankedo-daily/ParseArXiv.ts"
       },
       "id": "a1000002-0001-0001-0001-000000000009",
       "name": "ParseArXiv",
@@ -139,7 +139,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external shirankedo-daily/ArXivFallback.ts"
+        "jsCode": "// @external cron-shirankedo-daily/ArXivFallback.ts"
       },
       "id": "a1000002-0001-0001-0001-000000000030",
       "name": "ArXivFallback",
@@ -184,7 +184,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external shirankedo-daily/DeduplicateArticles.ts"
+        "jsCode": "// @external cron-shirankedo-daily/DeduplicateArticles.ts"
       },
       "id": "a1000002-0001-0001-0001-000000000011",
       "name": "DeduplicateArticles",
@@ -197,7 +197,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external shirankedo-daily/PrepareSelectionPrompt.ts"
+        "jsCode": "// @external cron-shirankedo-daily/PrepareSelectionPrompt.ts"
       },
       "id": "a1000002-0001-0001-0001-000000000012",
       "name": "PrepareSelectionPrompt",
@@ -235,7 +235,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external shirankedo-daily/ParseSelection.ts"
+        "jsCode": "// @external cron-shirankedo-daily/ParseSelection.ts"
       },
       "id": "a1000002-0001-0001-0001-000000000014",
       "name": "ParseSelection",
@@ -270,7 +270,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external shirankedo-daily/ExtractTexts.ts"
+        "jsCode": "// @external cron-shirankedo-daily/ExtractTexts.ts"
       },
       "id": "a1000002-0001-0001-0001-000000000016",
       "name": "ExtractTexts",
@@ -283,7 +283,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external shirankedo-daily/PrepareSummaryPrompt.ts"
+        "jsCode": "// @external cron-shirankedo-daily/PrepareSummaryPrompt.ts"
       },
       "id": "a1000002-0001-0001-0001-000000000017",
       "name": "PrepareSummaryPrompt",
@@ -321,7 +321,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external shirankedo-daily/FormatArticles.ts"
+        "jsCode": "// @external cron-shirankedo-daily/FormatArticles.ts"
       },
       "id": "a1000002-0001-0001-0001-000000000019",
       "name": "FormatArticles",
@@ -360,7 +360,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external shirankedo-daily/PrepareDiscordArticles.ts"
+        "jsCode": "// @external cron-shirankedo-daily/PrepareDiscordArticles.ts"
       },
       "id": "a1000002-0001-0001-0001-000000000021",
       "name": "PrepareDiscordArticles",
@@ -408,7 +408,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external shirankedo-daily/CheckTestMode.ts"
+        "jsCode": "// @external cron-shirankedo-daily/CheckTestMode.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -421,7 +421,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external shirankedo-daily/TestResponse.ts"
+        "jsCode": "// @external cron-shirankedo-daily/TestResponse.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -481,7 +481,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external shirankedo-daily/MockGeminiSelect.ts"
+        "jsCode": "// @external cron-shirankedo-daily/MockGeminiSelect.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -526,7 +526,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external shirankedo-daily/MockGeminiSummarize.ts"
+        "jsCode": "// @external cron-shirankedo-daily/MockGeminiSummarize.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
