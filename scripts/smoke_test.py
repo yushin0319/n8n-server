@@ -46,10 +46,18 @@ _DEFAULT_CRON_TIMEOUT = 60
 _DEFAULT_WEBHOOK_TIMEOUT = 30
 
 # Webhook WFのテスト用body（未指定は空dict → post_testで {"test": true} になる）
-_WEBHOOK_BODIES: dict[str, dict] = {
-    "api-notion-tasks": {"action": "list"},
-    "api-notion-emails": {"action": "search"},
-    "api-notion-recurring-tasks": {"action": "list"},
+# 複数アクションを検証する場合はリストで指定
+_WEBHOOK_BODIES: dict[str, dict | list[dict]] = {
+    "api-notion-tasks": [
+        {"action": "list"},
+        {"action": "search", "query": "test"},
+    ],
+    "api-notion-emails": [
+        {"action": "search"},
+    ],
+    "api-notion-recurring-tasks": [
+        {"action": "list"},
+    ],
     "api-gdrive": {"action": "search"},
 }
 
@@ -186,6 +194,62 @@ def verify_webhook_response(result: dict, allow_error: bool = False) -> bool:
     if result["status_code"] == 200:
         return True
     return allow_error and result["status_code"] in (400, 404, 500)
+
+
+# --- レスポンス構造バリデータ ---
+# 読み取り系アクションのレスポンスが期待する構造を持っているか検証する。
+# 戻り値: (ok, error_detail)
+
+
+def _validate_list_with_key(body: dict, key: str) -> tuple[bool, str]:
+    """共通: action, count(int), key(list) を検証."""
+    if not isinstance(body, dict):
+        return False, "response is not dict"
+    if "action" not in body:
+        return False, "missing 'action'"
+    if not isinstance(body.get("count"), int):
+        return False, f"'count' is not int: {type(body.get('count')).__name__}"
+    if not isinstance(body.get(key), list):
+        return False, f"'{key}' is not list: {type(body.get(key)).__name__}"
+    if body["count"] != len(body[key]):
+        return False, f"count mismatch: count={body['count']}, len({key})={len(body[key])}"
+    return True, ""
+
+
+def _validate_notion_tasks_list(body: dict) -> tuple[bool, str]:
+    return _validate_list_with_key(body, "tasks")
+
+
+def _validate_notion_tasks_search(body: dict) -> tuple[bool, str]:
+    return _validate_list_with_key(body, "tasks")
+
+
+def _validate_notion_emails_search(body: dict) -> tuple[bool, str]:
+    return _validate_list_with_key(body, "emails")
+
+
+def _validate_notion_recurring_tasks_list(body: dict) -> tuple[bool, str]:
+    return _validate_list_with_key(body, "tasks")
+
+
+# (wf_name, action) → バリデータ
+_RESPONSE_VALIDATORS: dict[tuple[str, str], callable] = {
+    ("api-notion-tasks", "list"): _validate_notion_tasks_list,
+    ("api-notion-tasks", "search"): _validate_notion_tasks_search,
+    ("api-notion-emails", "search"): _validate_notion_emails_search,
+    ("api-notion-recurring-tasks", "list"): _validate_notion_recurring_tasks_list,
+}
+
+
+def validate_response_structure(wf_name: str, action: str, result: dict) -> tuple[bool, str]:
+    """レスポンス構造を検証. バリデータ未定義のアクションはスキップ(常にOK)."""
+    validator = _RESPONSE_VALIDATORS.get((wf_name, action))
+    if validator is None:
+        return True, ""
+    body = result.get("body")
+    if body is None:
+        return False, "no response body"
+    return validator(body)
 
 
 def send_discord_summary(results: list[dict]) -> None:
@@ -390,13 +454,37 @@ def main() -> int:
             results.append({"endpoint": ep, "result": result, "ok": ok})
 
     if webhook_targets:
-        print("\n=== Webhook WF (connectivity check) ===")
+        print("\n=== Webhook WF (response validation) ===")
         for ep in webhook_targets:
-            print(f"  {ep['name']}...", end=" ", flush=True)
-            result = post_test(ep)
-            ok = verify_webhook_response(result, allow_error=ep.get("allow_error", False))
-            print("OK" if ok else f"FAIL ({result.get('error') or result['status_code']})")
-            results.append({"endpoint": ep, "result": result, "ok": ok})
+            bodies = ep.get("body", {})
+            # 単一dictの場合はリストに正規化
+            if isinstance(bodies, dict):
+                bodies = [bodies]
+            for body in bodies:
+                action = body.get("action", "unknown")
+                label = f"{ep['name']}:{action}"
+                test_ep = {**ep, "body": body}
+                print(f"  {label}...", end=" ", flush=True)
+                result = post_test(test_ep)
+                ok = verify_webhook_response(result, allow_error=ep.get("allow_error", False))
+                # HTTP成功時はレスポンス構造も検証
+                detail = ""
+                if ok:
+                    struct_ok, detail = validate_response_structure(ep["name"], action, result)
+                    if not struct_ok:
+                        ok = False
+                if ok:
+                    print("OK")
+                else:
+                    error = detail or result.get("error") or f"HTTP {result['status_code']}"
+                    print(f"FAIL ({error})")
+                results.append(
+                    {
+                        "endpoint": {**ep, "name": label},
+                        "result": result,
+                        "ok": ok,
+                    }
+                )
 
     if run_gdrive:
         print("\n=== GDrive E2E (real data flow) ===")
