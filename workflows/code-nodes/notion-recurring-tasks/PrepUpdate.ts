@@ -1,7 +1,8 @@
 export default function (): CodeNodeReturn {
   // update用リクエストボディを構築
-  const body = $input.first().json.body;
-  const pageId = body.page_id;
+  const body = $input.first().json?.body as Record<string, unknown> | undefined;
+  const pageId = body?.page_id as string | undefined;
+  if (!body || !pageId) throw new Error("body.page_id は必須です");
 
   const properties: Record<string, unknown> = {};
   if (body.name !== undefined) {
