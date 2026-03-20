@@ -92,8 +92,16 @@ export { familyKey, shouldSkip };
 
 export default function (): CodeNodeReturn {
   // AA APIデータからモデルをフィルタ・デデュプ
-  const aaResp = $("FetchAAModels").first().json;
-  const rateResp = $("FetchExchangeRate").first().json;
+  // Mock経由の場合は $("FetchAAModels") が未実行なのでフォールバック
+  let aaResp: IDataObject;
+  let rateResp: IDataObject;
+  try {
+    aaResp = $("FetchAAModels").first().json;
+    rateResp = $("FetchExchangeRate").first().json;
+  } catch {
+    aaResp = $("MockFetchAAModels").first().json;
+    rateResp = $("MockFetchExchangeRate").first().json;
+  }
   const aaData = (aaResp.data || []) as IDataObject[];
   const rates = (rateResp?.rates || {}) as IDataObject;
   const jpyRate = (rates.JPY as number) || 150;
