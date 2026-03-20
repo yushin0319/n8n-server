@@ -17,6 +17,11 @@ import sys
 import time
 import urllib.error
 import urllib.request
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 # 本番環境URL（CI環境では SMOKE_TEST_URL 環境変数で上書き可能）
 BASE_URL = os.environ.get("SMOKE_TEST_URL", "https://yushin-n8n.duckdns.org/webhook")
@@ -185,7 +190,10 @@ def send_discord_summary(results: list[dict]) -> None:
     req = urllib.request.Request(
         DISCORD_WEBHOOK_URL,
         data=payload,
-        headers={"Content-Type": "application/json"},
+        headers={
+            "Content-Type": "application/json",
+            "User-Agent": "n8n-server-smoke-test/1.0",
+        },
         method="POST",
     )
     try:
