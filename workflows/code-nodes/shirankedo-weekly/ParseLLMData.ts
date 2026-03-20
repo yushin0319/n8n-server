@@ -92,15 +92,20 @@ export { familyKey, shouldSkip };
 
 export default function (): CodeNodeReturn {
   // AA APIデータからモデルをフィルタ・デデュプ
-  // Mock経由の場合は $("FetchAAModels") が未実行なのでフォールバック
+  // テストモード時はMock経由のため $("FetchAAModels") が未実行エラーになる
+  // "hasn't been executed" を含むエラーのみフォールバック、それ以外は再throw
   let aaResp: IDataObject;
   let rateResp: IDataObject;
   try {
     aaResp = $("FetchAAModels").first().json;
     rateResp = $("FetchExchangeRate").first().json;
-  } catch {
-    aaResp = $("MockFetchAAModels").first().json;
-    rateResp = $("MockFetchExchangeRate").first().json;
+  } catch (e: unknown) {
+    if (e instanceof Error && e.message.includes("hasn't been executed")) {
+      aaResp = $("MockFetchAAModels").first().json;
+      rateResp = $("MockFetchExchangeRate").first().json;
+    } else {
+      throw e;
+    }
   }
   const aaData = (aaResp.data || []) as IDataObject[];
   const rates = (rateResp?.rates || {}) as IDataObject;
