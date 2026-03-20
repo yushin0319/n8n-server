@@ -397,7 +397,7 @@
     },
     {
       "parameters": {
-        "jsCode": "return [{ json: { models: [] } }];"
+        "jsCode": "// @external shirankedo-weekly-llm/MockFetchAAModels.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -442,7 +442,7 @@
     },
     {
       "parameters": {
-        "jsCode": "return [{ json: { rates: { JPY: 150.0 } } }];"
+        "jsCode": "// @external shirankedo-weekly-llm/MockFetchExchangeRate.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
