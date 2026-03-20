@@ -28,8 +28,6 @@ DISCORD_WEBHOOK_URL = os.environ.get("DISCORD_WEBHOOK_URL", "")
 # WFファイル名 → エンドポイントのマッピングを自動生成
 _CRON_WFS = {
     "health-check": 30,
-    "github-summary": 30,
-    "gmail-to-notion": 30,
     "recurring-tasks": 30,
     "shirankedo-daily-articles": 60,
     "shirankedo-daily-vulns": 60,
@@ -54,13 +52,6 @@ CRON_ENDPOINTS = [
 # Webhook WF（読み取り専用リクエストで疎通確認）
 # GDrive書き込み系は副作用があるため除外
 WEBHOOK_ENDPOINTS = [
-    {
-        "path": "status",
-        "name": "Server Status",
-        "timeout": 10,
-        "body": {},
-        "wf": "server-status.json",
-    },
     {
         "path": "notion-tasks",
         "name": "Notion Tasks",

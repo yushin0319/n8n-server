@@ -1,27 +1,37 @@
 {
   "id": "oGx9uiLsxLGfGDcJ",
-  "name": "Gmail to Notion 重要メール",
+  "name": "trigger/gmail-import",
   "active": true,
   "nodes": [
     {
       "parameters": {
-        "rule": {
-          "interval": [
+        "pollTimes": {
+          "item": [
             {
-              "field": "hours",
-              "hoursInterval": 1
+              "mode": "everyHour"
             }
           ]
-        }
+        },
+        "filters": {
+          "readStatus": "unread"
+        },
+        "simple": true,
+        "options": {}
       },
       "id": "a1",
-      "name": "Schedule",
-      "type": "n8n-nodes-base.scheduleTrigger",
+      "name": "GmailTrigger",
+      "type": "n8n-nodes-base.gmailTrigger",
       "typeVersion": 1.2,
       "position": [
         0,
         0
-      ]
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "rqMLM5TDLPFAXf6K",
+          "name": "Gmail account"
+        }
+      }
     },
     {
       "parameters": {
@@ -52,30 +62,6 @@
       ],
       "name": "CheckTestMode",
       "id": "gm-0011-4000-8000-000000000011"
-    },
-    {
-      "parameters": {
-        "operation": "getAll",
-        "returnAll": true,
-        "simple": true,
-        "filters": {
-          "q": "is:unread"
-        }
-      },
-      "id": "a2",
-      "name": "GmailGetAll",
-      "type": "n8n-nodes-base.gmail",
-      "typeVersion": 2.1,
-      "position": [
-        440,
-        0
-      ],
-      "credentials": {
-        "gmailOAuth2": {
-          "id": "rqMLM5TDLPFAXf6K",
-          "name": "Gmail account"
-        }
-      }
     },
     {
       "parameters": {
@@ -326,7 +312,7 @@
     }
   ],
   "connections": {
-    "Schedule": {
+    "GmailTrigger": {
       "main": [
         [
           {
@@ -349,17 +335,6 @@
       ]
     },
     "CheckTestMode": {
-      "main": [
-        [
-          {
-            "node": "GmailGetAll",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "GmailGetAll": {
       "main": [
         [
           {

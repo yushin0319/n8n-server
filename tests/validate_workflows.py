@@ -10,6 +10,7 @@
 7. jsCode 内の Unicode エスケープ残存 (可読性)
 8. continueErrorOutput のエラー出力未接続 (サイレント失敗)
 9. 接続グラフに含まれない孤立ノード (不要ノード残存)
+10. WF名がカテゴリ/ケバブケース命名規則に違反 (整理)
 """
 
 import glob
@@ -42,10 +43,15 @@ TRIGGER_TYPES = {
     "n8n-nodes-base.webhook",
     "n8n-nodes-base.scheduleTrigger",
     "n8n-nodes-base.cronTrigger",
+    "n8n-nodes-base.gmailTrigger",
 }
 
 # errorWorkflow チェック除外（Error Handler 自身は errorWorkflow を持てない）
 ERROR_HANDLER_TRIGGER = "n8n-nodes-base.errorTrigger"
+
+# WF名の命名規則: カテゴリ/ケバブケース
+VALID_CATEGORIES = {"api", "cron", "trigger", "system"}
+NAME_PATTERN = re.compile(r"^(api|cron|trigger|system)/[a-z][a-z0-9]+(-[a-z0-9]+)*$")
 
 
 def load_workflow(path):
@@ -237,6 +243,16 @@ def check_error_output_connected(wf, errors):
             )
 
 
+def check_naming_convention(wf, errors):
+    """WF名がカテゴリ/ケバブケース命名規則に従っているか."""
+    name = wf.get("name", "")
+    if not NAME_PATTERN.match(name):
+        errors.append(
+            f'WF名 "{name}" が命名規則に違反しています。'
+            " 形式: カテゴリ/ケバブケース (例: api/notion-tasks, cron/health-check)"
+        )
+
+
 def check_isolated_nodes(wf, errors):
     """接続グラフに含まれない孤立ノードを検出."""
     connections = wf.get("connections", {})
@@ -254,10 +270,7 @@ def check_isolated_nodes(wf, errors):
     # 孤立 = 接続グラフに一切登場しないノード
     isolated = all_nodes - connected
     for node_name in sorted(isolated):
-        errors.append(
-            f"[{node_name}] 接続グラフに含まれていません。"
-            " 不要なら削除してください。"
-        )
+        errors.append(f"[{node_name}] 接続グラフに含まれていません。 不要なら削除してください。")
 
 
 def validate_workflow(path):
@@ -273,6 +286,7 @@ def validate_workflow(path):
     check_unicode_escapes(wf, errors)
     check_error_output_connected(wf, errors)
     check_isolated_nodes(wf, errors)
+    check_naming_convention(wf, errors)
     return errors
 
 

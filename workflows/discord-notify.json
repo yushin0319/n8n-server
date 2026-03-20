@@ -1,6 +1,6 @@
 {
   "id": "8CCP4flWRe4eaKoF",
-  "name": "Discord Notify",
+  "name": "api/discord-notify",
   "active": true,
   "nodes": [
     {
