@@ -1,0 +1,581 @@
+{
+  "id": "S54gDOkbmgh7vDGm",
+  "name": "shirankedo 週次Stars",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                1
+              ],
+              "triggerAtHour": 18
+            }
+          ]
+        }
+      },
+      "id": "18eca777-587c-4313-8e03-b7986940a938",
+      "name": "Schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        200,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://shirankedo.y-fudo.workers.dev/api/ingest/tracking-repos",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "43351559-1ac7-43ea-89d8-3ead54102dd6",
+      "name": "FetchTrackingRepos",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        200
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "CdkfLkdZEMFfnx8h",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external shirankedo-weekly/BuildStarBatches.ts"
+      },
+      "id": "2759a84d-5b14-4bfd-987e-152386d5920b",
+      "name": "BuildStarBatches",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "daded971-728c-4975-a465-be6683caf28a",
+      "name": "SplitStarBatches",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        960,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.github.com/graphql",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ query: $json.query }) }}",
+        "options": {}
+      },
+      "id": "33d9e0af-5f88-4858-805a-2cd3ef00ee5e",
+      "name": "FetchStarBatch",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        100
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "GMg4fnokNoF4q4MU",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external shirankedo-weekly/AccumulateStars.ts"
+      },
+      "id": "c155eb5d-634a-47b4-80e3-cf348393248f",
+      "name": "AccumulateStars",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external shirankedo-weekly/ParseStars.ts"
+      },
+      "id": "705aeb00-9f20-48ea-8884-1a38283ba81a",
+      "name": "ParseStars",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "44911158-f603-47db-8e25-3f7fdd3bb85d",
+      "name": "SplitStarChunks",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1440,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://shirankedo.y-fudo.workers.dev/api/ingest/repo-stats",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.requestBody }}",
+        "options": {}
+      },
+      "id": "afa25fd7-6e6a-4f87-ab1e-3d750028a56f",
+      "name": "PostRepoStats",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1680,
+        200
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "CdkfLkdZEMFfnx8h",
+          "name": "Header Auth account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external shirankedo-weekly/AccumulatePostResults.ts"
+      },
+      "id": "1898f2c5-4d4d-4a09-af6e-16f97a52aa4e",
+      "name": "AccumulatePostResults",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1920,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external shirankedo-weekly/ParsePostResults.ts"
+      },
+      "id": "01e2f04c-3a6b-499c-a13f-869bdfd68e17",
+      "name": "ParsePostResults",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external shirankedo-weekly/PrepareDiscordStars.ts"
+      },
+      "id": "c7676c8d-12a6-4e64-af0d-4b5a85f3acbd",
+      "name": "PrepareDiscordStars",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1920,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:5678/webhook/discord-notify",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ message: $json.message }) }}",
+        "options": {}
+      },
+      "id": "1f86dd7a-33db-4e23-a078-a3470678f59d",
+      "name": "DiscordNotifyStars",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2160,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "test-shirankedo-weekly-stars",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "name": "WebhookTest",
+      "id": "sw-0010-4000-8000-000000000010",
+      "webhookId": "sw-0010-4000-8000-000000000010"
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external shirankedo-weekly/CheckTestMode.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        90,
+        300
+      ],
+      "name": "CheckTestMode",
+      "id": "sw-0011-4000-8000-000000000011"
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external shirankedo-weekly/TestResponse.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        90,
+        500
+      ],
+      "name": "TestResponse",
+      "id": "sw-0012-4000-8000-000000000012"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        310,
+        500
+      ],
+      "name": "RespondTest",
+      "id": "sw-0013-4000-8000-000000000013"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "sw-cond-skip-post-repo-stats",
+              "leftValue": "={{ $execution.customData.get('isTest') }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1570,
+        200
+      ],
+      "name": "IfSkipPostRepoStats",
+      "id": "sw-0040-4000-8000-000000000040"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "sw-cond-skip-discord-notify-stars",
+              "leftValue": "={{ $execution.customData.get('isTest') }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2050,
+        400
+      ],
+      "name": "IfSkipDiscordNotifyStars",
+      "id": "sw-0041-4000-8000-000000000041"
+    }
+  ],
+  "connections": {
+    "Schedule": {
+      "main": [
+        [
+          {
+            "node": "CheckTestMode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FetchTrackingRepos": {
+      "main": [
+        [
+          {
+            "node": "BuildStarBatches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "BuildStarBatches": {
+      "main": [
+        [
+          {
+            "node": "SplitStarBatches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SplitStarBatches": {
+      "main": [
+        [
+          {
+            "node": "ParseStars",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "FetchStarBatch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FetchStarBatch": {
+      "main": [
+        [
+          {
+            "node": "AccumulateStars",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AccumulateStars": {
+      "main": [
+        [
+          {
+            "node": "SplitStarBatches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ParseStars": {
+      "main": [
+        [
+          {
+            "node": "SplitStarChunks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SplitStarChunks": {
+      "main": [
+        [
+          {
+            "node": "ParsePostResults",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "IfSkipPostRepoStats",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PostRepoStats": {
+      "main": [
+        [
+          {
+            "node": "AccumulatePostResults",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AccumulatePostResults",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AccumulatePostResults": {
+      "main": [
+        [
+          {
+            "node": "SplitStarChunks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ParsePostResults": {
+      "main": [
+        [
+          {
+            "node": "PrepareDiscordStars",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepareDiscordStars": {
+      "main": [
+        [
+          {
+            "node": "IfSkipDiscordNotifyStars",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WebhookTest": {
+      "main": [
+        [
+          {
+            "node": "CheckTestMode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CheckTestMode": {
+      "main": [
+        [
+          {
+            "node": "FetchTrackingRepos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TestResponse": {
+      "main": [
+        [
+          {
+            "node": "RespondTest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IfSkipPostRepoStats": {
+      "main": [
+        [
+          {
+            "node": "AccumulatePostResults",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PostRepoStats",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IfSkipDiscordNotifyStars": {
+      "main": [
+        [
+          {
+            "node": "TestResponse",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "DiscordNotifyStars",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "aHM9O6mSwMNPTwdI"
+  }
+}

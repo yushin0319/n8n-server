@@ -1,0 +1,617 @@
+{
+  "id": "HgZFfm8V00zdpW7F",
+  "name": "shirankedo 週次Report",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                1
+              ],
+              "triggerAtHour": 18
+            }
+          ]
+        }
+      },
+      "id": "18eca777-587c-4313-8e03-b7986940a938",
+      "name": "Schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        200,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://shirankedo.y-fudo.workers.dev/api/ingest/articles/recent?days=7",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "ea7b77eb-76cf-4960-be80-ff1c79380a53",
+      "name": "FetchRecentArticles",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        800
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "CdkfLkdZEMFfnx8h",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external shirankedo-weekly/PrepareWeeklyPrompt.ts"
+      },
+      "id": "c889ea26-d2d0-42c2-af26-61ba0b129625",
+      "name": "PrepareWeeklyPrompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        800
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "3a3c270e-994f-4903-925c-456fa0fa9425",
+              "leftValue": "={{ $json.hasArticles }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "0fa9bd99-6de9-431b-a4cc-ba215ca107b5",
+      "name": "HasArticlesForReport",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        960,
+        800
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: $json.prompt }] }], generationConfig: { temperature: 0.3 } }) }}",
+        "options": {}
+      },
+      "id": "aaa59c45-8487-4ee5-a611-ea15f870709b",
+      "name": "GeminiWeeklyReport",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        700
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "rlflsmwVLnPi2SAN",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external shirankedo-weekly/FormatWeeklyReport.ts"
+      },
+      "id": "a243a595-89cb-4c4b-b997-7e3fd9574678",
+      "name": "FormatWeeklyReport",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        700
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://shirankedo.y-fudo.workers.dev/api/ingest/weekly-summaries",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.requestBody }}",
+        "options": {}
+      },
+      "id": "8c056b34-7985-4018-9c1e-b3b079ccf68a",
+      "name": "PostWeeklySummary",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1680,
+        700
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "CdkfLkdZEMFfnx8h",
+          "name": "Header Auth account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external shirankedo-weekly/EmptyWeeklyResult.ts"
+      },
+      "id": "4e21a574-effd-4adc-98b9-8610f81a58a7",
+      "name": "EmptyWeeklyResult",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        900
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "append",
+        "options": {}
+      },
+      "id": "ec8fb7e6-32e1-41b9-aa14-5601b956eb75",
+      "name": "MergeWeeklyPaths",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [
+        1920,
+        800
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external shirankedo-weekly/PrepareDiscordWeekly.ts"
+      },
+      "id": "40c7ff45-343e-4e05-a7e2-ae56104adbac",
+      "name": "PrepareDiscordWeekly",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2160,
+        800
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:5678/webhook/discord-notify",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ message: $json.message }) }}",
+        "options": {}
+      },
+      "id": "08ff5326-2a4f-4182-81cb-4954950d1ba2",
+      "name": "DiscordNotifyWeekly",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2400,
+        800
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "test-shirankedo-weekly-report",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "name": "WebhookTest",
+      "id": "sw-0010-4000-8000-000000000010",
+      "webhookId": "sw-0010-4000-8000-000000000010"
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external shirankedo-weekly/CheckTestMode.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        90,
+        300
+      ],
+      "name": "CheckTestMode",
+      "id": "sw-0011-4000-8000-000000000011"
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external shirankedo-weekly/TestResponse.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        90,
+        500
+      ],
+      "name": "TestResponse",
+      "id": "sw-0012-4000-8000-000000000012"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        310,
+        500
+      ],
+      "name": "RespondTest",
+      "id": "sw-0013-4000-8000-000000000013"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "sw-cond-skip-gemini-weekly-report",
+              "leftValue": "={{ $execution.customData.get('isTest') }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1090,
+        700
+      ],
+      "name": "IfSkipGeminiWeeklyReport",
+      "id": "sw-0020-4000-8000-000000000020"
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external shirankedo-weekly/MockGeminiWeeklyReport.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1090,
+        600
+      ],
+      "name": "MockGeminiWeeklyReport",
+      "id": "sw-0030-4000-8000-000000000030"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "sw-cond-skip-post-weekly-summary",
+              "leftValue": "={{ $execution.customData.get('isTest') }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1570,
+        700
+      ],
+      "name": "IfSkipPostWeeklySummary",
+      "id": "sw-0042-4000-8000-000000000042"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "sw-cond-skip-discord-notify-weekly",
+              "leftValue": "={{ $execution.customData.get('isTest') }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2290,
+        800
+      ],
+      "name": "IfSkipDiscordNotifyWeekly",
+      "id": "sw-0043-4000-8000-000000000043"
+    }
+  ],
+  "connections": {
+    "Schedule": {
+      "main": [
+        [
+          {
+            "node": "CheckTestMode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FetchRecentArticles": {
+      "main": [
+        [
+          {
+            "node": "PrepareWeeklyPrompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepareWeeklyPrompt": {
+      "main": [
+        [
+          {
+            "node": "HasArticlesForReport",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HasArticlesForReport": {
+      "main": [
+        [
+          {
+            "node": "IfSkipGeminiWeeklyReport",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "EmptyWeeklyResult",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GeminiWeeklyReport": {
+      "main": [
+        [
+          {
+            "node": "FormatWeeklyReport",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FormatWeeklyReport": {
+      "main": [
+        [
+          {
+            "node": "IfSkipPostWeeklySummary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PostWeeklySummary": {
+      "main": [
+        [
+          {
+            "node": "MergeWeeklyPaths",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "MergeWeeklyPaths",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "EmptyWeeklyResult": {
+      "main": [
+        [
+          {
+            "node": "MergeWeeklyPaths",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "MergeWeeklyPaths": {
+      "main": [
+        [
+          {
+            "node": "PrepareDiscordWeekly",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepareDiscordWeekly": {
+      "main": [
+        [
+          {
+            "node": "IfSkipDiscordNotifyWeekly",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WebhookTest": {
+      "main": [
+        [
+          {
+            "node": "CheckTestMode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CheckTestMode": {
+      "main": [
+        [
+          {
+            "node": "FetchRecentArticles",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TestResponse": {
+      "main": [
+        [
+          {
+            "node": "RespondTest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IfSkipGeminiWeeklyReport": {
+      "main": [
+        [
+          {
+            "node": "MockGeminiWeeklyReport",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "GeminiWeeklyReport",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MockGeminiWeeklyReport": {
+      "main": [
+        [
+          {
+            "node": "FormatWeeklyReport",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IfSkipPostWeeklySummary": {
+      "main": [
+        [
+          {
+            "node": "MergeWeeklyPaths",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PostWeeklySummary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IfSkipDiscordNotifyWeekly": {
+      "main": [
+        [
+          {
+            "node": "TestResponse",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "DiscordNotifyWeekly",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "aHM9O6mSwMNPTwdI"
+  }
+}

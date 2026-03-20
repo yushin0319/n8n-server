@@ -29,7 +29,11 @@ CRON_ENDPOINTS = [
     {"path": "test-shirankedo-daily-vulns", "name": "ShiranKedo Vulns", "timeout": 60},
     {"path": "test-shirankedo-daily-releases", "name": "ShiranKedo Releases", "timeout": 120},
     {"path": "test-shirankedo-daily-security", "name": "ShiranKedo Security", "timeout": 60},
-    {"path": "test-shirankedo-weekly", "name": "ShiranKedo Weekly", "timeout": 120},
+    {"path": "test-shirankedo-weekly-stars", "name": "ShiranKedo Weekly Stars", "timeout": 120},
+    {"path": "test-shirankedo-weekly-report", "name": "ShiranKedo Weekly Report", "timeout": 120},
+    {"path": "test-shirankedo-weekly-comments", "name": "Weekly Comments", "timeout": 120},
+    {"path": "test-shirankedo-weekly-llm", "name": "ShiranKedo Weekly LLM", "timeout": 120},
+    {"path": "test-shirankedo-weekly-repos", "name": "ShiranKedo Weekly Repos", "timeout": 120},
 ]
 
 # Webhook WF（読み取り専用リクエストで疎通確認）
@@ -38,6 +42,12 @@ WEBHOOK_ENDPOINTS = [
     {"path": "status", "name": "Server Status", "timeout": 10, "body": {}},
     {"path": "notion-tasks", "name": "Notion Tasks", "timeout": 30, "body": {"action": "list"}},
     {"path": "notion-emails", "name": "Notion Emails", "timeout": 30, "body": {"action": "search"}},
+    {
+        "path": "notion-recurring-tasks",
+        "name": "Recurring Tasks",
+        "timeout": 30,
+        "body": {"action": "list"},
+    },
     # GDrive: searchのみ（書き込み系はE2Eテストで別途実行）
     {"path": "gdrive", "name": "GDrive Search", "timeout": 30, "body": {"action": "search"}},
 ]
