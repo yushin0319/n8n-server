@@ -42,6 +42,12 @@ WEBHOOK_ENDPOINTS = [
     {"path": "status", "name": "Server Status", "timeout": 10, "body": {}},
     {"path": "notion-tasks", "name": "Notion Tasks", "timeout": 30, "body": {"action": "list"}},
     {"path": "notion-emails", "name": "Notion Emails", "timeout": 30, "body": {"action": "search"}},
+    {
+        "path": "notion-recurring-tasks",
+        "name": "Recurring Tasks",
+        "timeout": 30,
+        "body": {"action": "list"},
+    },
     # GDrive: searchのみ（書き込み系はE2Eテストで別途実行）
     {"path": "gdrive", "name": "GDrive Search", "timeout": 30, "body": {"action": "search"}},
 ]
