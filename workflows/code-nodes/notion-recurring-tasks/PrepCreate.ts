@@ -1,11 +1,12 @@
 export default function (): CodeNodeReturn {
   // create用リクエストボディを構築
-  const body = $input.first().json.body;
-  const name = body.name;
-  const frequency = body.frequency || "毎週";
-  const nextDate = body.next_date || null;
-  const taskTemplate = body.template || "";
-  const enabled = body.enabled !== undefined ? body.enabled : true;
+  const body = $input.first().json?.body as Record<string, unknown> | undefined;
+  if (!body?.name) throw new Error("body.name は必須です");
+  const name = body.name as string;
+  const frequency = (body.frequency as string) || "毎週";
+  const nextDate = (body.next_date as string) || null;
+  const taskTemplate = (body.template as string) || "";
+  const enabled = body.enabled !== undefined ? (body.enabled as boolean) : true;
 
   const properties: Record<string, unknown> = {
     "": { title: [{ text: { content: name } }] },
