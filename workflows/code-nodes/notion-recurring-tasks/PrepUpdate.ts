@@ -3,7 +3,7 @@ export default function (): CodeNodeReturn {
   const body = $input.first().json.body;
   const pageId = body.page_id;
 
-  const properties = {};
+  const properties: Record<string, unknown> = {};
   if (body.name !== undefined) {
     properties[""] = { title: [{ text: { content: body.name } }] };
   }

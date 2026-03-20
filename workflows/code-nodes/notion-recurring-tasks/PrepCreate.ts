@@ -7,7 +7,7 @@ export default function (): CodeNodeReturn {
   const taskTemplate = body.template || "";
   const enabled = body.enabled !== undefined ? body.enabled : true;
 
-  const properties = {
+  const properties: Record<string, unknown> = {
     "": { title: [{ text: { content: name } }] },
     頻度: { multi_select: [{ name: frequency }] },
     有効: { checkbox: enabled },
