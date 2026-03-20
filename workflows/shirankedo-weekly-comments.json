@@ -12,7 +12,7 @@
               "triggerAtDay": [
                 1
               ],
-              "triggerAtHour": 18,
+              "triggerAtHour": 3,
               "triggerAtMinute": 15
             }
           ]
