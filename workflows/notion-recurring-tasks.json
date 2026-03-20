@@ -1,0 +1,920 @@
+{
+  "id": "S20BChUvHLdS8D33",
+  "name": "Notion Recurring Tasks",
+  "description": "定期タスク定義DBのCRUD操作用Webhook",
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "notion-recurring-tasks",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        300
+      ],
+      "name": "Webhook",
+      "id": "rt-0001-0000-0000-000000000001",
+      "webhookId": ""
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "test-notion-recurring-tasks",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        500
+      ],
+      "name": "WebhookTest",
+      "id": "rt-0002-0000-0000-000000000002",
+      "webhookId": ""
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// テストモード判定: body.test === true なら isTest フラグをセット\nconst body = $input.first().json.body;\nconst isTest = body?.test === true;\n$execution.customData.set('isTest', isTest ? 'true' : 'false');\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        400
+      ],
+      "name": "CheckTestMode",
+      "id": "rt-0003-0000-0000-000000000003"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": ""
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.action }}",
+                    "rightValue": "list",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "list"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": ""
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.action }}",
+                    "rightValue": "create",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "create"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": ""
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.action }}",
+                    "rightValue": "update",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "update"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": ""
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.action }}",
+                    "rightValue": "delete",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "delete"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        460,
+        400
+      ],
+      "name": "Switch",
+      "id": "rt-0004-0000-0000-000000000004"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "rt-cond-skip-list",
+              "leftValue": "={{ $execution.customData.get('isTest') }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        680,
+        200
+      ],
+      "name": "IfSkipList",
+      "id": "rt-0005-0000-0000-000000000005"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.notion.com/v1/databases/3142570f-e49f-80cf-8383-cc62030339c9/query",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2022-06-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"sorts\": [{\"property\": \"次回予定日\", \"direction\": \"ascending\"}]}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        900,
+        300
+      ],
+      "name": "ListQuery",
+      "id": "rt-0006-0000-0000-000000000006",
+      "credentials": {
+        "notionApi": {
+          "id": "StdChbKZz3co4jDO",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// list結果をフォーマット\nconst results = $input.first().json.results || [];\nconst tasks = results.map(p => {\n  const props = p.properties;\n  return {\n    id: p.id,\n    name: props['タスク名']?.title?.[0]?.plain_text || '',\n    frequency: props['頻度']?.select?.name || null,\n    next_date: props['次回予定日']?.date?.start || null,\n    last_executed: props['最終実行日']?.date?.start || null,\n    taskTemplate: props['テンプレ本文']?.rich_text?.[0]?.plain_text || '',\n    enabled: props['有効']?.checkbox ?? true,\n    url: p.url,\n  };\n});\nreturn [{ json: { action: 'list', count: tasks.length, tasks } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        300
+      ],
+      "name": "FormatList",
+      "id": "rt-0007-0000-0000-000000000007"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1340,
+        300
+      ],
+      "name": "RespondList",
+      "id": "rt-0008-0000-0000-000000000008"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "rt-cond-skip-create",
+              "leftValue": "={{ $execution.customData.get('isTest') }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        680,
+        500
+      ],
+      "name": "IfSkipCreate",
+      "id": "rt-0009-0000-0000-000000000009"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// create用リクエストボディを構築\nconst body = $input.first().json.body;\nconst name = body.name;\nconst frequency = body.frequency || '毎週';\nconst nextDate = body.next_date || null;\nconst taskTemplate = body.template || '';\nconst enabled = body.enabled !== undefined ? body.enabled : true;\n\nconst properties = {\n  'タスク名': { title: [{ text: { content: name } }] },\n  '頻度': { select: { name: frequency } },\n  '有効': { checkbox: enabled },\n};\nif (nextDate) {\n  properties['次回予定日'] = { date: { start: nextDate } };\n}\nif (taskTemplate) {\n  properties['テンプレ本文'] = { rich_text: [{ text: { content: taskTemplate } }] };\n}\n\nconst requestBody = JSON.stringify({\n  parent: { database_id: '3142570f-e49f-80cf-8383-cc62030339c9' },\n  properties,\n});\n\nreturn [{ json: { requestBody } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        600
+      ],
+      "name": "PrepCreate",
+      "id": "rt-0010-0000-0000-000000000010"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.notion.com/v1/pages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2022-06-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.requestBody }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1120,
+        600
+      ],
+      "name": "CreatePage",
+      "id": "rt-0011-0000-0000-000000000011",
+      "credentials": {
+        "notionApi": {
+          "id": "StdChbKZz3co4jDO",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// create結果をフォーマット\nconst page = $input.first().json;\nreturn [{ json: { action: 'create', success: true, id: page.id, url: page.url } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        600
+      ],
+      "name": "FormatCreate",
+      "id": "rt-0012-0000-0000-000000000012"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1560,
+        600
+      ],
+      "name": "RespondCreate",
+      "id": "rt-0013-0000-0000-000000000013"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "rt-cond-skip-update",
+              "leftValue": "={{ $execution.customData.get('isTest') }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        680,
+        800
+      ],
+      "name": "IfSkipUpdate",
+      "id": "rt-0014-0000-0000-000000000014"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// update用リクエストボディを構築\nconst body = $input.first().json.body;\nconst pageId = body.page_id;\n\nconst properties = {};\nif (body.name !== undefined) {\n  properties['タスク名'] = { title: [{ text: { content: body.name } }] };\n}\nif (body.frequency !== undefined) {\n  properties['頻度'] = { select: { name: body.frequency } };\n}\nif (body.next_date !== undefined) {\n  properties['次回予定日'] = { date: body.next_date ? { start: body.next_date } : null };\n}\nif (body.template !== undefined) {\n  properties['テンプレ本文'] = { rich_text: [{ text: { content: body.template } }] };\n}\nif (body.enabled !== undefined) {\n  properties['有効'] = { checkbox: body.enabled };\n}\n\nconst requestBody = JSON.stringify({ properties });\nreturn [{ json: { pageId, requestBody } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        900
+      ],
+      "name": "PrepUpdate",
+      "id": "rt-0015-0000-0000-000000000015"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://api.notion.com/v1/pages/{{ $json.pageId }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2022-06-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.requestBody }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1120,
+        900
+      ],
+      "name": "UpdatePage",
+      "id": "rt-0016-0000-0000-000000000016",
+      "credentials": {
+        "notionApi": {
+          "id": "StdChbKZz3co4jDO",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// update結果をフォーマット\nconst page = $input.first().json;\nreturn [{ json: { action: 'update', success: true, id: page.id, url: page.url } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        900
+      ],
+      "name": "FormatUpdate",
+      "id": "rt-0017-0000-0000-000000000017"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1560,
+        900
+      ],
+      "name": "RespondUpdate",
+      "id": "rt-0018-0000-0000-000000000018"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "rt-cond-skip-delete",
+              "leftValue": "={{ $execution.customData.get('isTest') }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        680,
+        1100
+      ],
+      "name": "IfSkipDelete",
+      "id": "rt-0019-0000-0000-000000000019"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// delete用: page_idを取得\nconst body = $input.first().json.body;\nreturn [{ json: { pageId: body.page_id } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        1200
+      ],
+      "name": "PrepDelete",
+      "id": "rt-0020-0000-0000-000000000020"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://api.notion.com/v1/pages/{{ $json.pageId }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2022-06-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"archived\": true}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1120,
+        1200
+      ],
+      "name": "ArchivePage",
+      "id": "rt-0021-0000-0000-000000000021",
+      "credentials": {
+        "notionApi": {
+          "id": "StdChbKZz3co4jDO",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// delete結果をフォーマット\nconst page = $input.first().json;\nreturn [{ json: { action: 'delete', success: true, id: page.id } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        1200
+      ],
+      "name": "FormatDelete",
+      "id": "rt-0022-0000-0000-000000000022"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1560,
+        1200
+      ],
+      "name": "RespondDelete",
+      "id": "rt-0023-0000-0000-000000000023"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ error: 'Unknown action', message: 'Supported actions: list, create, update, delete', received: $json.body?.action || 'none' }) }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        680,
+        1400
+      ],
+      "name": "RespondFallback",
+      "id": "rt-0024-0000-0000-000000000024"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// テストモード: スキップされたアクションのレスポンス\nconst body = $input.first().json.body || {};\nreturn [{ json: { action: body.action || 'unknown', test: true, skipped: true, message: 'Test mode: API call skipped' } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        100
+      ],
+      "name": "TestResponse",
+      "id": "rt-0025-0000-0000-000000000025"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1120,
+        100
+      ],
+      "name": "RespondTest",
+      "id": "rt-0026-0000-0000-000000000026"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "CheckTestMode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WebhookTest": {
+      "main": [
+        [
+          {
+            "node": "CheckTestMode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CheckTestMode": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "IfSkipList",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "IfSkipCreate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "IfSkipUpdate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "IfSkipDelete",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "RespondFallback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IfSkipList": {
+      "main": [
+        [
+          {
+            "node": "TestResponse",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "ListQuery",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ListQuery": {
+      "main": [
+        [
+          {
+            "node": "FormatList",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FormatList": {
+      "main": [
+        [
+          {
+            "node": "RespondList",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IfSkipCreate": {
+      "main": [
+        [
+          {
+            "node": "TestResponse",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PrepCreate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepCreate": {
+      "main": [
+        [
+          {
+            "node": "CreatePage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CreatePage": {
+      "main": [
+        [
+          {
+            "node": "FormatCreate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FormatCreate": {
+      "main": [
+        [
+          {
+            "node": "RespondCreate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IfSkipUpdate": {
+      "main": [
+        [
+          {
+            "node": "TestResponse",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PrepUpdate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepUpdate": {
+      "main": [
+        [
+          {
+            "node": "UpdatePage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "UpdatePage": {
+      "main": [
+        [
+          {
+            "node": "FormatUpdate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FormatUpdate": {
+      "main": [
+        [
+          {
+            "node": "RespondUpdate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IfSkipDelete": {
+      "main": [
+        [
+          {
+            "node": "TestResponse",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PrepDelete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepDelete": {
+      "main": [
+        [
+          {
+            "node": "ArchivePage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ArchivePage": {
+      "main": [
+        [
+          {
+            "node": "FormatDelete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FormatDelete": {
+      "main": [
+        [
+          {
+            "node": "RespondDelete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TestResponse": {
+      "main": [
+        [
+          {
+            "node": "RespondTest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "errorWorkflow": "aHM9O6mSwMNPTwdI"
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": null,
+  "tags": []
+}
