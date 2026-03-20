@@ -348,7 +348,7 @@ def main() -> int:
 
     cron_targets = [ep for ep in CRON_ENDPOINTS if should_test(ep)]
     webhook_targets = [ep for ep in WEBHOOK_ENDPOINTS if should_test(ep)]
-    run_gdrive = target_wfs is None or "gdrive.json" in (target_wfs or set())
+    run_gdrive = target_wfs is None or "gdrive.json" in target_wfs
 
     results = []
 
