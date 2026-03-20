@@ -1,0 +1,585 @@
+{
+  "id": "ihHyzBv9sm7vw4Ht",
+  "name": "shirankedo 週次LLM",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                1
+              ],
+              "triggerAtHour": 18
+            }
+          ]
+        }
+      },
+      "id": "18eca777-587c-4313-8e03-b7986940a938",
+      "name": "Schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        200,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://artificialanalysis.ai/api/v2/data/llms/models",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "80e7ac11-2909-4382-96d8-676b7aad8fe0",
+      "name": "FetchAAModels",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        1200
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "4p2w1eRfbdSRVCJe",
+          "name": "artificial-analysis-api-key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.exchangerate-api.com/v4/latest/USD",
+        "options": {}
+      },
+      "id": "5faddb84-9f69-4d4e-960f-ddb81ba8c213",
+      "name": "FetchExchangeRate",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        1400
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "id": "29bd3c7b-7590-43c3-9ed7-bee9d4e7a3a5",
+      "name": "MergeLLMInputs",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        720,
+        1300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external shirankedo-weekly/ParseLLMData.ts"
+      },
+      "id": "638c0a55-3069-474e-930e-465bea2fcad2",
+      "name": "ParseLLMData",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        1300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://shirankedo.y-fudo.workers.dev/api/ingest/llm-models",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.requestBody }}",
+        "options": {}
+      },
+      "id": "34e75315-ea1c-4664-bc77-63edf4f8e708",
+      "name": "PostLLMModels",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        1200
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "CdkfLkdZEMFfnx8h",
+          "name": "Header Auth account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://shirankedo.y-fudo.workers.dev/api/ingest/exchange-rate",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.requestBody }}",
+        "options": {}
+      },
+      "id": "cf70fbdd-5031-4beb-9f63-c36dc2d36f4f",
+      "name": "PostExchangeRate",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        1400
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "CdkfLkdZEMFfnx8h",
+          "name": "Header Auth account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "e0026fc0-ced6-4427-8b4b-d16a279e67f7",
+              "leftValue": "={{ $json.type }}",
+              "rightValue": "llm-models",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "4dd1746f-bce3-4bd7-a447-15363cfa58d0",
+      "name": "RouteLLMOutput",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        960,
+        1100
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external shirankedo-weekly/PrepareDiscordLLM.ts"
+      },
+      "id": "b9efaa57-0266-4f14-970e-f2d698e83411",
+      "name": "PrepareDiscordLLM",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        1200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:5678/webhook/discord-notify",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ message: $json.message }) }}",
+        "options": {}
+      },
+      "id": "6acce676-0e45-4478-b2fa-c0086c798833",
+      "name": "DiscordNotifyLLM",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1680,
+        1200
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "test-shirankedo-weekly-llm",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "name": "WebhookTest",
+      "id": "sw-0010-4000-8000-000000000010",
+      "webhookId": "sw-0010-4000-8000-000000000010"
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external shirankedo-weekly/CheckTestMode.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        90,
+        300
+      ],
+      "name": "CheckTestMode",
+      "id": "sw-0011-4000-8000-000000000011"
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external shirankedo-weekly/TestResponse.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        90,
+        500
+      ],
+      "name": "TestResponse",
+      "id": "sw-0012-4000-8000-000000000012"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        310,
+        500
+      ],
+      "name": "RespondTest",
+      "id": "sw-0013-4000-8000-000000000013"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "sw-cond-skip-post-llm-models",
+              "leftValue": "={{ $execution.customData.get('isTest') }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1090,
+        1200
+      ],
+      "name": "IfSkipPostLLMModels",
+      "id": "sw-0046-4000-8000-000000000046"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "sw-cond-skip-post-exchange-rate",
+              "leftValue": "={{ $execution.customData.get('isTest') }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1090,
+        1400
+      ],
+      "name": "IfSkipPostExchangeRate",
+      "id": "sw-0047-4000-8000-000000000047"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "sw-cond-skip-discord-notify-llm",
+              "leftValue": "={{ $execution.customData.get('isTest') }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1570,
+        1200
+      ],
+      "name": "IfSkipDiscordNotifyLLM",
+      "id": "sw-0048-4000-8000-000000000048"
+    }
+  ],
+  "connections": {
+    "Schedule": {
+      "main": [
+        [
+          {
+            "node": "CheckTestMode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FetchAAModels": {
+      "main": [
+        [
+          {
+            "node": "MergeLLMInputs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FetchExchangeRate": {
+      "main": [
+        [
+          {
+            "node": "MergeLLMInputs",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "MergeLLMInputs": {
+      "main": [
+        [
+          {
+            "node": "ParseLLMData",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ParseLLMData": {
+      "main": [
+        [
+          {
+            "node": "RouteLLMOutput",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RouteLLMOutput": {
+      "main": [
+        [
+          {
+            "node": "IfSkipPostLLMModels",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "IfSkipPostExchangeRate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PostLLMModels": {
+      "main": [
+        [
+          {
+            "node": "PrepareDiscordLLM",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PrepareDiscordLLM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PostExchangeRate": {
+      "main": [
+        [
+          {
+            "node": "PrepareDiscordLLM",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PrepareDiscordLLM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepareDiscordLLM": {
+      "main": [
+        [
+          {
+            "node": "IfSkipDiscordNotifyLLM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WebhookTest": {
+      "main": [
+        [
+          {
+            "node": "CheckTestMode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CheckTestMode": {
+      "main": [
+        [
+          {
+            "node": "FetchAAModels",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "FetchExchangeRate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TestResponse": {
+      "main": [
+        [
+          {
+            "node": "RespondTest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IfSkipPostLLMModels": {
+      "main": [
+        [
+          {
+            "node": "PrepareDiscordLLM",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PostLLMModels",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IfSkipPostExchangeRate": {
+      "main": [
+        [
+          {
+            "node": "PrepareDiscordLLM",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PostExchangeRate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IfSkipDiscordNotifyLLM": {
+      "main": [
+        [
+          {
+            "node": "TestResponse",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "DiscordNotifyLLM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "aHM9O6mSwMNPTwdI"
+  }
+}

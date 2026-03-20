@@ -29,7 +29,11 @@ CRON_ENDPOINTS = [
     {"path": "test-shirankedo-daily-vulns", "name": "ShiranKedo Vulns", "timeout": 60},
     {"path": "test-shirankedo-daily-releases", "name": "ShiranKedo Releases", "timeout": 120},
     {"path": "test-shirankedo-daily-security", "name": "ShiranKedo Security", "timeout": 60},
-    {"path": "test-shirankedo-weekly", "name": "ShiranKedo Weekly", "timeout": 120},
+    {"path": "test-shirankedo-weekly-stars", "name": "ShiranKedo Weekly Stars", "timeout": 120},
+    {"path": "test-shirankedo-weekly-report", "name": "ShiranKedo Weekly Report", "timeout": 120},
+    {"path": "test-shirankedo-weekly-comments", "name": "Weekly Comments", "timeout": 120},
+    {"path": "test-shirankedo-weekly-llm", "name": "ShiranKedo Weekly LLM", "timeout": 120},
+    {"path": "test-shirankedo-weekly-repos", "name": "ShiranKedo Weekly Repos", "timeout": 120},
 ]
 
 # Webhook WF（読み取り専用リクエストで疎通確認）
