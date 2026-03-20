@@ -1,6 +1,6 @@
 {
   "id": "ihHyzBv9sm7vw4Ht",
-  "name": "shirankedo 週次LLM",
+  "name": "cron/shirankedo-weekly-llm",
   "active": true,
   "nodes": [
     {
