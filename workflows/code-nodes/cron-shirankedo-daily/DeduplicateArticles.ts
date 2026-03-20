@@ -1,3 +1,5 @@
+import { stripHtmlTags } from "../_shared/stripHtmlTags";
+
 /** 記事データの型 */
 interface ArticleItem {
   title: string;
@@ -46,13 +48,9 @@ function extractRssItems(nodeName: string, sourceName: string): ArticleItem[] {
       return {
         title: ((d.title as string) || "").substring(0, 200),
         url: (d.link as string) || (d.url as string) || "",
-        description: (
-          (d.contentSnippet as string) ||
-          (d.description as string) ||
-          ""
-        )
-          .replace(/<[^>]+>/g, "")
-          .substring(0, 200),
+        description: stripHtmlTags(
+          (d.contentSnippet as string) || (d.description as string) || "",
+        ).substring(0, 200),
         source: sourceName,
       };
     });
