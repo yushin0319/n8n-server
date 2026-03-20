@@ -255,11 +255,10 @@ def main():
     adjust_schedule(report, 18, 0)
     adjust_webhook_path(report, "test-shirankedo-weekly-report")
     limit_check_test_mode_connections(report, ["FetchRecentArticles"])
-    # Report WF: IfSkipDiscordNotifyWeekly[0] は元々 FetchRecentSummaries（Comments WF）に行くが
-    # 分割後はTestResponseへ接続する（テスト時スキップ終了）
-    # extract_wf で FetchRecentSummaries がないため自動的に除外されるが、TestResponseへの接続を追加
+    # IfSkipDiscordNotifyWeekly[0]（テストモード時）→ TestResponse へ接続
+    # 元WFでは DiscordNotifyWeekly → FetchRecentSummaries と続くが、
+    # FetchRecentSummaries は Comments WF に属するため Report WF には含まれない
     add_test_response_connection(report, "IfSkipDiscordNotifyWeekly", 0)
-    # DiscordNotifyWeekly → FetchRecentSummaries の接続も除外済み（FetchRecentSummariesがないため）
     normalize_positions(report)
     with open(OUT_DIR / "shirankedo-weekly-report.json", "w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
