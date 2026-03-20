@@ -24,7 +24,7 @@ try:
 
     load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 except ModuleNotFoundError:
-    pass  # CI環境では環境変数が直接設定される
+    print("python-dotenv未インストール、.envの読み込みスキップ", file=sys.stderr)
 
 # 本番環境URL（CI環境では SMOKE_TEST_URL 環境変数で上書き可能）
 BASE_URL = os.environ.get("SMOKE_TEST_URL", "https://yushin-n8n.duckdns.org/webhook")
