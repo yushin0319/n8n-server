@@ -82,7 +82,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external shirankedo-weekly/ParseLLMData.ts"
+        "jsCode": "// @external cron-shirankedo-weekly/ParseLLMData.ts"
       },
       "id": "638c0a55-3069-474e-930e-465bea2fcad2",
       "name": "ParseLLMData",
@@ -180,7 +180,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external shirankedo-weekly/PrepareDiscordLLM.ts"
+        "jsCode": "// @external cron-shirankedo-weekly/PrepareDiscordLLM.ts"
       },
       "id": "b9efaa57-0266-4f14-970e-f2d698e83411",
       "name": "PrepareDiscordLLM",
@@ -228,7 +228,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external shirankedo-weekly/CheckTestMode.ts"
+        "jsCode": "// @external cron-shirankedo-weekly/CheckTestMode.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -241,7 +241,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external shirankedo-weekly/TestResponse.ts"
+        "jsCode": "// @external cron-shirankedo-weekly/TestResponse.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -397,7 +397,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external shirankedo-weekly-llm/MockFetchAAModels.ts"
+        "jsCode": "// @external cron-shirankedo-weekly-llm/MockFetchAAModels.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -442,7 +442,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external shirankedo-weekly-llm/MockFetchExchangeRate.ts"
+        "jsCode": "// @external cron-shirankedo-weekly-llm/MockFetchExchangeRate.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,

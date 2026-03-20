@@ -80,7 +80,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external shirankedo-daily/ParseNVD.ts"
+        "jsCode": "// @external cron-shirankedo-daily/ParseNVD.ts"
       },
       "id": "a1000002-0001-0001-0001-000000000041",
       "name": "ParseNVD",
@@ -93,7 +93,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external shirankedo-daily/PrepareNVDTranslation.ts"
+        "jsCode": "// @external cron-shirankedo-daily/PrepareNVDTranslation.ts"
       },
       "id": "a1000002-0001-0001-0001-000000000042",
       "name": "PrepareNVDTranslation",
@@ -162,7 +162,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external shirankedo-daily/FormatVulnerabilities.ts"
+        "jsCode": "// @external cron-shirankedo-daily/FormatVulnerabilities.ts"
       },
       "id": "a1000002-0001-0001-0001-000000000045",
       "name": "FormatVulnerabilities",
@@ -175,7 +175,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external shirankedo-daily/EmptyVulnResult.ts"
+        "jsCode": "// @external cron-shirankedo-daily/EmptyVulnResult.ts"
       },
       "id": "a1000002-0001-0001-0001-000000000046",
       "name": "EmptyVulnResult",
@@ -229,7 +229,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external shirankedo-daily/PrepareDiscordVulns.ts"
+        "jsCode": "// @external cron-shirankedo-daily/PrepareDiscordVulns.ts"
       },
       "id": "a1000002-0001-0001-0001-000000000049",
       "name": "PrepareDiscordVulns",
@@ -277,7 +277,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external shirankedo-daily/CheckTestMode.ts"
+        "jsCode": "// @external cron-shirankedo-daily/CheckTestMode.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -290,7 +290,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external shirankedo-daily/TestResponse.ts"
+        "jsCode": "// @external cron-shirankedo-daily/TestResponse.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -350,7 +350,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external shirankedo-daily/MockGeminiTranslateVulns.ts"
+        "jsCode": "// @external cron-shirankedo-daily/MockGeminiTranslateVulns.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,

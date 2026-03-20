@@ -42,7 +42,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external health-check/CheckTestMode.ts"
+        "jsCode": "// @external cron-health-check/CheckTestMode.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -85,7 +85,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external health-check/FormatDiscord.ts"
+        "jsCode": "// @external cron-health-check/FormatDiscord.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -161,7 +161,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external health-check/TestResponse.ts"
+        "jsCode": "// @external cron-health-check/TestResponse.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
