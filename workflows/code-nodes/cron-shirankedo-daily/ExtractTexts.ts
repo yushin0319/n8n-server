@@ -1,3 +1,5 @@
+import { stripHtmlTags } from "../_shared/stripHtmlTags";
+
 /** 選定記事の型 */
 interface SelectedArticle {
   url: string;
@@ -21,7 +23,7 @@ export default function (): CodeNodeReturn {
     if (rawHtml && typeof rawHtml === "string") {
       const paragraphs = rawHtml.match(/<p[^>]*>[\s\S]*?<\/p>/gi) || [];
       fulltext = paragraphs
-        .map((p) => p.replace(/<[^>]+>/g, "").trim())
+        .map((p) => stripHtmlTags(p).trim())
         .filter((t) => t.length > 20)
         .join("\n")
         .substring(0, 3000);
