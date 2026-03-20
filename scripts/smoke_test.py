@@ -28,65 +28,89 @@ BASE_URL = os.environ.get("SMOKE_TEST_URL", "https://yushin-n8n.duckdns.org/webh
 WEBHOOK_SECRET = os.environ.get("WEBHOOK_SECRET", "")
 DISCORD_WEBHOOK_URL = os.environ.get("DISCORD_WEBHOOK_URL", "")
 
-# wf: 対応するワークフローJSONファイル名（フィルタ用）
+# --- 設定（JSONから自動取得できないもののみ） ---
 
-# WFファイル名 → エンドポイントのマッピングを自動生成
-# (wf_file_base, webhook_path_suffix, timeout)
-_CRON_WFS = [
-    ("cron-health-check", "health-check", 30),
-    ("cron-recurring-tasks", "recurring-tasks", 30),
-    ("cron-shirankedo-daily-articles", "shirankedo-daily-articles", 60),
-    ("cron-shirankedo-daily-vulns", "shirankedo-daily-vulns", 60),
-    ("cron-shirankedo-daily-releases", "shirankedo-daily-releases", 120),
-    ("cron-shirankedo-daily-security", "shirankedo-daily-security", 60),
-    ("cron-shirankedo-weekly-stars", "shirankedo-weekly-stars", 120),
-    ("cron-shirankedo-weekly-report", "shirankedo-weekly-report", 120),
-    ("cron-shirankedo-weekly-comments", "shirankedo-weekly-comments", 120),
-    ("cron-shirankedo-weekly-llm", "shirankedo-weekly-llm", 120),
-    ("cron-shirankedo-weekly-repos", "shirankedo-weekly-repos", 120),
-]
-CRON_ENDPOINTS = [
-    {
-        "path": f"test-{path_suffix}",
-        "name": wf_base,
-        "timeout": timeout,
-        "wf": f"{wf_base}.json",
-    }
-    for wf_base, path_suffix, timeout in _CRON_WFS
-]
+# タイムアウト上書き（未指定WFはデフォルト値を使用）
+_TIMEOUT_OVERRIDES = {
+    "cron-shirankedo-daily-releases": 120,
+    "cron-shirankedo-weekly-stars": 120,
+    "cron-shirankedo-weekly-report": 120,
+    "cron-shirankedo-weekly-comments": 120,
+    "cron-shirankedo-weekly-llm": 120,
+    "cron-shirankedo-weekly-repos": 120,
+}
+_DEFAULT_CRON_TIMEOUT = 60
+_DEFAULT_WEBHOOK_TIMEOUT = 30
 
-# Webhook WF（読み取り専用リクエストで疎通確認）
-# GDrive書き込み系は副作用があるため除外
-WEBHOOK_ENDPOINTS = [
-    {
-        "path": "notion-tasks",
-        "name": "Notion Tasks",
-        "timeout": 30,
-        "body": {"action": "list"},
-        "wf": "api-notion-tasks.json",
-    },
-    {
-        "path": "notion-emails",
-        "name": "Notion Emails",
-        "timeout": 30,
-        "body": {"action": "search"},
-        "wf": "api-notion-emails.json",
-    },
-    {
-        "path": "notion-recurring-tasks",
-        "name": "Recurring Tasks API",
-        "timeout": 30,
-        "body": {"action": "list"},
-        "wf": "api-notion-recurring-tasks.json",
-    },
-    {
-        "path": "gdrive",
-        "name": "GDrive Search",
-        "timeout": 30,
-        "body": {"action": "search"},
-        "wf": "api-gdrive.json",
-    },
-]
+# Webhook WFのテスト用body（未指定は空dict → post_testで {"test": true} になる）
+_WEBHOOK_BODIES: dict[str, dict] = {
+    "api-notion-tasks": {"action": "list"},
+    "api-notion-emails": {"action": "search"},
+    "api-notion-recurring-tasks": {"action": "list"},
+    "api-gdrive": {"action": "search"},
+}
+
+# スモークテスト対象外WF
+_EXCLUDE_WFS = {"system-error-handler", "api-discord-notify"}
+
+
+def scan_workflows() -> tuple[list[dict], list[dict]]:
+    """workflows/*.json をスキャンしてCron/Webhookエンドポイントを自動生成."""
+    wf_dir = Path(__file__).resolve().parent.parent / "workflows"
+    cron_endpoints: list[dict] = []
+    webhook_endpoints: list[dict] = []
+
+    for json_file in sorted(wf_dir.glob("*.json")):
+        wf_base = json_file.stem
+        if wf_base in _EXCLUDE_WFS:
+            continue
+
+        with open(json_file, encoding="utf-8") as f:
+            wf = json.load(f)
+
+        # Webhookノードからpathを抽出
+        webhook_paths = [
+            node["parameters"]["path"]
+            for node in wf.get("nodes", [])
+            if node.get("type") == "n8n-nodes-base.webhook"
+            and node.get("parameters", {}).get("path")
+        ]
+
+        if not webhook_paths:
+            continue
+
+        if wf_base.startswith(("cron-", "trigger-")):
+            # Cron/Trigger WF → test-* パスを使用
+            test_path = next((p for p in webhook_paths if p.startswith("test-")), None)
+            if test_path:
+                timeout = _TIMEOUT_OVERRIDES.get(wf_base, _DEFAULT_CRON_TIMEOUT)
+                cron_endpoints.append(
+                    {
+                        "path": test_path,
+                        "name": wf_base,
+                        "timeout": timeout,
+                        "wf": f"{wf_base}.json",
+                    }
+                )
+        elif wf_base.startswith("api-"):
+            # API WF → メインpathを使用
+            main_path = webhook_paths[0]
+            timeout = _TIMEOUT_OVERRIDES.get(wf_base, _DEFAULT_WEBHOOK_TIMEOUT)
+            body = _WEBHOOK_BODIES.get(wf_base, {})
+            webhook_endpoints.append(
+                {
+                    "path": main_path,
+                    "name": wf_base,
+                    "timeout": timeout,
+                    "body": body,
+                    "wf": f"{wf_base}.json",
+                }
+            )
+
+    return cron_endpoints, webhook_endpoints
+
+
+CRON_ENDPOINTS, WEBHOOK_ENDPOINTS = scan_workflows()
 
 
 def parse_only_file(filepath: str) -> set[str]:
