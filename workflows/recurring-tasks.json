@@ -1,6 +1,6 @@
 {
   "id": "NKY960IvoIjpLH6m",
-  "name": "Recurring Tasks Scheduler",
+  "name": "cron/recurring-tasks",
   "active": true,
   "nodes": [
     {

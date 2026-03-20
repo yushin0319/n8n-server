@@ -2,7 +2,7 @@
   "updatedAt": "2026-02-06T09:46:29.619Z",
   "createdAt": "2026-02-06T08:46:52.182Z",
   "id": "c8ZI0oriZgjePMud",
-  "name": "Notion Tasks",
+  "name": "api/notion-tasks",
   "description": null,
   "active": true,
   "isArchived": false,

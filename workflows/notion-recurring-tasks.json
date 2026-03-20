@@ -1,6 +1,6 @@
 {
   "id": "S20BChUvHLdS8D33",
-  "name": "Notion Recurring Tasks",
+  "name": "api/notion-recurring-tasks",
   "description": "定期タスク定義DBのCRUD操作用Webhook",
   "active": true,
   "isArchived": false,

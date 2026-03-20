@@ -1,6 +1,6 @@
 {
   "id": "242dVoV5dAhs4JMx",
-  "name": "shirankedo 日次Security",
+  "name": "cron/shirankedo-daily-security",
   "active": true,
   "nodes": [
     {
