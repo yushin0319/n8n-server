@@ -86,4 +86,6 @@ n8n ワークフローが操作する Notion データベースの定義。
 | テンプレ本文 | rich_text | タスク本文テンプレート |
 | 有効 | checkbox | false で生成停止 |
 
-**補足**: Webhook なし。スケジュール WF からのみ使用。
+**Webhook**: `notion-recurring-tasks`
+**アクション**: list / create / update / delete
+**補足**: スケジュール WF（日次 0:00）からも使用。
