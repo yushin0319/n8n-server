@@ -58,7 +58,8 @@
       "position": [
         220,
         200
-      ]
+      ],
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -71,7 +72,8 @@
       "position": [
         220,
         350
-      ]
+      ],
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -84,7 +86,8 @@
       "position": [
         220,
         500
-      ]
+      ],
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -97,7 +100,8 @@
       "position": [
         220,
         650
-      ]
+      ],
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -683,11 +687,25 @@
             "type": "main",
             "index": 1
           }
+        ],
+        [
+          {
+            "node": "WaitAllFeeds",
+            "type": "main",
+            "index": 1
+          }
         ]
       ]
     },
     "FetchHatena": {
       "main": [
+        [
+          {
+            "node": "WaitAllFeeds",
+            "type": "main",
+            "index": 2
+          }
+        ],
         [
           {
             "node": "WaitAllFeeds",
@@ -705,11 +723,25 @@
             "type": "main",
             "index": 3
           }
+        ],
+        [
+          {
+            "node": "WaitAllFeeds",
+            "type": "main",
+            "index": 3
+          }
         ]
       ]
     },
     "FetchLobsters": {
       "main": [
+        [
+          {
+            "node": "WaitAllFeeds",
+            "type": "main",
+            "index": 4
+          }
+        ],
         [
           {
             "node": "WaitAllFeeds",
