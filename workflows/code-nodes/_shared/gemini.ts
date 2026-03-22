@@ -8,6 +8,7 @@ export function buildGeminiRequest(params: {
   temperature?: number;
   responseMimeType?: string;
   maxOutputTokens?: number;
+  thinkingBudget?: number;
 }): string {
   const config: Record<string, unknown> = {
     temperature: params.temperature ?? 0.3,
@@ -15,6 +16,9 @@ export function buildGeminiRequest(params: {
   };
   if (params.maxOutputTokens) {
     config.maxOutputTokens = params.maxOutputTokens;
+  }
+  if (params.thinkingBudget !== undefined) {
+    config.thinkingConfig = { thinkingBudget: params.thinkingBudget };
   }
 
   return JSON.stringify({

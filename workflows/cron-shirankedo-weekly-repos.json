@@ -207,7 +207,7 @@
         "nodeCredentialType": "googlePalmApi",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: $json.prompt }] }], generationConfig: { temperature: 0.2 } }) }}",
+        "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: $json.prompt }] }], generationConfig: { temperature: 0.2, thinkingConfig: { thinkingBudget: 0 } } }) }}",
         "options": {}
       },
       "id": "40ec98c9-d1ac-4a3a-b00f-f5dfab76ca70",
