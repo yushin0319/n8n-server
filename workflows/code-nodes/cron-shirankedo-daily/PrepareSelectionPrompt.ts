@@ -63,7 +63,11 @@ ${paperLines}
 {"clusters":[{"theme":"テーマ名","count":1}],"articles":[{"index":1,"title":"タイトル","source":"ソース","impact":5,"effect":"すぐ動く","reason":"選定理由"}],"paper":{"index":1,"title":"タイトル","impact":5,"reason":"選定理由"}}
 JSONのみ出力してください。`;
 
-  const geminiBody = buildGeminiRequest({ prompt, temperature: 0.3 });
+  const geminiBody = buildGeminiRequest({
+    prompt,
+    temperature: 0.3,
+    thinkingBudget: 0,
+  });
 
   return [{ json: { geminiBody, articles, papers } }];
 }

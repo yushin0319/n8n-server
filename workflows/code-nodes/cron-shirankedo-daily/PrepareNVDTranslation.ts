@@ -34,7 +34,11 @@ ${vulnText}
 [{"index": 1, "title": "日本語タイトル"}]
 JSONのみ出力してください。`;
 
-  const geminiBody = buildGeminiRequest({ prompt, temperature: 0.2 });
+  const geminiBody = buildGeminiRequest({
+    prompt,
+    temperature: 0.2,
+    thinkingBudget: 0,
+  });
 
   return [
     {
