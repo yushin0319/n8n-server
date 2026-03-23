@@ -25,7 +25,7 @@
   },
   "homepage": "https://github.com/yushin0319/n8n-server#readme",
   "devDependencies": {
-    "@biomejs/biome": "^2.4.7",
+    "@biomejs/biome": "^2.4.8",
     "esbuild": "^0.27.4",
     "husky": "^9.1.7",
     "lint-staged": "^16.4.0",
