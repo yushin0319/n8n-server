@@ -27,7 +27,7 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "=https://services.nvd.nist.gov/rest/json/cves/2.0?pubStartDate={{ $now.minus({hours: 72}).toFormat(\"yyyy-MM-dd'T'HH:mm:ss.SSS\") }}&pubEndDate={{ $now.toFormat(\"yyyy-MM-dd'T'HH:mm:ss.SSS\") }}"
+        "url": "=https://services.nvd.nist.gov/rest/json/cves/2.0?pubStartDate={{ $now.minus({hours: 48}).toFormat(\"yyyy-MM-dd'T'HH:mm:ss.SSS\") }}&pubEndDate={{ $now.toFormat(\"yyyy-MM-dd'T'HH:mm:ss.SSS\") }}"
       },
       "id": "a1000002-0001-0001-0001-000000000040",
       "name": "FetchNVD",
