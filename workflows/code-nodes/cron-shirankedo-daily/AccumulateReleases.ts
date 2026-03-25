@@ -19,7 +19,7 @@ export default function (): CodeNodeReturn {
   const releases = staticData.releases as IDataObject[];
 
   const now = new Date();
-  const cutoff = new Date(now.getTime() - 72 * 60 * 60 * 1000).toISOString();
+  const cutoff = new Date(now.getTime() - 48 * 60 * 60 * 1000).toISOString();
   const data =
     ($input.first().json.data as Record<string, RepoResponse>) ||
     ($input.first().json as Record<string, RepoResponse>) ||
