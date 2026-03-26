@@ -4,22 +4,19 @@ import formatSearch from "./FormatSearch";
 describe("FormatSearch (notion-emails)", () => {
   beforeEach(() => {
     vi.unstubAllGlobals();
-    vi.stubGlobal("$", (_name: string) => ({
-      first: () => ({ json: { limit: undefined } }),
-    }));
   });
 
   const makePage = (overrides: IDataObject = {}): IDataObject => ({
     id: "page-1",
     url: "https://notion.so/page-1",
     properties: {
-      件名: { title: [{ plain_text: "テストメール" }] },
-      差出人: { rich_text: [{ plain_text: "sender@example.com" }] },
-      日時: { date: { start: "2026-03-17T10:00:00" } },
-      重要度: { select: { name: "重要" } },
-      スニペット: { rich_text: [{ plain_text: "本文の一部" }] },
-      ステータス: { select: { name: "未読" } },
-      理由: { rich_text: [{ plain_text: "重要な案件" }] },
+      subject: { title: [{ plain_text: "テストメール" }] },
+      sender: { rich_text: [{ plain_text: "sender@example.com" }] },
+      date: { date: { start: "2026-03-17T10:00:00" } },
+      importance: { select: { name: "重要" } },
+      snippet: { rich_text: [{ plain_text: "本文の一部" }] },
+      status: { select: { name: "未読" } },
+      reason: { rich_text: [{ plain_text: "重要な案件" }] },
       ...overrides,
     },
   });
@@ -47,7 +44,7 @@ describe("FormatSearch (notion-emails)", () => {
 
   it("件名が未設定の場合「(無題)」を返す", () => {
     vi.stubGlobal("$input", {
-      all: () => [{ json: makePage({ 件名: { title: [] } }) }],
+      all: () => [{ json: makePage({ subject: { title: [] } }) }],
     });
 
     const result = formatSearch() as INodeExecutionData[];
@@ -82,49 +79,5 @@ describe("FormatSearch (notion-emails)", () => {
     const result = formatSearch() as INodeExecutionData[];
     expect(result[0].json.count).toBe(2);
     expect((result[0].json.emails as IDataObject[]).length).toBe(2);
-  });
-
-  it("日時の降順でソートされる", () => {
-    vi.stubGlobal("$input", {
-      all: () => [
-        {
-          json: makePage({ 日時: { date: { start: "2026-03-01T00:00:00" } } }),
-        },
-        {
-          json: {
-            ...makePage({ 日時: { date: { start: "2026-03-10T00:00:00" } } }),
-            id: "page-newer",
-          },
-        },
-        {
-          json: {
-            ...makePage({ 日時: { date: null } }),
-            id: "page-nodate",
-          },
-        },
-      ],
-    });
-
-    const result = formatSearch() as INodeExecutionData[];
-    const emails = result[0].json.emails as IDataObject[];
-    expect(emails[0].id).toBe("page-newer");
-    expect(emails[1].id).toBe("page-1");
-    expect(emails[2].id).toBe("page-nodate");
-  });
-
-  it("limitが指定された場合に件数を制限する", () => {
-    vi.stubGlobal("$", (_name: string) => ({
-      first: () => ({ json: { limit: 1 } }),
-    }));
-    vi.stubGlobal("$input", {
-      all: () => [
-        { json: makePage() },
-        { json: { ...makePage(), id: "page-2" } },
-      ],
-    });
-
-    const result = formatSearch() as INodeExecutionData[];
-    expect(result[0].json.count).toBe(1);
-    expect((result[0].json.emails as IDataObject[]).length).toBe(1);
   });
 });

@@ -10,12 +10,12 @@ function mockPage(
   return {
     id,
     properties: {
-      件名: { title: [{ plain_text: subject }] },
-      差出人: { rich_text: [{ plain_text: "sender@test.com" }] },
-      日時: { date: { start: "2024-01-01" } },
-      重要度: { select: { name: importance } },
-      スニペット: { rich_text: [{ plain_text: "snippet" }] },
-      理由: { rich_text: [] },
+      subject: { title: [{ plain_text: subject }] },
+      sender: { rich_text: [{ plain_text: "sender@test.com" }] },
+      date: { date: { start: "2024-01-01" } },
+      importance: { select: { name: importance } },
+      snippet: { rich_text: [{ plain_text: "snippet" }] },
+      reason: { rich_text: [] },
     },
     url: `https://notion.so/${id}`,
   };

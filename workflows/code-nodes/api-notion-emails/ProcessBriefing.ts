@@ -13,12 +13,12 @@ export default function (): CodeNodeReturn {
   for (const item of $input.all()) {
     const page = item.json as IDataObject;
     const props = page.properties as IDataObject;
-    const subject = notionTitle(props, "件名", "(無題)");
-    const from = notionRichText(props, "差出人");
-    const date = notionDate(props, "日時");
-    const importance = notionSelect(props, "重要度", "未設定");
-    const snippet = notionRichText(props, "スニペット");
-    const reason = notionRichText(props, "理由");
+    const subject = notionTitle(props, "subject", "(無題)");
+    const from = notionRichText(props, "sender");
+    const date = notionDate(props, "date");
+    const importance = notionSelect(props, "importance", "未設定");
+    const snippet = notionRichText(props, "snippet");
+    const reason = notionRichText(props, "reason");
     const emailData = {
       id: page.id,
       subject,
