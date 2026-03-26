@@ -208,11 +208,10 @@
           "mode": "id",
           "value": "2ff2570f-e49f-8119-aaaf-f688605e5aa3"
         },
-        "returnAll": false,
+        "returnAll": true,
         "simple": false,
         "filterType": "json",
-        "filterJson": "={{ $json.filterJson }}",
-        "limit": "={{ $json.limit || 100 }}"
+        "filterJson": "={{ $json.filterJson }}"
       },
       "type": "n8n-nodes-base.notion",
       "typeVersion": 2.2,
