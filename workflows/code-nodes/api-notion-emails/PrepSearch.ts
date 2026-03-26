@@ -44,7 +44,7 @@ export default function (): CodeNodeReturn {
   return [
     {
       json: {
-        filterJson: filter ? JSON.stringify(filter) : "",
+        filterJson: JSON.stringify(filter ?? {}),
         limit: input.limit ? Math.min(input.limit as number, 100) : undefined,
       },
     },

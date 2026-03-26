@@ -6,13 +6,13 @@ describe("PrepSearch (notion-emails)", () => {
     vi.unstubAllGlobals();
   });
 
-  it("フィルタなしの場合filterJsonが空文字を返す", () => {
+  it("フィルタなしの場合filterJsonが空オブジェクトを返す", () => {
     vi.stubGlobal("$input", {
       first: () => ({ json: { body: {} } }),
     });
 
     const result = prepSearch() as INodeExecutionData[];
-    expect(result[0].json.filterJson).toBe("");
+    expect(result[0].json.filterJson).toBe("{}");
   });
 
   it("importanceフィルタを適用する", () => {

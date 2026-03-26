@@ -26,5 +26,5 @@ export default function (): CodeNodeReturn {
       : filters.length === 1
         ? filters[0]
         : { and: filters };
-  return [{ json: { filterJson: filter ? JSON.stringify(filter) : "" } }];
+  return [{ json: { filterJson: JSON.stringify(filter ?? {}) } }];
 }
