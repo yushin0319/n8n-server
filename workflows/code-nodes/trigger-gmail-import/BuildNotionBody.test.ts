@@ -53,13 +53,13 @@ describe("BuildNotionBody", () => {
 
     // 1件目: 重要
     const body1 = JSON.parse(result[0].json.requestBody as string);
-    expect(body1.properties["重要度"].select.name).toBe("重要");
-    expect(body1.properties["件名"].title[0].text.content).toBe("銀行通知");
+    expect(body1.properties["importance"].select.name).toBe("重要");
+    expect(body1.properties["subject"].title[0].text.content).toBe("銀行通知");
     expect(result[0].json.messageId).toBe("msg-1");
 
     // 2件目: 不要
     const body2 = JSON.parse(result[1].json.requestBody as string);
-    expect(body2.properties["重要度"].select.name).toBe("不要");
+    expect(body2.properties["importance"].select.name).toBe("不要");
   });
 
   it("分類がない場合デフォルトで確認を使う", () => {
@@ -88,7 +88,7 @@ describe("BuildNotionBody", () => {
 
     const result = buildNotionBody() as INodeExecutionData[];
     const body = JSON.parse(result[0].json.requestBody as string);
-    expect(body.properties["重要度"].select.name).toBe("確認");
+    expect(body.properties["importance"].select.name).toBe("確認");
   });
 
   it("Geminiレスポンスのパースに失敗したらエラーを投げる", () => {
