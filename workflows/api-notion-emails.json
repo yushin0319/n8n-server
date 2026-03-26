@@ -308,7 +308,8 @@
           "id": "StdChbKZz3co4jDO",
           "name": "Notion account"
         }
-      }
+      },
+      "alwaysOutputData": true
     },
     {
       "parameters": {

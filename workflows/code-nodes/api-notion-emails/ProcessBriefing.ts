@@ -12,6 +12,7 @@ export default function (): CodeNodeReturn {
 
   for (const item of $input.all()) {
     const page = item.json as IDataObject;
+    if (!page.properties) continue;
     const props = page.properties as IDataObject;
     const subject = notionTitle(props, "subject", "(無題)");
     const from = notionRichText(props, "sender");
