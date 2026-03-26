@@ -4,6 +4,9 @@ import formatSearch from "./FormatSearch";
 describe("FormatSearch (notion-emails)", () => {
   beforeEach(() => {
     vi.unstubAllGlobals();
+    vi.stubGlobal("$", (_name: string) => ({
+      first: () => ({ json: { limit: undefined } }),
+    }));
   });
 
   const makePage = (overrides: IDataObject = {}): IDataObject => ({

@@ -28,5 +28,16 @@ export default function (): CodeNodeReturn {
       url: page.url,
     };
   });
-  return [{ json: { action: "search", count: emails.length, emails } }];
+  // ネイティブノードのソートオプションがDB schema照合で不安定なためJS側でソート
+  emails.sort((a, b) => {
+    const da = a.date ? new Date(a.date as string).getTime() : 0;
+    const db = b.date ? new Date(b.date as string).getTime() : 0;
+    return db - da;
+  });
+  // PrepSearchのlimit指定があれば適用
+  const limit = $("PrepSearch").first().json.limit as number | undefined;
+  const limited = limit ? emails.slice(0, limit) : emails;
+  return [
+    { json: { action: "search", count: limited.length, emails: limited } },
+  ];
 }
