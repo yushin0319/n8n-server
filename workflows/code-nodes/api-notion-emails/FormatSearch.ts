@@ -29,11 +29,12 @@ export default function (): CodeNodeReturn {
     };
   });
   // ネイティブノードのソートオプションがDB schema照合で不安定なためJS側でソート
-  emails.sort((a, b) => {
-    const da = a.date ? new Date(a.date as string).getTime() : 0;
-    const db = b.date ? new Date(b.date as string).getTime() : 0;
-    return db - da;
-  });
+  const toTime = (d: unknown): number => {
+    if (!d) return 0;
+    const t = new Date(d as string).getTime();
+    return Number.isNaN(t) ? 0 : t;
+  };
+  emails.sort((a, b) => toTime(b.date) - toTime(a.date));
   // PrepSearchのlimit指定があれば適用
   const limit = $("PrepSearch").first().json.limit as number | undefined;
   const limited = limit ? emails.slice(0, limit) : emails;
