@@ -6,9 +6,33 @@ describe("FormatGet", () => {
     vi.unstubAllGlobals();
   });
 
-  it("paragraph ブロックから rich_text を抽出する", () => {
+  it("ネイティブノード簡略化出力の content フィールドからテキストを抽出する", () => {
     vi.stubGlobal("$", (_name: string) => ({
       first: () => ({ json: { pageId: "page-1" } }),
+    }));
+    vi.stubGlobal("$input", {
+      all: () => [
+        {
+          json: {
+            type: "paragraph",
+            content: "Hello World",
+          },
+        },
+      ],
+    });
+
+    const result = formatGet() as INodeExecutionData[];
+    expect(result[0].json.action).toBe("get");
+    expect(result[0].json.page_id).toBe("page-1");
+    const blocks = result[0].json.blocks as { type: string; text: string }[];
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0].type).toBe("paragraph");
+    expect(blocks[0].text).toBe("Hello World");
+  });
+
+  it("rich_text フォールバックでテキストを抽出する", () => {
+    vi.stubGlobal("$", (_name: string) => ({
+      first: () => ({ json: { pageId: "page-1b" } }),
     }));
     vi.stubGlobal("$input", {
       all: () => [
@@ -24,11 +48,8 @@ describe("FormatGet", () => {
     });
 
     const result = formatGet() as INodeExecutionData[];
-    expect(result[0].json.action).toBe("get");
-    expect(result[0].json.page_id).toBe("page-1");
     const blocks = result[0].json.blocks as { type: string; text: string }[];
     expect(blocks).toHaveLength(1);
-    expect(blocks[0].type).toBe("paragraph");
     expect(blocks[0].text).toBe("Hello World");
   });
 
