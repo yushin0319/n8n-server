@@ -11,18 +11,16 @@ describe("FormatGet", () => {
       first: () => ({ json: { pageId: "page-1" } }),
     }));
     vi.stubGlobal("$input", {
-      first: () => ({
-        json: {
-          results: [
-            {
-              type: "paragraph",
-              paragraph: {
-                rich_text: [{ plain_text: "Hello " }, { plain_text: "World" }],
-              },
+      all: () => [
+        {
+          json: {
+            type: "paragraph",
+            paragraph: {
+              rich_text: [{ plain_text: "Hello " }, { plain_text: "World" }],
             },
-          ],
+          },
         },
-      }),
+      ],
     });
 
     const result = formatGet() as INodeExecutionData[];
@@ -39,16 +37,14 @@ describe("FormatGet", () => {
       first: () => ({ json: { pageId: "page-2" } }),
     }));
     vi.stubGlobal("$input", {
-      first: () => ({
-        json: {
-          results: [
-            {
-              type: "child_database",
-              child_database: { title: "My DB" },
-            },
-          ],
+      all: () => [
+        {
+          json: {
+            type: "child_database",
+            child_database: { title: "My DB" },
+          },
         },
-      }),
+      ],
     });
 
     const result = formatGet() as INodeExecutionData[];
@@ -61,14 +57,10 @@ describe("FormatGet", () => {
       first: () => ({ json: { pageId: "page-3" } }),
     }));
     vi.stubGlobal("$input", {
-      first: () => ({
-        json: {
-          results: [
-            { type: "image", image: {} },
-            { type: "divider", divider: {} },
-          ],
-        },
-      }),
+      all: () => [
+        { json: { type: "image", image: {} } },
+        { json: { type: "divider", divider: {} } },
+      ],
     });
 
     const result = formatGet() as INodeExecutionData[];
@@ -83,16 +75,14 @@ describe("FormatGet", () => {
       first: () => ({ json: { pageId: "page-4" } }),
     }));
     vi.stubGlobal("$input", {
-      first: () => ({
-        json: {
-          results: [
-            {
-              type: "paragraph",
-              paragraph: { rich_text: [] },
-            },
-          ],
+      all: () => [
+        {
+          json: {
+            type: "paragraph",
+            paragraph: { rich_text: [] },
+          },
         },
-      }),
+      ],
     });
 
     const result = formatGet() as INodeExecutionData[];
@@ -107,7 +97,7 @@ describe("FormatGet", () => {
       return { first: () => ({ json: { pageId: "page-from-prep" } }) };
     });
     vi.stubGlobal("$input", {
-      first: () => ({ json: { results: [] } }),
+      all: () => [],
     });
 
     const result = formatGet() as INodeExecutionData[];
