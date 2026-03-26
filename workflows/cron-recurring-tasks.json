@@ -70,32 +70,36 @@
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "https://api.notion.com/v1/databases/3142570f-e49f-80cf-8383-cc62030339c9/query",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "notionApi",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Notion-Version",
-              "value": "2022-06-28"
-            }
-          ]
+        "resource": "databasePage",
+        "operation": "getAll",
+        "databaseId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "3142570f-e49f-80cf-8383-cc62030339c9"
         },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ $json.requestBody }}",
-        "options": {}
+        "returnAll": true,
+        "simple": false,
+        "filterType": "json",
+        "filterJson": "={{ $json.filterJson }}",
+        "options": {
+          "sort": {
+            "sortValue": [
+              {
+                "property": "次回予定日",
+                "direction": "ascending"
+              }
+            ]
+          }
+        }
       },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
       "position": [
         660,
         300
       ],
-      "name": "QueryDB",
       "id": "rt-query-db-001",
+      "name": "QueryDB",
       "credentials": {
         "notionApi": {
           "id": "StdChbKZz3co4jDO",
@@ -277,32 +281,35 @@
     },
     {
       "parameters": {
-        "method": "PATCH",
-        "url": "=https://api.notion.com/v1/pages/{{ $json.pageId }}",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "notionApi",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
+        "resource": "databasePage",
+        "operation": "update",
+        "pageId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.pageId }}"
+        },
+        "propertiesUi": {
+          "propertyValues": [
             {
-              "name": "Notion-Version",
-              "value": "2022-06-28"
+              "key": "最終実行日|date",
+              "date": "={{ $json.lastExecuted }}"
+            },
+            {
+              "key": "次回予定日|date",
+              "date": "={{ $json.nextDate }}"
             }
           ]
         },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ $json.requestBody }}",
-        "options": {}
+        "simple": false
       },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
       "position": [
         2420,
         400
       ],
-      "name": "UpdateDef",
       "id": "rt-update-def-001",
+      "name": "UpdateDef",
       "credentials": {
         "notionApi": {
           "id": "StdChbKZz3co4jDO",

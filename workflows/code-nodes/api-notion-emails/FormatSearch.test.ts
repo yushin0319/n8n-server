@@ -23,7 +23,7 @@ describe("FormatSearch (notion-emails)", () => {
 
   it("Notionページからメールプロパティを正しく抽出する", () => {
     vi.stubGlobal("$input", {
-      first: () => ({ json: { results: [makePage()] } }),
+      all: () => [{ json: makePage() }],
     });
 
     const result = formatSearch() as INodeExecutionData[];
@@ -44,9 +44,7 @@ describe("FormatSearch (notion-emails)", () => {
 
   it("件名が未設定の場合「(無題)」を返す", () => {
     vi.stubGlobal("$input", {
-      first: () => ({
-        json: { results: [makePage({ 件名: { title: [] } })] },
-      }),
+      all: () => [{ json: makePage({ 件名: { title: [] } }) }],
     });
 
     const result = formatSearch() as INodeExecutionData[];
@@ -56,7 +54,7 @@ describe("FormatSearch (notion-emails)", () => {
 
   it("結果が空の場合、空配列とcount=0を返す", () => {
     vi.stubGlobal("$input", {
-      first: () => ({ json: { results: [] } }),
+      all: () => [],
     });
 
     const result = formatSearch() as INodeExecutionData[];
@@ -66,14 +64,16 @@ describe("FormatSearch (notion-emails)", () => {
 
   it("複数ページで正しいcountを返す", () => {
     vi.stubGlobal("$input", {
-      first: () => ({
-        json: {
-          results: [
-            makePage(),
-            { ...makePage(), id: "page-2", url: "https://notion.so/page-2" },
-          ],
+      all: () => [
+        { json: makePage() },
+        {
+          json: {
+            ...makePage(),
+            id: "page-2",
+            url: "https://notion.so/page-2",
+          },
         },
-      }),
+      ],
     });
 
     const result = formatSearch() as INodeExecutionData[];

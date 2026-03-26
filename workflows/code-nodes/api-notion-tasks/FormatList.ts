@@ -7,8 +7,8 @@ import {
 } from "../_shared/notionProps";
 
 export default function (): CodeNodeReturn {
-  const results = ($input.first().json.results as IDataObject[]) || [];
-  const tasks = results.map((page: IDataObject) => {
+  const tasks = $input.all().map((item) => {
+    const page = item.json as IDataObject;
     const props = page.properties as IDataObject;
     const title = notionTitle(props, "", "(無題)");
     const status = notionStatus(props, "ステータス", "不明");

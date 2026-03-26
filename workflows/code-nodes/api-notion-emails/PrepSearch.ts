@@ -35,13 +35,18 @@ export default function (): CodeNodeReturn {
       date: { on_or_before: input.date_to },
     });
   }
-  const body: IDataObject = {};
-  if (filters.length > 0) {
-    body.filter = filters.length === 1 ? filters[0] : { and: filters };
-  }
-  body.sorts = [{ property: "日時", direction: "descending" }];
-  if (input.limit) {
-    body.page_size = Math.min(input.limit as number, 100);
-  }
-  return [{ json: { requestBody: JSON.stringify(body) } }];
+  const filter =
+    filters.length === 0
+      ? undefined
+      : filters.length === 1
+        ? filters[0]
+        : { and: filters };
+  return [
+    {
+      json: {
+        filterJson: filter ? JSON.stringify(filter) : "",
+        limit: input.limit ? Math.min(input.limit as number, 100) : undefined,
+      },
+    },
+  ];
 }

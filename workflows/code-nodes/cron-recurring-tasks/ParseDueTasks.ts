@@ -1,11 +1,12 @@
 import { notionMultiSelectFirst, notionRichText } from "../_shared/notionProps";
 
 export default function (): CodeNodeReturn {
-  const results = ($input.first().json.results || []) as IDataObject[];
-  if (results.length === 0) {
+  const allItems = $input.all();
+  if (allItems.length === 0) {
     return [{ json: { hasDue: false } }];
   }
-  const items = results.map((page: IDataObject) => {
+  const items = allItems.map((item) => {
+    const page = item.json as IDataObject;
     const props = page.properties as Record<string, IDataObject>;
     const titleEntry = Object.entries(props).find(
       ([_k, v]) => v.type === "title",

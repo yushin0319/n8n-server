@@ -28,15 +28,11 @@ describe("ProcessBriefing", () => {
 
   it("重要メールと確認メールを分類する", () => {
     vi.stubGlobal("$input", {
-      first: () => ({
-        json: {
-          results: [
-            mockPage("p1", "銀行通知", "重要"),
-            mockPage("p2", "広告", "不要"),
-            mockPage("p3", "問い合わせ", "確認"),
-          ],
-        },
-      }),
+      all: () => [
+        { json: mockPage("p1", "銀行通知", "重要") },
+        { json: mockPage("p2", "広告", "不要") },
+        { json: mockPage("p3", "問い合わせ", "確認") },
+      ],
     });
 
     const result = processBriefing() as INodeExecutionData[];
@@ -48,7 +44,7 @@ describe("ProcessBriefing", () => {
 
   it("結果が空の場合カウント0を返す", () => {
     vi.stubGlobal("$input", {
-      first: () => ({ json: { results: [] } }),
+      all: () => [],
     });
 
     const result = processBriefing() as INodeExecutionData[];
@@ -59,14 +55,10 @@ describe("ProcessBriefing", () => {
 
   it("全ページIDをallPageIdsに含む", () => {
     vi.stubGlobal("$input", {
-      first: () => ({
-        json: {
-          results: [
-            mockPage("p1", "mail1", "重要"),
-            mockPage("p2", "mail2", "不要"),
-          ],
-        },
-      }),
+      all: () => [
+        { json: mockPage("p1", "mail1", "重要") },
+        { json: mockPage("p2", "mail2", "不要") },
+      ],
     });
 
     const result = processBriefing() as INodeExecutionData[];

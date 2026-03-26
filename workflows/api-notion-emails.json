@@ -117,22 +117,39 @@
     },
     {
       "parameters": {
-        "method": "PATCH",
-        "url": "=https://api.notion.com/v1/pages/{{ $json.pageId }}",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "notionApi",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ $json.requestBody }}"
+        "resource": "databasePage",
+        "operation": "update",
+        "pageId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.pageId }}"
+        },
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "重要度|select",
+              "selectValue": "={{ $json.importance }}"
+            },
+            {
+              "key": "理由|rich_text",
+              "textContent": "={{ $json.reason }}"
+            },
+            {
+              "key": "ステータス|select",
+              "selectValue": "={{ $json.emailStatus }}"
+            }
+          ]
+        },
+        "simple": false
       },
-      "id": "b7",
-      "name": "UpdatePage",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
       "position": [
         660,
         -120
       ],
+      "id": "b7",
+      "name": "UpdatePage",
       "credentials": {
         "notionApi": {
           "id": "StdChbKZz3co4jDO",
@@ -184,22 +201,36 @@
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "https://api.notion.com/v1/databases/2ff2570f-e49f-8119-aaaf-f688605e5aa3/query",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "notionApi",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ $json.requestBody }}"
+        "resource": "databasePage",
+        "operation": "getAll",
+        "databaseId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "2ff2570f-e49f-8119-aaaf-f688605e5aa3"
+        },
+        "returnAll": true,
+        "simple": false,
+        "filterType": "json",
+        "filterJson": "={{ $json.filterJson }}",
+        "options": {
+          "sort": {
+            "sortValue": [
+              {
+                "property": "日時",
+                "direction": "descending"
+              }
+            ]
+          }
+        }
       },
-      "id": "b-search-query",
-      "name": "SearchQuery",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
       "position": [
         660,
         120
       ],
+      "id": "b-search-query",
+      "name": "SearchQuery",
       "credentials": {
         "notionApi": {
           "id": "StdChbKZz3co4jDO",
@@ -250,22 +281,36 @@
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "https://api.notion.com/v1/databases/2ff2570f-e49f-8119-aaaf-f688605e5aa3/query",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "notionApi",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ $json.queryBody }}"
+        "resource": "databasePage",
+        "operation": "getAll",
+        "databaseId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "2ff2570f-e49f-8119-aaaf-f688605e5aa3"
+        },
+        "returnAll": true,
+        "simple": false,
+        "filterType": "json",
+        "filterJson": "{\"property\": \"ステータス\", \"select\": {\"equals\": \"未読\"}}",
+        "options": {
+          "sort": {
+            "sortValue": [
+              {
+                "property": "日時",
+                "direction": "descending"
+              }
+            ]
+          }
+        }
       },
-      "id": "c2",
-      "name": "QueryBriefingEmails",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
       "position": [
         660,
         360
       ],
+      "id": "c2",
+      "name": "QueryBriefingEmails",
       "credentials": {
         "notionApi": {
           "id": "StdChbKZz3co4jDO",
@@ -315,22 +360,31 @@
     },
     {
       "parameters": {
-        "method": "PATCH",
-        "url": "=https://api.notion.com/v1/pages/{{ $json.pageId }}",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "notionApi",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ $json.requestBody }}"
+        "resource": "databasePage",
+        "operation": "update",
+        "pageId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.pageId }}"
+        },
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "ステータス|select",
+              "selectValue": "既読"
+            }
+          ]
+        },
+        "simple": false
       },
-      "id": "c6",
-      "name": "MarkRead",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
       "position": [
         1320,
         300
       ],
+      "id": "c6",
+      "name": "MarkRead",
       "credentials": {
         "notionApi": {
           "id": "StdChbKZz3co4jDO",

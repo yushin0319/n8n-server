@@ -6,12 +6,12 @@ import {
 } from "../_shared/notionProps";
 
 export default function (): CodeNodeReturn {
-  const results = ($input.first().json.results as IDataObject[]) || [];
   const importantEmails: IDataObject[] = [];
   const unclassifiedEmails: IDataObject[] = [];
   const allPageIds: string[] = [];
 
-  for (const page of results) {
+  for (const item of $input.all()) {
+    const page = item.json as IDataObject;
     const props = page.properties as IDataObject;
     const subject = notionTitle(props, "件名", "(無題)");
     const from = notionRichText(props, "差出人");

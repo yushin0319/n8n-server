@@ -6,15 +6,13 @@ describe("PrepSearch (notion-emails)", () => {
     vi.unstubAllGlobals();
   });
 
-  it("フィルタなしの場合ソートのみ含む", () => {
+  it("フィルタなしの場合filterJsonが空文字を返す", () => {
     vi.stubGlobal("$input", {
       first: () => ({ json: { body: {} } }),
     });
 
     const result = prepSearch() as INodeExecutionData[];
-    const body = JSON.parse(result[0].json.requestBody as string);
-    expect(body.filter).toBeUndefined();
-    expect(body.sorts[0].property).toBe("日時");
+    expect(result[0].json.filterJson).toBe("");
   });
 
   it("importanceフィルタを適用する", () => {
@@ -23,8 +21,8 @@ describe("PrepSearch (notion-emails)", () => {
     });
 
     const result = prepSearch() as INodeExecutionData[];
-    const body = JSON.parse(result[0].json.requestBody as string);
-    expect(body.filter.property).toBe("重要度");
+    const filter = JSON.parse(result[0].json.filterJson as string);
+    expect(filter.property).toBe("重要度");
   });
 
   it("limitを100以下に制限する", () => {
@@ -33,8 +31,7 @@ describe("PrepSearch (notion-emails)", () => {
     });
 
     const result = prepSearch() as INodeExecutionData[];
-    const body = JSON.parse(result[0].json.requestBody as string);
-    expect(body.page_size).toBe(100);
+    expect(result[0].json.limit).toBe(100);
   });
 
   it("複数フィルタをandで結合する", () => {
@@ -51,7 +48,7 @@ describe("PrepSearch (notion-emails)", () => {
     });
 
     const result = prepSearch() as INodeExecutionData[];
-    const body = JSON.parse(result[0].json.requestBody as string);
-    expect(body.filter.and).toHaveLength(3);
+    const filter = JSON.parse(result[0].json.filterJson as string);
+    expect(filter.and).toHaveLength(3);
   });
 });

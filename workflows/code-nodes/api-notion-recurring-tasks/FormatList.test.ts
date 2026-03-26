@@ -24,7 +24,7 @@ describe("FormatList", () => {
 
   it("全プロパティを正しく抽出する", () => {
     vi.stubGlobal("$input", {
-      first: () => ({ json: { results: [makePage()] } }),
+      all: () => [{ json: makePage() }],
     });
 
     const result = formatList() as INodeExecutionData[];
@@ -46,7 +46,7 @@ describe("FormatList", () => {
 
   it("results が空の場合 count=0, tasks=[]", () => {
     vi.stubGlobal("$input", {
-      first: () => ({ json: { results: [] } }),
+      all: () => [],
     });
 
     const result = formatList() as INodeExecutionData[];
@@ -56,9 +56,7 @@ describe("FormatList", () => {
 
   it("プロパティ欠落時にデフォルト値を返す", () => {
     vi.stubGlobal("$input", {
-      first: () => ({
-        json: { results: [{ id: "page-002", url: null, properties: {} }] },
-      }),
+      all: () => [{ json: { id: "page-002", url: null, properties: {} } }],
     });
 
     const result = formatList() as INodeExecutionData[];
@@ -73,24 +71,20 @@ describe("FormatList", () => {
 
   it("複数ページを正しく処理する", () => {
     vi.stubGlobal("$input", {
-      first: () => ({
-        json: {
-          results: [
-            makePage({ id: "p1" }),
-            makePage({ id: "p2" }),
-            makePage({ id: "p3" }),
-          ],
-        },
-      }),
+      all: () => [
+        { json: makePage({ id: "p1" }) },
+        { json: makePage({ id: "p2" }) },
+        { json: makePage({ id: "p3" }) },
+      ],
     });
 
     const result = formatList() as INodeExecutionData[];
     expect(result[0].json.count).toBe(3);
   });
 
-  it("results が undefined の場合 空配列として処理", () => {
+  it("入力が空の場合 空配列として処理", () => {
     vi.stubGlobal("$input", {
-      first: () => ({ json: {} }),
+      all: () => [],
     });
 
     const result = formatList() as INodeExecutionData[];
