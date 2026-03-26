@@ -22,7 +22,7 @@ describe("PrepSearch (notion-emails)", () => {
 
     const result = prepSearch() as INodeExecutionData[];
     const filter = JSON.parse(result[0].json.filterJson as string);
-    expect(filter.property).toBe("重要度");
+    expect(filter.property).toBe("importance");
   });
 
   it("limitを100以下に制限する", () => {

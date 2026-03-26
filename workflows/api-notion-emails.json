@@ -127,15 +127,15 @@
         "propertiesUi": {
           "propertyValues": [
             {
-              "key": "重要度|select",
+              "key": "importance|select",
               "selectValue": "={{ $json.importance }}"
             },
             {
-              "key": "理由|rich_text",
+              "key": "reason|rich_text",
               "textContent": "={{ $json.reason }}"
             },
             {
-              "key": "ステータス|select",
+              "key": "status|select",
               "selectValue": "={{ $json.emailStatus }}"
             }
           ]
@@ -208,10 +208,21 @@
           "mode": "id",
           "value": "2ff2570f-e49f-8119-aaaf-f688605e5aa3"
         },
-        "returnAll": true,
+        "returnAll": false,
         "simple": false,
         "filterType": "json",
-        "filterJson": "={{ $json.filterJson }}"
+        "filterJson": "={{ $json.filterJson }}",
+        "options": {
+          "sort": {
+            "sortValue": [
+              {
+                "property": "date",
+                "direction": "descending"
+              }
+            ]
+          }
+        },
+        "limit": "={{ $json.limit || 100 }}"
       },
       "type": "n8n-nodes-base.notion",
       "typeVersion": 2.2,
@@ -268,12 +279,12 @@
         "returnAll": true,
         "simple": false,
         "filterType": "json",
-        "filterJson": "{\"property\": \"ステータス\", \"select\": {\"equals\": \"未読\"}}",
+        "filterJson": "{\"property\": \"status\", \"select\": {\"equals\": \"未読\"}}",
         "options": {
           "sort": {
             "sortValue": [
               {
-                "property": "日時",
+                "property": "date",
                 "direction": "descending"
               }
             ]
@@ -347,7 +358,7 @@
         "propertiesUi": {
           "propertyValues": [
             {
-              "key": "ステータス|select",
+              "key": "status|select",
               "selectValue": "既読"
             }
           ]
