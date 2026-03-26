@@ -217,7 +217,9 @@
             "sortValue": [
               {
                 "property": "date",
-                "direction": "descending"
+                "direction": "descending",
+                "key": "date",
+                "timestamp": false
               }
             ]
           }
@@ -285,7 +287,9 @@
             "sortValue": [
               {
                 "property": "date",
-                "direction": "descending"
+                "direction": "descending",
+                "key": "date",
+                "timestamp": false
               }
             ]
           }

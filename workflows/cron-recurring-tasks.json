@@ -86,7 +86,9 @@
             "sortValue": [
               {
                 "property": "次回予定日",
-                "direction": "ascending"
+                "direction": "ascending",
+                "key": "次回予定日",
+                "timestamp": false
               }
             ]
           }

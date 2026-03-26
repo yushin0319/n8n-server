@@ -166,7 +166,9 @@
             "sortValue": [
               {
                 "property": "ステータス",
-                "direction": "ascending"
+                "direction": "ascending",
+                "key": "ステータス",
+                "timestamp": false
               }
             ]
           }
@@ -375,7 +377,9 @@
             "sortValue": [
               {
                 "property": "最終更新日時",
-                "direction": "descending"
+                "direction": "descending",
+                "key": "最終更新日時",
+                "timestamp": false
               }
             ]
           }
