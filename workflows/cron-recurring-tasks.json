@@ -91,7 +91,8 @@
                 "timestamp": false
               }
             ]
-          }
+          },
+          "emptyResult": "passThrough"
         }
       },
       "type": "n8n-nodes-base.notion",
@@ -107,7 +108,8 @@
           "id": "StdChbKZz3co4jDO",
           "name": "Notion account"
         }
-      }
+      },
+      "alwaysOutputData": true
     },
     {
       "parameters": {

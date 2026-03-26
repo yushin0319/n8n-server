@@ -27,16 +27,16 @@ export default function (): CodeNodeReturn {
     const body = {
       parent: { database_id: "2ff2570f-e49f-8119-aaaf-f688605e5aa3" },
       properties: {
-        件名: { title: [{ text: { content: email.subject } }] },
-        差出人: {
+        subject: { title: [{ text: { content: email.subject } }] },
+        sender: {
           rich_text: [
             { text: { content: (email.from as string).substring(0, 2000) } },
           ],
         },
-        日時: { date: { start: email.dateISO } },
-        重要度: { select: { name: importance } },
-        スニペット: { rich_text: [{ text: { content: email.snippet } }] },
-        ステータス: { select: { name: "未読" } },
+        date: { date: { start: email.dateISO } },
+        importance: { select: { name: importance } },
+        snippet: { rich_text: [{ text: { content: email.snippet } }] },
+        status: { select: { name: "未読" } },
       },
     };
     return {

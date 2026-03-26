@@ -2,7 +2,8 @@ import { notionMultiSelectFirst, notionRichText } from "../_shared/notionProps";
 
 export default function (): CodeNodeReturn {
   const allItems = $input.all();
-  if (allItems.length === 0) {
+  // ネイティブノードが0件の場合: alwaysOutputDataで空jsonアイテムが来る
+  if (allItems.length === 0 || !allItems[0].json.properties) {
     return [{ json: { hasDue: false } }];
   }
   const items = allItems.map((item) => {
