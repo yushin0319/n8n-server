@@ -268,19 +268,6 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external api-notion-emails/BuildBriefingQuery.ts"
-      },
-      "id": "c1",
-      "name": "BuildBriefingQuery",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        440,
-        360
-      ]
-    },
-    {
-      "parameters": {
         "resource": "databasePage",
         "operation": "getAll",
         "databaseId": {
@@ -440,7 +427,7 @@
         ],
         [
           {
-            "node": "BuildBriefingQuery",
+            "node": "QueryBriefingEmails",
             "type": "main",
             "index": 0
           }
@@ -514,17 +501,6 @@
         [
           {
             "node": "RespondSearch",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "BuildBriefingQuery": {
-      "main": [
-        [
-          {
-            "node": "QueryBriefingEmails",
             "type": "main",
             "index": 0
           }
