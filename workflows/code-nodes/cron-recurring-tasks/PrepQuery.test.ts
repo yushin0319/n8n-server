@@ -16,18 +16,18 @@ describe("PrepQuery", () => {
     );
   });
 
-  it("有効=trueかつ次回予定日<=今日のフィルタをJSON文字列で返す", () => {
+  it("有効=trueかつ次回予定日<=今日のフィルタをfilterJsonで返す", () => {
     const items = callAndGetItems();
 
     expect(items).toHaveLength(1);
-    const parsed = JSON.parse(items[0].json.requestBody as string);
+    const parsed = JSON.parse(items[0].json.filterJson as string);
 
-    expect(parsed.filter.and).toHaveLength(2);
-    expect(parsed.filter.and[0]).toEqual({
+    expect(parsed.and).toHaveLength(2);
+    expect(parsed.and[0]).toEqual({
       property: "有効",
       checkbox: { equals: true },
     });
-    expect(parsed.filter.and[1]).toEqual({
+    expect(parsed.and[1]).toEqual({
       property: "次回予定日",
       date: { on_or_before: "2026-03-17" },
     });

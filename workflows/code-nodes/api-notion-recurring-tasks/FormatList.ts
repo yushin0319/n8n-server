@@ -1,8 +1,7 @@
 export default function (): CodeNodeReturn {
-  // list結果をフォーマット
-  const results = ($input.first().json.results || []) as unknown[];
   // biome-ignore lint/suspicious/noExplicitAny: Notion API レスポンス構造は複雑なため
-  const tasks = results.map((p: any) => {
+  const tasks = $input.all().map((item) => {
+    const p = item.json as any;
     const props = p.properties;
     return {
       id: p.id as string,

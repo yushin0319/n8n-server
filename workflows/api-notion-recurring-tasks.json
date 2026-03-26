@@ -190,32 +190,34 @@
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "https://api.notion.com/v1/databases/3142570f-e49f-80cf-8383-cc62030339c9/query",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "notionApi",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Notion-Version",
-              "value": "2022-06-28"
-            }
-          ]
+        "resource": "databasePage",
+        "operation": "getAll",
+        "databaseId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "3142570f-e49f-80cf-8383-cc62030339c9"
         },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "{\"sorts\": [{\"property\": \"次回予定日\", \"direction\": \"ascending\"}]}",
-        "options": {}
+        "returnAll": true,
+        "simple": false,
+        "options": {
+          "sort": {
+            "sortValue": [
+              {
+                "property": "次回予定日",
+                "direction": "ascending"
+              }
+            ]
+          }
+        }
       },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
       "position": [
         900,
         300
       ],
-      "name": "ListQuery",
       "id": "rt-0006-0000-0000-000000000006",
+      "name": "ListQuery",
       "credentials": {
         "notionApi": {
           "id": "StdChbKZz3co4jDO",
@@ -520,32 +522,23 @@
     },
     {
       "parameters": {
-        "method": "PATCH",
-        "url": "=https://api.notion.com/v1/pages/{{ $json.pageId }}",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "notionApi",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Notion-Version",
-              "value": "2022-06-28"
-            }
-          ]
+        "resource": "page",
+        "operation": "archive",
+        "pageId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.pageId }}"
         },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "{\"archived\": true}",
-        "options": {}
+        "simple": false
       },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
       "position": [
         1120,
         1200
       ],
-      "name": "ArchivePage",
       "id": "rt-0021-0000-0000-000000000021",
+      "name": "ArchivePage",
       "credentials": {
         "notionApi": {
           "id": "StdChbKZz3co4jDO",

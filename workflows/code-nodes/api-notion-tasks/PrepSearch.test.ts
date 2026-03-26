@@ -6,16 +6,13 @@ describe("PrepSearch (notion-tasks)", () => {
     vi.unstubAllGlobals();
   });
 
-  it("フィルタなしの場合ソートのみ含む", () => {
+  it("フィルタなしの場合filterJsonが空文字を返す", () => {
     vi.stubGlobal("$input", {
       first: () => ({ json: { body: {} } }),
     });
 
     const result = prepSearch() as INodeExecutionData[];
-    const body = JSON.parse(result[0].json.requestBody as string);
-    expect(body.filter).toBeUndefined();
-    expect(body.sorts).toHaveLength(1);
-    expect(body.sorts[0].property).toBe("最終更新日時");
+    expect(result[0].json.filterJson).toBe("");
   });
 
   it("statusフィルタを適用する", () => {
@@ -24,9 +21,9 @@ describe("PrepSearch (notion-tasks)", () => {
     });
 
     const result = prepSearch() as INodeExecutionData[];
-    const body = JSON.parse(result[0].json.requestBody as string);
-    expect(body.filter.property).toBe("ステータス");
-    expect(body.filter.status.equals).toBe("進行中");
+    const filter = JSON.parse(result[0].json.filterJson as string);
+    expect(filter.property).toBe("ステータス");
+    expect(filter.status.equals).toBe("進行中");
   });
 
   it("複数フィルタをandで結合する", () => {
@@ -37,7 +34,7 @@ describe("PrepSearch (notion-tasks)", () => {
     });
 
     const result = prepSearch() as INodeExecutionData[];
-    const body = JSON.parse(result[0].json.requestBody as string);
-    expect(body.filter.and).toHaveLength(2);
+    const filter = JSON.parse(result[0].json.filterJson as string);
+    expect(filter.and).toHaveLength(2);
   });
 });

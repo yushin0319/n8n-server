@@ -14,7 +14,7 @@ describe("ParseDueTasks", () => {
 
   it("結果が空の場合hasDue=falseを返す", () => {
     vi.stubGlobal("$input", {
-      first: () => ({ json: { results: [] } }),
+      all: () => [],
     });
 
     const items = callAndGetItems();
@@ -22,9 +22,9 @@ describe("ParseDueTasks", () => {
     expect(items[0].json.hasDue).toBe(false);
   });
 
-  it("resultsがundefinedの場合もhasDue=falseを返す", () => {
+  it("入力が空配列の場合もhasDue=falseを返す", () => {
     vi.stubGlobal("$input", {
-      first: () => ({ json: {} }),
+      all: () => [],
     });
 
     const items = callAndGetItems();
@@ -33,27 +33,25 @@ describe("ParseDueTasks", () => {
 
   it("Notionページからタスク情報を正しく抽出する", () => {
     vi.stubGlobal("$input", {
-      first: () => ({
-        json: {
-          results: [
-            {
-              id: "page-id-1",
-              properties: {
-                タスク名: {
-                  type: "title",
-                  title: [{ plain_text: "週次レビュー" }],
-                },
-                頻度: {
-                  multi_select: [{ name: "weekly" }],
-                },
-                テンプレ本文: {
-                  rich_text: [{ plain_text: "テンプレ内容" }],
-                },
+      all: () => [
+        {
+          json: {
+            id: "page-id-1",
+            properties: {
+              タスク名: {
+                type: "title",
+                title: [{ plain_text: "週次レビュー" }],
+              },
+              頻度: {
+                multi_select: [{ name: "weekly" }],
+              },
+              テンプレ本文: {
+                rich_text: [{ plain_text: "テンプレ内容" }],
               },
             },
-          ],
+          },
         },
-      }),
+      ],
     });
 
     const items = callAndGetItems();
@@ -67,23 +65,21 @@ describe("ParseDueTasks", () => {
 
   it("頻度が未設定の場合monthlyになる", () => {
     vi.stubGlobal("$input", {
-      first: () => ({
-        json: {
-          results: [
-            {
-              id: "page-id-2",
-              properties: {
-                名前: {
-                  type: "title",
-                  title: [{ plain_text: "テスト" }],
-                },
-                頻度: { multi_select: [] },
-                テンプレ本文: { rich_text: [] },
+      all: () => [
+        {
+          json: {
+            id: "page-id-2",
+            properties: {
+              名前: {
+                type: "title",
+                title: [{ plain_text: "テスト" }],
               },
+              頻度: { multi_select: [] },
+              テンプレ本文: { rich_text: [] },
             },
-          ],
+          },
         },
-      }),
+      ],
     });
 
     const items = callAndGetItems();

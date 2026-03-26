@@ -8,22 +8,20 @@ describe("FormatSearch", () => {
 
   it("タスクのプロパティを抽出する", () => {
     vi.stubGlobal("$input", {
-      first: () => ({
-        json: {
-          results: [
-            {
-              id: "page-1",
-              url: "https://notion.so/page-1",
-              properties: {
-                "": { title: [{ plain_text: "検索タスク" }] },
-                ステータス: { status: { name: "進行中" } },
-                ID: { unique_id: { number: 10 } },
-                最終更新日時: { last_edited_time: "2026-01-15T00:00:00Z" },
-              },
+      all: () => [
+        {
+          json: {
+            id: "page-1",
+            url: "https://notion.so/page-1",
+            properties: {
+              "": { title: [{ plain_text: "検索タスク" }] },
+              ステータス: { status: { name: "進行中" } },
+              ID: { unique_id: { number: 10 } },
+              最終更新日時: { last_edited_time: "2026-01-15T00:00:00Z" },
             },
-          ],
+          },
         },
-      }),
+      ],
     });
 
     const result = formatSearch() as INodeExecutionData[];
@@ -36,22 +34,20 @@ describe("FormatSearch", () => {
 
   it("action が 'search' を返す", () => {
     vi.stubGlobal("$input", {
-      first: () => ({
-        json: {
-          results: [
-            {
-              id: "page-1",
-              url: "https://notion.so/page-1",
-              properties: {
-                "": { title: [{ plain_text: "タスク" }] },
-                ステータス: { status: { name: "完了" } },
-                ID: { unique_id: { number: 1 } },
-                最終更新日時: { last_edited_time: "" },
-              },
+      all: () => [
+        {
+          json: {
+            id: "page-1",
+            url: "https://notion.so/page-1",
+            properties: {
+              "": { title: [{ plain_text: "タスク" }] },
+              ステータス: { status: { name: "完了" } },
+              ID: { unique_id: { number: 1 } },
+              最終更新日時: { last_edited_time: "" },
             },
-          ],
+          },
         },
-      }),
+      ],
     });
 
     const result = formatSearch() as INodeExecutionData[];
@@ -60,7 +56,7 @@ describe("FormatSearch", () => {
 
   it("空の results を処理する", () => {
     vi.stubGlobal("$input", {
-      first: () => ({ json: { results: [] } }),
+      all: () => [],
     });
 
     const result = formatSearch() as INodeExecutionData[];

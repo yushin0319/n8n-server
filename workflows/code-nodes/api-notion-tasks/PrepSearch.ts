@@ -20,10 +20,11 @@ export default function (): CodeNodeReturn {
       last_edited_time: { on_or_before: input.date_to },
     });
   }
-  const body: IDataObject = {};
-  if (filters.length > 0) {
-    body.filter = filters.length === 1 ? filters[0] : { and: filters };
-  }
-  body.sorts = [{ property: "最終更新日時", direction: "descending" }];
-  return [{ json: { requestBody: JSON.stringify(body) } }];
+  const filter =
+    filters.length === 0
+      ? undefined
+      : filters.length === 1
+        ? filters[0]
+        : { and: filters };
+  return [{ json: { filterJson: filter ? JSON.stringify(filter) : "" } }];
 }

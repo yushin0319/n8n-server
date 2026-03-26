@@ -6,8 +6,8 @@ import {
 } from "../_shared/notionProps";
 
 export default function (): CodeNodeReturn {
-  const results = ($input.first().json.results as IDataObject[]) || [];
-  const emails = results.map((page: IDataObject) => {
+  const emails = $input.all().map((item) => {
+    const page = item.json as IDataObject;
     const props = page.properties as IDataObject;
     const subject = notionTitle(props, "件名", "(無題)");
     const from = notionRichText(props, "差出人");

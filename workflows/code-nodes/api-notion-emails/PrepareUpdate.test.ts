@@ -14,7 +14,7 @@ describe("PrepareUpdate (notion-emails)", () => {
     expect(() => prepareUpdate()).toThrow("page_id is required");
   });
 
-  it("importanceを重要度プロパティに設定する", () => {
+  it("importanceを個別フィールドとして返す", () => {
     vi.stubGlobal("$input", {
       first: () => ({
         json: { body: { page_id: "page-1", importance: "重要" } },
@@ -23,11 +23,10 @@ describe("PrepareUpdate (notion-emails)", () => {
 
     const result = prepareUpdate() as INodeExecutionData[];
     expect(result[0].json.pageId).toBe("page-1");
-    const body = JSON.parse(result[0].json.requestBody as string);
-    expect(body.properties.重要度.select.name).toBe("重要");
+    expect(result[0].json.importance).toBe("重要");
   });
 
-  it("reasonを理由プロパティに設定する", () => {
+  it("reasonを個別フィールドとして返す", () => {
     vi.stubGlobal("$input", {
       first: () => ({
         json: { body: { page_id: "page-1", reason: "重要な案件のため" } },
@@ -35,13 +34,10 @@ describe("PrepareUpdate (notion-emails)", () => {
     });
 
     const result = prepareUpdate() as INodeExecutionData[];
-    const body = JSON.parse(result[0].json.requestBody as string);
-    expect(body.properties.理由.rich_text[0].text.content).toBe(
-      "重要な案件のため",
-    );
+    expect(result[0].json.reason).toBe("重要な案件のため");
   });
 
-  it("statusをステータスプロパティに設定する", () => {
+  it("statusをemailStatusフィールドとして返す", () => {
     vi.stubGlobal("$input", {
       first: () => ({
         json: { body: { page_id: "page-1", status: "既読" } },
@@ -49,8 +45,7 @@ describe("PrepareUpdate (notion-emails)", () => {
     });
 
     const result = prepareUpdate() as INodeExecutionData[];
-    const body = JSON.parse(result[0].json.requestBody as string);
-    expect(body.properties.ステータス.select.name).toBe("既読");
+    expect(result[0].json.emailStatus).toBe("既読");
   });
 
   it("bodyラッパーなしでも動作する", () => {
@@ -62,7 +57,6 @@ describe("PrepareUpdate (notion-emails)", () => {
 
     const result = prepareUpdate() as INodeExecutionData[];
     expect(result[0].json.pageId).toBe("page-1");
-    const body = JSON.parse(result[0].json.requestBody as string);
-    expect(body.properties.重要度.select.name).toBe("通常");
+    expect(result[0].json.importance).toBe("通常");
   });
 });

@@ -36,10 +36,8 @@ describe("PrepUpdate", () => {
     expect(items).toHaveLength(1);
     expect(items[0].json.pageId).toBe("page-1");
     expect(items[0].json.taskName).toBe("週次レビュー");
-
-    const parsed = JSON.parse(items[0].json.requestBody as string);
     // 最終実行日は今日（JST）
-    expect(parsed.properties["最終実行日"].date.start).toBe("2026-03-17");
+    expect(items[0].json.lastExecuted).toBe("2026-03-17");
   });
 
   it("dailyタスクの次回予定日を1日後に設定する", () => {
@@ -59,9 +57,8 @@ describe("PrepUpdate", () => {
     }));
 
     const items = callAndGetItems();
-    const parsed = JSON.parse(items[0].json.requestBody as string);
     // 次回予定日が設定されていること
-    expect(parsed.properties["次回予定日"].date.start).toBeTruthy();
+    expect(items[0].json.nextDate).toBeTruthy();
   });
 
   it("monthlyタスクの次回予定日を1ヶ月後に設定する", () => {
@@ -81,8 +78,7 @@ describe("PrepUpdate", () => {
     }));
 
     const items = callAndGetItems();
-    const parsed = JSON.parse(items[0].json.requestBody as string);
-    expect(parsed.properties["次回予定日"].date.start).toBeTruthy();
+    expect(items[0].json.nextDate).toBeTruthy();
   });
 
   it("不明なfrequencyはmonthlyとして扱う", () => {
@@ -102,7 +98,6 @@ describe("PrepUpdate", () => {
     }));
 
     const items = callAndGetItems();
-    const parsed = JSON.parse(items[0].json.requestBody as string);
-    expect(parsed.properties["次回予定日"].date.start).toBeTruthy();
+    expect(items[0].json.nextDate).toBeTruthy();
   });
 });

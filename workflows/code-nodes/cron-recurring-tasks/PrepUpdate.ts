@@ -30,17 +30,12 @@ export default function (): CodeNodeReturn {
     const nextDue = new Date(nextDate.getTime() + 9 * 60 * 60 * 1000)
       .toISOString()
       .split("T")[0];
-    const body = {
-      properties: {
-        最終実行日: { date: { start: today } },
-        次回予定日: { date: { start: nextDue } },
-      },
-    };
     return {
       json: {
         pageId: original.defPageId,
         taskName: original.taskName,
-        requestBody: JSON.stringify(body),
+        lastExecuted: today,
+        nextDate: nextDue,
       },
     };
   });
