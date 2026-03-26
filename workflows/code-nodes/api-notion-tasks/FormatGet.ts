@@ -6,7 +6,11 @@ export default function (): CodeNodeReturn {
       const block = item.json as IDataObject;
       const bType = block.type as string;
       let text = "";
-      if ((block[bType] as IDataObject)?.rich_text) {
+      if (block.content != null) {
+        // ネイティブノード簡略化出力: content フィールドにテキストが入る
+        text = String(block.content);
+      } else if ((block[bType] as IDataObject)?.rich_text) {
+        // HTTP Request 生出力: block[type].rich_text 配列
         text = ((block[bType] as IDataObject).rich_text as IDataObject[])
           .map((t: IDataObject) => t.plain_text)
           .join("");
