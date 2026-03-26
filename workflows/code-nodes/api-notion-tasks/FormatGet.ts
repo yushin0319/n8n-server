@@ -1,8 +1,9 @@
 export default function (): CodeNodeReturn {
   const pageId = $("PrepGet").first().json.pageId as string;
-  const blocksResult = $input.first().json;
-  const blocks = ((blocksResult.results as IDataObject[]) || [])
-    .map((block: IDataObject) => {
+  const blocks = $input
+    .all()
+    .map((item) => {
+      const block = item.json as IDataObject;
       const bType = block.type as string;
       let text = "";
       if ((block[bType] as IDataObject)?.rich_text) {
