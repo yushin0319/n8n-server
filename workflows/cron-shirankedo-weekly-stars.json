@@ -8,10 +8,7 @@
         "rule": {
           "interval": [
             {
-              "field": "weeks",
-              "triggerAtDay": [
-                1
-              ],
+              "field": "days",
               "triggerAtHour": 3,
               "triggerAtMinute": 0
             }
