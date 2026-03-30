@@ -11,22 +11,12 @@ describe("FormatPageComments", () => {
     vi.unstubAllGlobals();
   });
 
-  it("3件のコメントを含むJSONを返す", () => {
-    vi.stubGlobal("$input", {
-      first: () => ({
-        json: {
-          candidates: [{ content: { parts: [{ text: "サブコメント" }] } }],
-        },
-      }),
-    });
+  it("trendコメント1件のみを含むJSONを返す", () => {
     vi.stubGlobal("$", (nodeName: string) => {
-      if (nodeName === "FormatAIApiComment") {
+      if (nodeName === "FormatTrendComment") {
         return {
           first: () => ({
-            json: {
-              trendComment: "トレンドコメント",
-              aiApiComment: "AIコメント",
-            },
+            json: { trendComment: "トレンドコメント" },
           }),
         };
       }
@@ -35,35 +25,8 @@ describe("FormatPageComments", () => {
 
     const items = callAndGetItems();
     const comments = JSON.parse(items[0].json.requestBody as string);
-    expect(comments).toHaveLength(3);
-    expect(items[0].json.count).toBe(3);
-  });
-
-  it("trend, ai_api, ai_subの3タイプを含む", () => {
-    vi.stubGlobal("$input", {
-      first: () => ({
-        json: {
-          candidates: [{ content: { parts: [{ text: "sub text" }] } }],
-        },
-      }),
-    });
-    vi.stubGlobal("$", (nodeName: string) => {
-      if (nodeName === "FormatAIApiComment") {
-        return {
-          first: () => ({
-            json: {
-              trendComment: "trend",
-              aiApiComment: "ai_api",
-            },
-          }),
-        };
-      }
-      throw new Error(`Unknown node: ${nodeName}`);
-    });
-
-    const items = callAndGetItems();
-    const comments = JSON.parse(items[0].json.requestBody as string);
-    const types = comments.map((c: any) => c.type);
-    expect(types).toEqual(["trend", "ai_api", "ai_sub"]);
+    expect(comments).toHaveLength(1);
+    expect(items[0].json.count).toBe(1);
+    expect(comments[0]).toEqual({ type: "trend", content: "トレンドコメント" });
   });
 });

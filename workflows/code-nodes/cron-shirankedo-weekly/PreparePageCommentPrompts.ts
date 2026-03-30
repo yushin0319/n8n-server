@@ -43,42 +43,13 @@ export default function (): CodeNodeReturn {
   ## 直近の週次レポート
   ${summaryText}`;
 
-  const aiApiPrompt = `あなたはAI API・LLMの比較ページの総評コメントを書くライターです。
-
-  ${toneRules}
-
-  ${formatRules}
-
-  ## このコメントの役割
-  AI APIの料金・性能比較ページに表示される総評。
-  以下の週次レポートからAI・LLM関連の話題を拾い、最近のモデル動向・API機能・価格の変化について語れ。
-  月額目安（独自算出値）には言及しないこと。
-  具体的なモデル名やサービス名を挙げて語れ。
-
-  ## 直近の週次レポート
-  ${summaryText}`;
-
-  const aiSubPrompt = `あなたはAIサブスクリプション比較ページの総評コメントを書くライターです。
-
-  ${toneRules}
-
-  ${formatRules}
-
-  ## このコメントの役割
-  ChatGPT / Claude / Gemini 等のサブスクプラン比較ページに表示される総評。
-  以下の週次レポートを参考に、最近のAIサブスク事情（料金変更、新プラン、使い分け戦略）について語れ。
-  開発者・ユーザー目線で「結局どれ使えばいいの？」に答える方向性で。
-
-  ## 直近の週次レポート
-  ${summaryText}`;
-
   return [
     {
       json: {
         hasSummaries: true,
         trendPrompt,
-        aiApiPrompt,
-        aiSubPrompt,
+        aiApiPrompt: "",
+        aiSubPrompt: "",
       },
     },
   ];
