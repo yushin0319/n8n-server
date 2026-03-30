@@ -36,7 +36,7 @@ DISCORD_WEBHOOK_URL = os.environ.get("DISCORD_WEBHOOK_URL", "")
 # タイムアウト上書き（未指定WFはデフォルト値を使用）
 _TIMEOUT_OVERRIDES = {
     "cron-shirankedo-daily-articles": 120,
-    "cron-shirankedo-daily-releases": 120,
+    "cron-shirankedo-daily-releases": 180,
     "cron-shirankedo-daily-stars": 120,
     "cron-shirankedo-weekly-report": 120,
     "cron-shirankedo-weekly-comments": 120,
