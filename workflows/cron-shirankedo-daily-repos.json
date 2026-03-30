@@ -1,6 +1,6 @@
 {
   "id": "OQZpNlGXAPaij7Rl",
-  "name": "cron/shirankedo-weekly-repos",
+  "name": "cron/shirankedo-daily-repos",
   "active": true,
   "nodes": [
     {
@@ -8,12 +8,9 @@
         "rule": {
           "interval": [
             {
-              "field": "weeks",
-              "triggerAtDay": [
-                1
-              ],
+              "field": "days",
               "triggerAtHour": 3,
-              "triggerAtMinute": 0
+              "triggerAtMinute": 30
             }
           ]
         }
@@ -52,7 +49,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external cron-shirankedo-weekly/BuildSearchQueries.ts"
+        "jsCode": "// @external cron-shirankedo-daily/BuildSearchQueries.ts"
       },
       "id": "af2c426b-64fe-4f38-b3a9-39f203862e44",
       "name": "BuildSearchQueries",
@@ -117,7 +114,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external cron-shirankedo-weekly/AccumulateSearchResults.ts"
+        "jsCode": "// @external cron-shirankedo-daily/AccumulateSearchResults.ts"
       },
       "id": "3aa53497-b8a8-4edb-a2d5-259789e52400",
       "name": "AccumulateSearchResults",
@@ -130,7 +127,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external cron-shirankedo-weekly/ParseSearchResults.ts"
+        "jsCode": "// @external cron-shirankedo-daily/ParseSearchResults.ts"
       },
       "id": "fa432fdb-29cf-474b-afa9-e30102f8d68b",
       "name": "ParseSearchResults",
@@ -174,7 +171,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external cron-shirankedo-weekly/PrepareTranslatePrompt.ts"
+        "jsCode": "// @external cron-shirankedo-daily/PrepareTranslatePrompt.ts"
       },
       "id": "ff3829d3-ab08-43f6-a5a8-e70098aba7b1",
       "name": "PrepareTranslatePrompt",
@@ -227,7 +224,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external cron-shirankedo-weekly/AccumulateTranslations.ts"
+        "jsCode": "// @external cron-shirankedo-daily/AccumulateTranslations.ts"
       },
       "id": "1eeee0cc-51aa-493d-bfb0-364772566bdf",
       "name": "AccumulateTranslations",
@@ -240,7 +237,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external cron-shirankedo-weekly/ParseTranslations.ts"
+        "jsCode": "// @external cron-shirankedo-daily/ParseTranslations.ts"
       },
       "id": "83bedec4-fa73-41a5-a756-b031bdf6ae45",
       "name": "ParseTranslations",
@@ -294,7 +291,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external cron-shirankedo-weekly/AccumulateRepoPostResults.ts"
+        "jsCode": "// @external cron-shirankedo-daily/AccumulateRepoPostResults.ts"
       },
       "id": "646fd2de-a855-4155-9e26-c464532f85d4",
       "name": "AccumulateRepoPostResults",
@@ -307,7 +304,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external cron-shirankedo-weekly/ParseRepoPostResults.ts"
+        "jsCode": "// @external cron-shirankedo-daily/ParseRepoPostResults.ts"
       },
       "id": "93e45a75-6901-4441-bc83-a9d481f6bc4c",
       "name": "ParseRepoPostResults",
@@ -320,7 +317,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external cron-shirankedo-weekly/EmptyRepoResult.ts"
+        "jsCode": "// @external cron-shirankedo-daily/EmptyRepoResult.ts"
       },
       "id": "4d8636dc-2345-410b-99e0-6655f222a905",
       "name": "EmptyRepoResult",
@@ -347,7 +344,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external cron-shirankedo-weekly/PrepareDiscordRepos.ts"
+        "jsCode": "// @external cron-shirankedo-daily/PrepareDiscordRepos.ts"
       },
       "id": "8f8d7f47-9f94-4fb5-b3d9-5fcfc04e61d3",
       "name": "PrepareDiscordRepos",
@@ -421,7 +418,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external cron-shirankedo-weekly/CheckTestMode.ts"
+        "jsCode": "// @external cron-shirankedo-daily/CheckTestMode.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -434,7 +431,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external cron-shirankedo-weekly/TestResponse.ts"
+        "jsCode": "// @external cron-shirankedo-daily/TestResponse.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -494,7 +491,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external cron-shirankedo-weekly/MockGeminiTranslateRepos.ts"
+        "jsCode": "// @external cron-shirankedo-daily/MockGeminiTranslateRepos.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,

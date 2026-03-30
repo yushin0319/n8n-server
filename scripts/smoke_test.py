@@ -37,11 +37,11 @@ DISCORD_WEBHOOK_URL = os.environ.get("DISCORD_WEBHOOK_URL", "")
 _TIMEOUT_OVERRIDES = {
     "cron-shirankedo-daily-articles": 120,
     "cron-shirankedo-daily-releases": 120,
-    "cron-shirankedo-weekly-stars": 120,
+    "cron-shirankedo-daily-stars": 120,
     "cron-shirankedo-weekly-report": 120,
     "cron-shirankedo-weekly-comments": 120,
     "cron-shirankedo-weekly-llm": 120,
-    "cron-shirankedo-weekly-repos": 120,
+    "cron-shirankedo-daily-repos": 120,
 }
 _DEFAULT_CRON_TIMEOUT = 60
 _DEFAULT_WEBHOOK_TIMEOUT = 30
