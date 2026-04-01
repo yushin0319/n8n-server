@@ -11,7 +11,8 @@ export default function (): CodeNodeReturn {
     )
     .join("\n\n---\n\n");
 
-  if (!summaryText.trim()) {
+  const hasData = !!summaryText.trim() || trendRanking.length > 0;
+  if (!hasData) {
     return [{ json: { hasSummaries: false } }];
   }
 

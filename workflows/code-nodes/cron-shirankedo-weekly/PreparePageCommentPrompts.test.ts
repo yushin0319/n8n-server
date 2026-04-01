@@ -105,9 +105,20 @@ describe("PreparePageCommentPrompts", () => {
     expect(items[0].json.trendPrompt).toContain("ランキングデータなし");
   });
 
-  it("サマリーがない場合にhasSummaries=falseを返す", () => {
+  it("サマリーがなくてもトレンドランキングがあればプロンプト生成する", () => {
     vi.stubGlobal("$input", {
       all: () => [{ json: { data: [] } }, { json: { data: mockTrendRanking } }],
+      first: () => ({ json: { data: [] } }),
+    });
+
+    const items = callAndGetItems();
+    expect(items[0].json.hasSummaries).toBe(true);
+    expect(items[0].json.trendPrompt).toContain("Next.js");
+  });
+
+  it("サマリーもランキングもない場合にhasSummaries=falseを返す", () => {
+    vi.stubGlobal("$input", {
+      all: () => [{ json: { data: [] } }, { json: { data: [] } }],
       first: () => ({ json: { data: [] } }),
     });
 
