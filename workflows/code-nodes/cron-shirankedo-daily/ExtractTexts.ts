@@ -7,6 +7,7 @@ interface SelectedArticle {
   source: string;
   impact: number;
   isPaper: number;
+  pubDate?: string;
 }
 
 export default function (): CodeNodeReturn {
@@ -35,6 +36,7 @@ export default function (): CodeNodeReturn {
       source: orig.source,
       impact: orig.impact,
       isPaper: orig.isPaper,
+      pubDate: orig.pubDate || "",
       fulltext,
     });
   }

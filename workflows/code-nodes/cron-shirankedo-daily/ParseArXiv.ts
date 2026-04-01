@@ -11,15 +11,17 @@ export default function (): CodeNodeReturn {
     const titleMatch = block.match(/<title[^>]*>([\s\S]*?)<\/title>/);
     const linkMatch = block.match(/<id>([\s\S]*?)<\/id>/);
     const summaryMatch = block.match(/<summary[^>]*>([\s\S]*?)<\/summary>/);
+    const publishedMatch = block.match(/<published>([\s\S]*?)<\/published>/);
     const title = (titleMatch ? titleMatch[1] : "").replace(/\s+/g, " ").trim();
     const url = (linkMatch ? linkMatch[1] : "").trim();
     const desc = stripHtmlTags(summaryMatch ? summaryMatch[1] : "")
       .replace(/\s+/g, " ")
       .trim()
       .substring(0, 200);
+    const pubDate = (publishedMatch ? publishedMatch[1] : "").trim();
     if (title && url) {
       entries.push({
-        json: { title, url, description: desc, source: "arxiv" },
+        json: { title, url, description: desc, source: "arxiv", pubDate },
       });
     }
     if (entries.length >= 30) break;
