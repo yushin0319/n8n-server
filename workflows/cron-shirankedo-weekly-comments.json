@@ -52,6 +52,43 @@
     },
     {
       "parameters": {
+        "method": "GET",
+        "url": "https://shirankedo.y-fudo.workers.dev/api/ingest/trend-ranking?limit=10",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "name": "FetchTrendRanking",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2640,
+        900
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "CdkfLkdZEMFfnx8h",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "append",
+        "options": {}
+      },
+      "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "name": "MergeFetchResults",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [
+        2880,
+        800
+      ]
+    },
+    {
+      "parameters": {
         "jsCode": "// @external cron-shirankedo-weekly/PreparePageCommentPrompts.ts"
       },
       "id": "6c2f2427-13d9-4bab-94a7-007b6db8d48e",
@@ -59,8 +96,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2880,
-        700
+        3120,
+        800
       ]
     },
     {
@@ -570,6 +607,28 @@
       "main": [
         [
           {
+            "node": "MergeFetchResults",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FetchTrendRanking": {
+      "main": [
+        [
+          {
+            "node": "MergeFetchResults",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "MergeFetchResults": {
+      "main": [
+        [
+          {
             "node": "PreparePageCommentPrompts",
             "type": "main",
             "index": 0
@@ -873,6 +932,11 @@
         [
           {
             "node": "FetchRecentSummaries",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "FetchTrendRanking",
             "type": "main",
             "index": 0
           }
