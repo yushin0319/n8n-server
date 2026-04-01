@@ -23,6 +23,7 @@ interface ArticleCandidate {
   title: string;
   url: string;
   source: string;
+  pubDate?: string;
 }
 
 export default function (): CodeNodeReturn {
@@ -62,6 +63,7 @@ export default function (): CodeNodeReturn {
         source: original.source,
         impact: a.impact || 5,
         isPaper: 0,
+        pubDate: original.pubDate || "",
       },
     });
   }
@@ -82,6 +84,7 @@ export default function (): CodeNodeReturn {
         source: "arxiv",
         impact: paper.impact || 5,
         isPaper: 1,
+        pubDate: original.pubDate || "",
       },
     });
   }

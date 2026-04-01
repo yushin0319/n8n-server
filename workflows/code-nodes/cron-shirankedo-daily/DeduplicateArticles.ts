@@ -6,6 +6,7 @@ interface ArticleItem {
   url: string;
   description?: string;
   source: string;
+  pubDate?: string;
   link?: string;
   contentSnippet?: string;
 }
@@ -52,6 +53,7 @@ function extractRssItems(nodeName: string, sourceName: string): ArticleItem[] {
           (d.contentSnippet as string) || (d.description as string) || "",
         ).substring(0, 200),
         source: sourceName,
+        pubDate: (d.isoDate as string) || (d.pubDate as string) || "",
       };
     });
   } catch {

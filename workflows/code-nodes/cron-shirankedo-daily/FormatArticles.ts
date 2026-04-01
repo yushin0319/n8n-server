@@ -16,6 +16,7 @@ interface OriginalItem {
   source: string;
   impact: number;
   isPaper: number;
+  pubDate?: string;
 }
 
 export default function (): CodeNodeReturn {
@@ -25,6 +26,9 @@ export default function (): CodeNodeReturn {
 
   const summaries = parseGeminiJson<SummaryEntry[]>(geminiResponse);
 
+  // pubDateがない場合のフォールバック（WF実行時刻、ISO形式）
+  const fallbackDate = new Date().toISOString();
+
   const apiBody: IDataObject[] = [];
   for (const s of summaries) {
     const idx = (s.article_index || 1) - 1;
@@ -32,6 +36,10 @@ export default function (): CodeNodeReturn {
     if (!orig) continue;
     // title_ja があれば翻訳タイトルを使用、なければ元タイトル
     const title = s.title_ja || orig.title;
+    // RSSのpubDateがあればISO形式に正規化、なければWF実行時刻
+    const publishedAt = orig.pubDate
+      ? new Date(orig.pubDate).toISOString()
+      : fallbackDate;
     apiBody.push({
       url: orig.url,
       title,
@@ -41,7 +49,7 @@ export default function (): CodeNodeReturn {
       tags: s.tags || [],
       impact: orig.impact || 5,
       isPaper: orig.isPaper || 0,
-      publishedAt: new Date().toISOString().substring(0, 10),
+      publishedAt,
     });
   }
 
