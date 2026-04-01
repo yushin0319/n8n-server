@@ -1,6 +1,9 @@
 export default function (): CodeNodeReturn {
-  // 直近4週の週次サマリーからページコメント3件分のプロンプトを構築
-  const summaries = ($input.first().json.data || []) as IDataObject[];
+  // 週次サマリー + トレンドランキングからトレンドコメント用プロンプトを構築
+  const items = $input.all();
+  const summaries = (items[0]?.json.data || []) as IDataObject[];
+  const trendRanking = (items[1]?.json.data || []) as IDataObject[];
+
   const summaryText = summaries
     .map(
       (s: IDataObject, i: number) =>
@@ -8,9 +11,20 @@ export default function (): CodeNodeReturn {
     )
     .join("\n\n---\n\n");
 
-  if (!summaryText.trim()) {
+  const hasData = !!summaryText.trim() || trendRanking.length > 0;
+  if (!hasData) {
     return [{ json: { hasSummaries: false } }];
   }
+
+  // トレンドTOP10のテキスト化
+  const trendRankingText = trendRanking.length
+    ? trendRanking
+        .map(
+          (r: IDataObject, i: number) =>
+            `${i + 1}. **${r.displayName}** (${r.repo}) — ★${r.stars?.toLocaleString()} (+${r.diff?.toLocaleString()})\n   ${r.description} [${r.language}]`,
+        )
+        .join("\n")
+    : "（ランキングデータなし）";
 
   const toneRules = `## 口調ルール
   「ギャルっぽい記号を貼り付けた文章」ではなく「ギャルが実際に喋りそうな文章」を書け。
@@ -36,11 +50,20 @@ export default function (): CodeNodeReturn {
   ${formatRules}
 
   ## このコメントの役割
-  テック業界全体のトレンドページに表示される総評。
-  以下の週次レポートを参考にしつつ、今のテック業界で何が熱いか・どこに向かってるかを語れ。
-  具体的なプロジェクト名やツール名を挙げて、抽象論で逃げるな。
+  テック系トレンドページに表示される総評コメント。
+  このページにはGitHubリポジトリが★週間増加数順に並んでいる。
 
-  ## 直近の週次レポート
+  以下の「今週のトレンド TOP10」を主軸にコメントを書け。
+  - TOP10のうち最低2〜3個のリポ名（displayName）を具体的に挙げろ
+  - 「なぜ今伸びてるのか」「何がすごいのか」の視点で語れ
+  - 業界全体の抽象論で逃げるな。ページを見てる人が「あ、これの話してる」とわかるように
+
+  週次レポートは背景知識として参考にしてよいが、メインはトレンドリポの話。
+
+  ## 今週のトレンド TOP10
+  ${trendRankingText}
+
+  ## 参考: 直近の週次レポート
   ${summaryText}`;
 
   return [
