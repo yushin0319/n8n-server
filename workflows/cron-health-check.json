@@ -70,7 +70,10 @@
         0
       ],
       "name": "CheckHistLink",
-      "id": "hc-0002-4000-8000-000000000002"
+      "id": "hc-0002-4000-8000-000000000002",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
     },
     {
       "parameters": {},
