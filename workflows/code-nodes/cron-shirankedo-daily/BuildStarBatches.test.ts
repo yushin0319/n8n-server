@@ -44,6 +44,22 @@ describe("BuildStarBatches", () => {
     expect(query).toContain("nameWithOwner stargazerCount");
   });
 
+  it("repoMapにエイリアスと元リポ名のマッピングが含まれる", () => {
+    vi.stubGlobal("$input", {
+      first: () => ({
+        json: {
+          data: [{ repo: "owner1/repo1" }, { repo: "owner2/repo2" }],
+        },
+      }),
+    });
+
+    const items = callAndGetItems();
+    expect(items[0].json.repoMap).toEqual({
+      r0: "owner1/repo1",
+      r1: "owner2/repo2",
+    });
+  });
+
   it("60リポで2バッチに分割される（50件/バッチ）", () => {
     const repos = Array.from({ length: 60 }, (_, i) => ({
       repo: `owner/repo${i}`,
