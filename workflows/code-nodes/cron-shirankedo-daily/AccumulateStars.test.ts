@@ -90,6 +90,7 @@ describe("AccumulateStars", () => {
     // 初回バッチ済み
     staticData._starsInitialized = true;
     staticData.stars = [{ repo: "owner/batch1", stars: 100 }];
+    staticData.renames = [];
 
     vi.stubGlobal("$input", {
       first: () => ({
@@ -97,6 +98,7 @@ describe("AccumulateStars", () => {
           data: {
             repo0: { nameWithOwner: "owner/batch2", stargazerCount: 200 },
           },
+          repoMap: { repo0: "owner/batch2" },
         },
       }),
       all: () => [{ json: {} }],
@@ -105,5 +107,87 @@ describe("AccumulateStars", () => {
     accumulateStars();
     const stars = staticData.stars as IDataObject[];
     expect(stars).toHaveLength(2);
+  });
+
+  it("nameWithOwnerが元と同じならrenamesに追加されない", () => {
+    vi.stubGlobal("$input", {
+      first: () => ({
+        json: {
+          data: {
+            r0: { nameWithOwner: "owner/repo1", stargazerCount: 100 },
+          },
+          repoMap: { r0: "owner/repo1" },
+        },
+      }),
+      all: () => [{ json: {} }],
+    });
+
+    accumulateStars();
+    expect(staticData.renames).toHaveLength(0);
+  });
+
+  it("nameWithOwnerが元と異なればrenamesに追加される", () => {
+    vi.stubGlobal("$input", {
+      first: () => ({
+        json: {
+          data: {
+            r0: { nameWithOwner: "new-owner/new-repo", stargazerCount: 100 },
+          },
+          repoMap: { r0: "old-owner/old-repo" },
+        },
+      }),
+      all: () => [{ json: {} }],
+    });
+
+    accumulateStars();
+    const renames = staticData.renames as IDataObject[];
+    expect(renames).toHaveLength(1);
+    expect(renames[0]).toEqual({
+      from: "old-owner/old-repo",
+      to: "new-owner/new-repo",
+    });
+  });
+
+  it("nullリポはrenamesにもstarsにも追加されない", () => {
+    vi.stubGlobal("$input", {
+      first: () => ({
+        json: {
+          data: {
+            r0: null,
+          },
+          repoMap: { r0: "owner/repo1" },
+        },
+      }),
+      all: () => [{ json: {} }],
+    });
+
+    accumulateStars();
+    expect(staticData.stars).toHaveLength(0);
+    expect(staticData.renames).toHaveLength(0);
+  });
+
+  it("初回バッチでrenamesもクリアする", () => {
+    staticData.renames = [{ from: "stale/old", to: "stale/new" }];
+
+    vi.stubGlobal("$input", {
+      first: () => ({
+        json: {
+          data: {
+            r0: { nameWithOwner: "new-owner/repo", stargazerCount: 10 },
+          },
+          repoMap: { r0: "old-owner/repo" },
+        },
+      }),
+      all: () => [{ json: {} }],
+    });
+
+    accumulateStars();
+    const renames = staticData.renames as IDataObject[];
+    // ゴミデータがクリアされ、新しいリネームのみ
+    expect(renames).toHaveLength(1);
+    expect(renames[0]).toEqual({
+      from: "old-owner/repo",
+      to: "new-owner/repo",
+    });
   });
 });

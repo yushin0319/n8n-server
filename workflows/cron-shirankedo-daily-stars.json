@@ -220,7 +220,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2160,
+        3120,
         400
       ]
     },
@@ -340,11 +340,82 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        2050,
+        2880,
         400
       ],
       "name": "IfSkipDiscordNotifyStars",
       "id": "sw-0041-4000-8000-000000000041"
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external cron-shirankedo-daily/HandleRenames.ts"
+      },
+      "id": "a282a270-fcee-44b6-9775-305f720a6f40",
+      "name": "HandleRenames",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2160,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond-skip-post-renames",
+              "leftValue": "={{ $json.skip }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "6b24f413-6265-49e2-86f7-102d8b34b00a",
+      "name": "IfSkipPostRenames",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2400,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://shirankedo.y-fudo.workers.dev/api/ingest/repo-renames",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.requestBody }}",
+        "options": {}
+      },
+      "id": "6d84feae-e7c5-4c49-bf78-2b1fdf0218f9",
+      "name": "PostRenames",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2640,
+        300
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "CdkfLkdZEMFfnx8h",
+          "name": "Header Auth account"
+        }
+      }
     }
   ],
   "connections": {
@@ -491,6 +562,46 @@
       ]
     },
     "PrepareDiscordStars": {
+      "main": [
+        [
+          {
+            "node": "HandleRenames",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HandleRenames": {
+      "main": [
+        [
+          {
+            "node": "IfSkipPostRenames",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IfSkipPostRenames": {
+      "main": [
+        [
+          {
+            "node": "IfSkipDiscordNotifyStars",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PostRenames",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PostRenames": {
       "main": [
         [
           {

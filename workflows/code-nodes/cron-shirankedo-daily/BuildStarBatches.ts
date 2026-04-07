@@ -9,12 +9,20 @@ export default function (): CodeNodeReturn {
   const batches: INodeExecutionData[] = [];
   for (let i = 0; i < repos.length; i += batchSize) {
     const batch = repos.slice(i, i + batchSize);
+    const repoMap: Record<string, string> = {};
     const parts = batch.map((r: IDataObject, idx: number) => {
-      const [owner, name] = (r.repo as string).split("/");
-      return `r${i + idx}: repository(owner: "${safe(owner)}", name: "${safe(name)}") { nameWithOwner stargazerCount }`;
+      const alias = `r${i + idx}`;
+      const repoName = r.repo as string;
+      const [owner, name] = repoName.split("/");
+      repoMap[alias] = repoName;
+      return `${alias}: repository(owner: "${safe(owner)}", name: "${safe(name)}") { nameWithOwner stargazerCount }`;
     });
     batches.push({
-      json: { query: `{${parts.join(" ")}}`, batchIndex: batches.length },
+      json: {
+        query: `{${parts.join(" ")}}`,
+        repoMap,
+        batchIndex: batches.length,
+      },
     });
   }
   return batches;
