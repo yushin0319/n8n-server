@@ -212,7 +212,7 @@
         "url": "http://localhost:5678/webhook/discord-notify",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ message: $json.message }) }}",
+        "jsonBody": "={{ JSON.stringify({ message: $('PrepareDiscordStars').item.json.message }) }}",
         "options": {}
       },
       "id": "1f86dd7a-33db-4e23-a078-a3470678f59d",
