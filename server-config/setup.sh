@@ -32,16 +32,16 @@ if ! dpkg -l 2>/dev/null | grep -q '^ii  fail2ban'; then
 fi
 
 F2B_JAIL=/etc/fail2ban/jail.d/sshd.local
-if [ ! -f "$F2B_JAIL" ] || ! grep -q "maxretry = 5" "$F2B_JAIL" 2>/dev/null; then
-  log "Writing $F2B_JAIL"
-  sudo tee "$F2B_JAIL" > /dev/null <<'JAIL'
-[sshd]
+F2B_EXPECTED='[sshd]
 enabled = true
 port = 22
 maxretry = 5
 findtime = 10m
-bantime = 1h
-JAIL
+bantime = 1h'
+
+if [ ! -f "$F2B_JAIL" ] || ! sudo diff -q "$F2B_JAIL" <(echo "$F2B_EXPECTED") >/dev/null 2>&1; then
+  log "Writing $F2B_JAIL"
+  echo "$F2B_EXPECTED" | sudo tee "$F2B_JAIL" > /dev/null
   sudo systemctl enable --now fail2ban
   sudo systemctl restart fail2ban
 fi
