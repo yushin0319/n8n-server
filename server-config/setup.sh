@@ -48,14 +48,15 @@ fi
 
 # ==========================================================================
 # 3. sshd ハードニング: X11Forwarding / PermitRootLogin を明示的に無効化
+#    ファイル内容を比較し、期待値と異なる場合のみ書き換える（手動改変も元に戻す）
 # ==========================================================================
 SSHD_HARDENING=/etc/ssh/sshd_config.d/99-hardening.conf
-if [ ! -f "$SSHD_HARDENING" ]; then
+SSHD_EXPECTED='X11Forwarding no
+PermitRootLogin no'
+
+if [ ! -f "$SSHD_HARDENING" ] || ! sudo diff -q "$SSHD_HARDENING" <(echo "$SSHD_EXPECTED") >/dev/null 2>&1; then
   log "Writing $SSHD_HARDENING"
-  sudo tee "$SSHD_HARDENING" > /dev/null <<'SSHD'
-X11Forwarding no
-PermitRootLogin no
-SSHD
+  echo "$SSHD_EXPECTED" | sudo tee "$SSHD_HARDENING" > /dev/null
   if sudo sshd -t; then
     sudo systemctl reload sshd
   else
@@ -66,13 +67,18 @@ SSHD
 fi
 
 # ==========================================================================
-# 4. unattended-upgrades (自動セキュリティパッチ): 既にインストール済み/有効想定
-#    状態のみ確認
+# 4. unattended-upgrades (自動セキュリティパッチ): 未インストールなら install、
+#    非アクティブなら enable --now
 # ==========================================================================
-if systemctl is-active --quiet unattended-upgrades; then
-  log "unattended-upgrades active"
-else
-  log "WARN: unattended-upgrades not active — investigate"
+if ! dpkg -l 2>/dev/null | grep -q '^ii  unattended-upgrades'; then
+  log "Installing unattended-upgrades"
+  sudo DEBIAN_FRONTEND=noninteractive apt-get update -qq
+  sudo DEBIAN_FRONTEND=noninteractive apt-get install -qqy unattended-upgrades
+fi
+
+if ! systemctl is-active --quiet unattended-upgrades; then
+  log "Enabling unattended-upgrades"
+  sudo systemctl enable --now unattended-upgrades
 fi
 
 # ==========================================================================
