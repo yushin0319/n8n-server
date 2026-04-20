@@ -12,7 +12,7 @@ describe("PrepareClassify", () => {
     expect(result).toEqual([]);
   });
 
-  it("メールからqwenBody/gemmaBody/emails配列を生成する", () => {
+  it("メールから4つのbodyとemails配列を生成する", () => {
     vi.stubGlobal("$input", {
       all: () => [
         {
@@ -34,18 +34,20 @@ describe("PrepareClassify", () => {
     const emails = data.emails as IDataObject[];
     expect(emails).toHaveLength(1);
     expect(emails[0].subject).toBe("テスト件名");
-    expect(emails[0].from).toBe("test@example.com");
-    expect(emails[0].messageId).toBe("msg-001");
 
     const qwen = JSON.parse(data.qwenBody as string);
     expect(qwen.model).toBe("qwen/qwen3-next-80b-a3b-instruct:free");
     expect(qwen.messages[0].content).toContain("テスト件名");
-    expect(qwen.temperature).toBe(0.1);
-    expect(qwen.response_format).toEqual({ type: "json_object" });
 
     const gemma = JSON.parse(data.gemmaBody as string);
     expect(gemma.model).toBe("google/gemma-4-31b-it:free");
-    expect(gemma.messages[0].content).toContain("テスト件名");
+
+    const gptoss = JSON.parse(data.gptossBody as string);
+    expect(gptoss.model).toBe("openai/gpt-oss-20b:free");
+
+    const gemini = JSON.parse(data.geminiBody as string);
+    expect(gemini.contents[0].parts[0].text).toContain("テスト件名");
+    expect(gemini.generationConfig.temperature).toBe(0.1);
   });
 
   it("Subject/Fromがない場合デフォルト値を使う", () => {

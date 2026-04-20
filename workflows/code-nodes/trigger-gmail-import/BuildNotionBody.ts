@@ -1,10 +1,14 @@
+import { parseGeminiText } from "../_shared/gemini";
 import { parseOpenRouterText } from "../_shared/openrouter";
 
 export default function (): CodeNodeReturn {
   const classifyResponse = $input.first().json;
   const emailData = $("PrepareClassify").first().json.emails as IDataObject[];
 
-  const responseText = parseOpenRouterText(classifyResponse);
+  // OpenRouter形式とGemini形式の両方に対応（どちらで成功したか不明なので両方試す）
+  const responseText =
+    parseOpenRouterText(classifyResponse) || parseGeminiText(classifyResponse);
+
   let classifications: IDataObject[] = [];
   try {
     const parsed = JSON.parse(responseText as string);
