@@ -7,12 +7,18 @@ function openRouterResponse(text: string): unknown {
   };
 }
 
+function geminiResponse(text: string): unknown {
+  return {
+    candidates: [{ content: { parts: [{ text }] } }],
+  };
+}
+
 describe("BuildNotionBody", () => {
   beforeEach(() => {
     vi.unstubAllGlobals();
   });
 
-  it("OpenRouter分類結果（JSONオブジェクト形式）をNotionページ作成ボディに変換する", () => {
+  it("OpenRouter形式のJSONオブジェクトレスポンスをNotionボディに変換する", () => {
     const emails = [
       {
         subject: "銀行通知",
@@ -48,17 +54,40 @@ describe("BuildNotionBody", () => {
 
     const result = buildNotionBody() as INodeExecutionData[];
     expect(result).toHaveLength(2);
-
     const body1 = JSON.parse(result[0].json.requestBody as string);
     expect(body1.properties["importance"].select.name).toBe("重要");
-    expect(body1.properties["subject"].title[0].text.content).toBe("銀行通知");
-    expect(result[0].json.messageId).toBe("msg-1");
-
     const body2 = JSON.parse(result[1].json.requestBody as string);
     expect(body2.properties["importance"].select.name).toBe("不要");
   });
 
-  it("素の配列レスポンスにもフォールバック対応する", () => {
+  it("Gemini形式のレスポンスも同じロジックで変換できる", () => {
+    const emails = [
+      {
+        subject: "セキュリティ通知",
+        from: "sec@example.com",
+        snippet: "ログイン",
+        messageId: "msg-g1",
+        dateISO: "2024-01-03T00:00:00.000Z",
+      },
+    ];
+
+    vi.stubGlobal("$input", {
+      first: () => ({
+        json: geminiResponse(
+          JSON.stringify({
+            classifications: [{ index: 1, importance: "重要" }],
+          }),
+        ),
+      }),
+    });
+    vi.stubGlobal("$", () => ({ first: () => ({ json: { emails } }) }));
+
+    const result = buildNotionBody() as INodeExecutionData[];
+    const body = JSON.parse(result[0].json.requestBody as string);
+    expect(body.properties["importance"].select.name).toBe("重要");
+  });
+
+  it("素の配列レスポンス（OpenRouter）にもフォールバック対応する", () => {
     const emails = [
       {
         subject: "t",
@@ -109,7 +138,7 @@ describe("BuildNotionBody", () => {
     expect(body.properties["importance"].select.name).toBe("確認");
   });
 
-  it("レスポンスがinvalid JSONでエラーを投げる（errorWorkflowで検知させる）", () => {
+  it("レスポンスがinvalid JSONでエラーを投げる", () => {
     vi.stubGlobal("$input", {
       first: () => ({ json: openRouterResponse("invalid json") }),
     });

@@ -136,9 +136,6 @@
       "name": "QwenClassify",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "retryOnFail": true,
-      "maxTries": 3,
-      "waitBetweenTries": 5000,
       "onError": "continueErrorOutput",
       "position": [
         1100,
@@ -166,9 +163,6 @@
       "name": "GemmaClassify",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "retryOnFail": true,
-      "maxTries": 3,
-      "waitBetweenTries": 5000,
       "onError": "continueErrorOutput",
       "position": [
         1100,
@@ -184,10 +178,67 @@
     {
       "parameters": {
         "method": "POST",
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $('PrepareClassify').first().json.gptossBody }}",
+        "options": {}
+      },
+      "id": "a3f",
+      "name": "GptossClassify",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "onError": "continueErrorOutput",
+      "position": [
+        1100,
+        420
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "y72Emffsth57f2Ai",
+          "name": "OpenRouter API key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $('PrepareClassify').first().json.geminiBody }}",
+        "options": {}
+      },
+      "id": "a3g",
+      "name": "GeminiClassify",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "onError": "continueErrorOutput",
+      "position": [
+        1100,
+        580
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "rlflsmwVLnPi2SAN",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
         "url": "http://localhost:5678/webhook/discord-notify",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ message: '⚠ gmail-import: Qwen + DeepSeek 両方が失敗、この回の分類をスキップ（次回実行で再試行）' }) }}",
+        "jsonBody": "={{ JSON.stringify({ message: '⚠ gmail-import: Qwen/Gemma/Gptoss/Gemini 全て失敗、この回の分類をスキップ（次回実行で再試行）' }) }}",
         "options": {}
       },
       "id": "a3e",
@@ -196,7 +247,7 @@
       "typeVersion": 4.2,
       "position": [
         1320,
-        260
+        580
       ]
     },
     {
@@ -462,6 +513,42 @@
       ]
     },
     "GemmaClassify": {
+      "main": [
+        [
+          {
+            "node": "BuildNotionBody",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "GptossClassify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GptossClassify": {
+      "main": [
+        [
+          {
+            "node": "BuildNotionBody",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "GeminiClassify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GeminiClassify": {
       "main": [
         [
           {

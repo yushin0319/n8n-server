@@ -1,3 +1,4 @@
+import { buildGeminiRequest } from "../_shared/gemini";
 import { buildOpenRouterRequest } from "../_shared/openrouter";
 
 export default function (): CodeNodeReturn {
@@ -49,18 +50,24 @@ ${emailList}
 以下のJSON形式で返答してください（他のテキストは不要）:
 {"classifications": [{"index": 1, "importance": "重要"}, {"index": 2, "importance": "不要"}, ...]}`;
 
+  const openRouterOpts = { prompt, temperature: 0.1, maxTokens: 1000 };
   const qwenBody = buildOpenRouterRequest({
-    prompt,
+    ...openRouterOpts,
     model: "qwen/qwen3-next-80b-a3b-instruct:free",
-    temperature: 0.1,
-    maxTokens: 1000,
   });
   const gemmaBody = buildOpenRouterRequest({
-    prompt,
+    ...openRouterOpts,
     model: "google/gemma-4-31b-it:free",
+  });
+  const gptossBody = buildOpenRouterRequest({
+    ...openRouterOpts,
+    model: "openai/gpt-oss-20b:free",
+  });
+  const geminiBody = buildGeminiRequest({
+    prompt,
     temperature: 0.1,
-    maxTokens: 1000,
+    maxOutputTokens: 1000,
   });
 
-  return [{ json: { qwenBody, gemmaBody, emails } }];
+  return [{ json: { qwenBody, gemmaBody, gptossBody, geminiBody, emails } }];
 }
