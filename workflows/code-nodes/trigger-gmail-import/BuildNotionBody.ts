@@ -4,24 +4,35 @@ export default function (): CodeNodeReturn {
   const classifyResponse = $input.first().json;
   const emailData = $("PrepareClassify").first().json.emails as IDataObject[];
 
-  let classifications: IDataObject[] = [];
   const responseText = parseOpenRouterText(classifyResponse);
+  let classifications: IDataObject[] = [];
   try {
     const parsed = JSON.parse(responseText as string);
     if (Array.isArray(parsed)) {
       classifications = parsed;
     } else if (Array.isArray((parsed as any)?.classifications)) {
       classifications = (parsed as any).classifications;
+    } else {
+      throw new Error(
+        "BuildNotionBody: 分類結果が配列でもclassificationsキーでもない: " +
+          (responseText as string).substring(0, 200),
+      );
     }
   } catch (_e) {
-    // JSONでないレスポンスは配列抽出でフォールバック
+    // JSONパース失敗時は素のテキスト内から配列を抽出してフォールバック
     const jsonMatch = (responseText as string).match(/\[[\s\S]*\]/);
-    if (jsonMatch) {
-      try {
-        classifications = JSON.parse(jsonMatch[0]);
-      } catch (_) {
-        classifications = [];
-      }
+    if (!jsonMatch) {
+      throw new Error(
+        "BuildNotionBody: 分類結果のパースに失敗（JSON形式でも配列抽出でも取得不可）: " +
+          (responseText as string).substring(0, 200),
+      );
+    }
+    try {
+      classifications = JSON.parse(jsonMatch[0]);
+    } catch (e: any) {
+      throw new Error(
+        "BuildNotionBody: 抽出した配列のパースに失敗: " + e.message,
+      );
     }
   }
 

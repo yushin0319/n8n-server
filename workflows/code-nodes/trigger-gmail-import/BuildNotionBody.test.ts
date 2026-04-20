@@ -109,7 +109,7 @@ describe("BuildNotionBody", () => {
     expect(body.properties["importance"].select.name).toBe("確認");
   });
 
-  it("レスポンスがinvalid JSONでも落ちず空配列を返す", () => {
+  it("レスポンスがinvalid JSONでエラーを投げる（errorWorkflowで検知させる）", () => {
     vi.stubGlobal("$input", {
       first: () => ({ json: openRouterResponse("invalid json") }),
     });
@@ -117,7 +117,8 @@ describe("BuildNotionBody", () => {
       first: () => ({ json: { emails: [] } }),
     }));
 
-    const result = buildNotionBody() as INodeExecutionData[];
-    expect(result).toHaveLength(0);
+    expect(() => buildNotionBody()).toThrow(
+      "BuildNotionBody: 分類結果のパースに失敗",
+    );
   });
 });
