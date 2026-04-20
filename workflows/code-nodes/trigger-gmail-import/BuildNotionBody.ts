@@ -1,20 +1,29 @@
-import { parseGeminiText } from "../_shared/gemini";
+import { parseOpenRouterText } from "../_shared/openrouter";
 
 export default function (): CodeNodeReturn {
-  const geminiResponse = $input.first().json;
+  const classifyResponse = $input.first().json;
   const emailData = $("PrepareClassify").first().json.emails as IDataObject[];
 
   let classifications: IDataObject[] = [];
   try {
-    const responseText = parseGeminiText(geminiResponse);
+    const responseText = parseOpenRouterText(classifyResponse);
+    const parsed = JSON.parse(responseText as string);
+    if (Array.isArray(parsed)) {
+      classifications = parsed;
+    } else if (Array.isArray((parsed as any)?.classifications)) {
+      classifications = (parsed as any).classifications;
+    }
+  } catch (_e) {
+    // JSONでないレスポンスは配列抽出でフォールバック
+    const responseText = parseOpenRouterText(classifyResponse);
     const jsonMatch = (responseText as string).match(/\[[\s\S]*\]/);
     if (jsonMatch) {
-      classifications = JSON.parse(jsonMatch[0]);
+      try {
+        classifications = JSON.parse(jsonMatch[0]);
+      } catch (_) {
+        classifications = [];
+      }
     }
-  } catch (e: any) {
-    throw new Error(
-      "BuildNotionBody: Gemini分類結果のパースに失敗: " + e.message,
-    );
   }
 
   const classMap: Record<number, string> = {};

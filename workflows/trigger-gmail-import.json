@@ -86,7 +86,7 @@
           },
           "conditions": [
             {
-              "id": "gm-cond-skip-gemini",
+              "id": "gm-cond-skip-classify",
               "leftValue": "={{ $execution.customData.get('isTest') }}",
               "rightValue": "true",
               "operator": {
@@ -105,12 +105,12 @@
         880,
         0
       ],
-      "name": "IfSkipGemini",
+      "name": "IfSkipClassify",
       "id": "gm-0012-4000-8000-000000000012"
     },
     {
       "parameters": {
-        "jsCode": "// @external trigger-gmail-import/MockGeminiClassify.ts"
+        "jsCode": "// @external trigger-gmail-import/MockClassify.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -118,34 +118,86 @@
         1100,
         -100
       ],
-      "name": "MockGeminiClassify",
+      "name": "MockClassify",
       "id": "gm-0013-4000-8000-000000000013"
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "googlePalmApi",
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ $json.geminiBody }}",
+        "jsonBody": "={{ $json.qwenBody }}",
         "options": {}
       },
       "id": "a3b",
-      "name": "GeminiClassify",
+      "name": "QwenClassify",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "onError": "continueErrorOutput",
       "position": [
         1100,
         100
       ],
       "credentials": {
-        "googlePalmApi": {
-          "id": "rlflsmwVLnPi2SAN",
-          "name": "Google Gemini(PaLM) Api account"
+        "httpHeaderAuth": {
+          "id": "y72Emffsth57f2Ai",
+          "name": "OpenRouter API key"
         }
       }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $('PrepareClassify').first().json.deepseekBody }}",
+        "options": {}
+      },
+      "id": "a3d",
+      "name": "DeepSeekClassify",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "onError": "continueErrorOutput",
+      "position": [
+        1100,
+        260
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "y72Emffsth57f2Ai",
+          "name": "OpenRouter API key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:5678/webhook/discord-notify",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ message: '⚠ gmail-import: Qwen + DeepSeek 両方が失敗、この回の分類をスキップ（次回実行で再試行）' }) }}",
+        "options": {}
+      },
+      "id": "a3e",
+      "name": "NotifyClassifyFailure",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1320,
+        260
+      ]
     },
     {
       "parameters": {
@@ -355,32 +407,32 @@
       "main": [
         [
           {
-            "node": "IfSkipGemini",
+            "node": "IfSkipClassify",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "IfSkipGemini": {
+    "IfSkipClassify": {
       "main": [
         [
           {
-            "node": "MockGeminiClassify",
+            "node": "MockClassify",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "GeminiClassify",
+            "node": "QwenClassify",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "MockGeminiClassify": {
+    "MockClassify": {
       "main": [
         [
           {
@@ -391,11 +443,36 @@
         ]
       ]
     },
-    "GeminiClassify": {
+    "QwenClassify": {
       "main": [
         [
           {
             "node": "BuildNotionBody",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "DeepSeekClassify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DeepSeekClassify": {
+      "main": [
+        [
+          {
+            "node": "BuildNotionBody",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "NotifyClassifyFailure",
             "type": "main",
             "index": 0
           }

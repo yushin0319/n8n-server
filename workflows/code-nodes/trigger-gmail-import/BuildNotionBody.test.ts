@@ -1,12 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import buildNotionBody from "./BuildNotionBody";
 
+function openRouterResponse(text: string): unknown {
+  return {
+    choices: [{ message: { role: "assistant", content: text } }],
+  };
+}
+
 describe("BuildNotionBody", () => {
   beforeEach(() => {
     vi.unstubAllGlobals();
   });
 
-  it("Gemini分類結果をNotionページ作成ボディに変換する", () => {
+  it("OpenRouter分類結果（JSONオブジェクト形式）をNotionページ作成ボディに変換する", () => {
     const emails = [
       {
         subject: "銀行通知",
@@ -26,22 +32,14 @@ describe("BuildNotionBody", () => {
 
     vi.stubGlobal("$input", {
       first: () => ({
-        json: {
-          candidates: [
-            {
-              content: {
-                parts: [
-                  {
-                    text: JSON.stringify([
-                      { index: 1, importance: "重要" },
-                      { index: 2, importance: "不要" },
-                    ]),
-                  },
-                ],
-              },
-            },
-          ],
-        },
+        json: openRouterResponse(
+          JSON.stringify({
+            classifications: [
+              { index: 1, importance: "重要" },
+              { index: 2, importance: "不要" },
+            ],
+          }),
+        ),
       }),
     });
     vi.stubGlobal("$", (_name: string) => ({
@@ -51,23 +49,43 @@ describe("BuildNotionBody", () => {
     const result = buildNotionBody() as INodeExecutionData[];
     expect(result).toHaveLength(2);
 
-    // 1件目: 重要
     const body1 = JSON.parse(result[0].json.requestBody as string);
     expect(body1.properties["importance"].select.name).toBe("重要");
     expect(body1.properties["subject"].title[0].text.content).toBe("銀行通知");
     expect(result[0].json.messageId).toBe("msg-1");
 
-    // 2件目: 不要
     const body2 = JSON.parse(result[1].json.requestBody as string);
     expect(body2.properties["importance"].select.name).toBe("不要");
+  });
+
+  it("素の配列レスポンスにもフォールバック対応する", () => {
+    const emails = [
+      {
+        subject: "t",
+        from: "a@b.com",
+        snippet: "",
+        messageId: "m1",
+        dateISO: "2024-01-01T00:00:00.000Z",
+      },
+    ];
+    vi.stubGlobal("$input", {
+      first: () => ({
+        json: openRouterResponse(
+          JSON.stringify([{ index: 1, importance: "重要" }]),
+        ),
+      }),
+    });
+    vi.stubGlobal("$", () => ({ first: () => ({ json: { emails } }) }));
+
+    const result = buildNotionBody() as INodeExecutionData[];
+    const body = JSON.parse(result[0].json.requestBody as string);
+    expect(body.properties["importance"].select.name).toBe("重要");
   });
 
   it("分類がない場合デフォルトで確認を使う", () => {
     vi.stubGlobal("$input", {
       first: () => ({
-        json: {
-          candidates: [{ content: { parts: [{ text: "[]" }] } }],
-        },
+        json: openRouterResponse(JSON.stringify({ classifications: [] })),
       }),
     });
     vi.stubGlobal("$", () => ({
@@ -91,20 +109,14 @@ describe("BuildNotionBody", () => {
     expect(body.properties["importance"].select.name).toBe("確認");
   });
 
-  it("Geminiレスポンスのパースに失敗したらエラーを投げる", () => {
+  it("レスポンスがinvalid JSONでも落ちず空配列を返す", () => {
     vi.stubGlobal("$input", {
-      first: () => ({
-        json: {
-          candidates: [{ content: { parts: [{ text: "invalid json" }] } }],
-        },
-      }),
+      first: () => ({ json: openRouterResponse("invalid json") }),
     });
     vi.stubGlobal("$", () => ({
       first: () => ({ json: { emails: [] } }),
     }));
 
-    // 配列がマッチしないので classifications は空 → emailData.map で空配列が返る
-    // パースエラーにはならない（jsonMatchがnull）
     const result = buildNotionBody() as INodeExecutionData[];
     expect(result).toHaveLength(0);
   });
