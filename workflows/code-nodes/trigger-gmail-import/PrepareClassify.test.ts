@@ -12,7 +12,7 @@ describe("PrepareClassify", () => {
     expect(result).toEqual([]);
   });
 
-  it("メールからqwenBody/deepseekBody/emails配列を生成する", () => {
+  it("メールからqwenBody/gemmaBody/emails配列を生成する", () => {
     vi.stubGlobal("$input", {
       all: () => [
         {
@@ -38,14 +38,14 @@ describe("PrepareClassify", () => {
     expect(emails[0].messageId).toBe("msg-001");
 
     const qwen = JSON.parse(data.qwenBody as string);
-    expect(qwen.model).toBe("qwen/qwen3-30b-a3b:free");
+    expect(qwen.model).toBe("qwen/qwen3-next-80b-a3b-instruct:free");
     expect(qwen.messages[0].content).toContain("テスト件名");
     expect(qwen.temperature).toBe(0.1);
     expect(qwen.response_format).toEqual({ type: "json_object" });
 
-    const ds = JSON.parse(data.deepseekBody as string);
-    expect(ds.model).toBe("deepseek/deepseek-chat-v3.1:free");
-    expect(ds.messages[0].content).toContain("テスト件名");
+    const gemma = JSON.parse(data.gemmaBody as string);
+    expect(gemma.model).toBe("google/gemma-4-31b-it:free");
+    expect(gemma.messages[0].content).toContain("テスト件名");
   });
 
   it("Subject/Fromがない場合デフォルト値を使う", () => {

@@ -51,16 +51,16 @@ ${emailList}
 
   const qwenBody = buildOpenRouterRequest({
     prompt,
-    model: "qwen/qwen3-30b-a3b:free",
+    model: "qwen/qwen3-next-80b-a3b-instruct:free",
     temperature: 0.1,
     maxTokens: 1000,
   });
-  const deepseekBody = buildOpenRouterRequest({
+  const gemmaBody = buildOpenRouterRequest({
     prompt,
-    model: "deepseek/deepseek-chat-v3.1:free",
+    model: "google/gemma-4-31b-it:free",
     temperature: 0.1,
     maxTokens: 1000,
   });
 
-  return [{ json: { qwenBody, deepseekBody, emails } }];
+  return [{ json: { qwenBody, gemmaBody, emails } }];
 }

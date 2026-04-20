@@ -159,11 +159,11 @@
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ $('PrepareClassify').first().json.deepseekBody }}",
+        "jsonBody": "={{ $('PrepareClassify').first().json.gemmaBody }}",
         "options": {}
       },
       "id": "a3d",
-      "name": "DeepSeekClassify",
+      "name": "GemmaClassify",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "retryOnFail": true,
@@ -454,14 +454,14 @@
         ],
         [
           {
-            "node": "DeepSeekClassify",
+            "node": "GemmaClassify",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "DeepSeekClassify": {
+    "GemmaClassify": {
       "main": [
         [
           {
