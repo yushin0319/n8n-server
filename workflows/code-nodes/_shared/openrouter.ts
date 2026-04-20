@@ -37,7 +37,7 @@ export function parseOpenRouterText(
 export function mockOpenRouterResponse(text: string): IDataObject {
   return {
     choices: [{ message: { role: "assistant", content: text } }],
-  } as unknown as IDataObject;
+  } as IDataObject;
 }
 
 /** OpenRouterレスポンスからテキストを取得してJSONパースする */

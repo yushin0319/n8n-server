@@ -5,8 +5,8 @@ export default function (): CodeNodeReturn {
   const emailData = $("PrepareClassify").first().json.emails as IDataObject[];
 
   let classifications: IDataObject[] = [];
+  const responseText = parseOpenRouterText(classifyResponse);
   try {
-    const responseText = parseOpenRouterText(classifyResponse);
     const parsed = JSON.parse(responseText as string);
     if (Array.isArray(parsed)) {
       classifications = parsed;
@@ -15,7 +15,6 @@ export default function (): CodeNodeReturn {
     }
   } catch (_e) {
     // JSONでないレスポンスは配列抽出でフォールバック
-    const responseText = parseOpenRouterText(classifyResponse);
     const jsonMatch = (responseText as string).match(/\[[\s\S]*\]/);
     if (jsonMatch) {
       try {
