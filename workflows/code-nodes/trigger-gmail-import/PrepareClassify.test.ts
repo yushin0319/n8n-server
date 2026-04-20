@@ -12,7 +12,7 @@ describe("PrepareClassify", () => {
     expect(result).toEqual([]);
   });
 
-  it("メールからgeminiBodyとemails配列を生成する", () => {
+  it("メールからqwenBody/deepseekBody/emails配列を生成する", () => {
     vi.stubGlobal("$input", {
       all: () => [
         {
@@ -31,17 +31,21 @@ describe("PrepareClassify", () => {
     expect(result).toHaveLength(1);
     const data = result[0].json;
 
-    // emails配列の検証
     const emails = data.emails as IDataObject[];
     expect(emails).toHaveLength(1);
     expect(emails[0].subject).toBe("テスト件名");
     expect(emails[0].from).toBe("test@example.com");
     expect(emails[0].messageId).toBe("msg-001");
 
-    // geminiBodyがJSON文字列であること
-    const parsed = JSON.parse(data.geminiBody as string);
-    expect(parsed.contents[0].parts[0].text).toContain("テスト件名");
-    expect(parsed.generationConfig.temperature).toBe(0.1);
+    const qwen = JSON.parse(data.qwenBody as string);
+    expect(qwen.model).toBe("qwen/qwen3-30b-a3b:free");
+    expect(qwen.messages[0].content).toContain("テスト件名");
+    expect(qwen.temperature).toBe(0.1);
+    expect(qwen.response_format).toEqual({ type: "json_object" });
+
+    const ds = JSON.parse(data.deepseekBody as string);
+    expect(ds.model).toBe("deepseek/deepseek-chat-v3.1:free");
+    expect(ds.messages[0].content).toContain("テスト件名");
   });
 
   it("Subject/Fromがない場合デフォルト値を使う", () => {

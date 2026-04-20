@@ -1,20 +1,39 @@
-import { parseGeminiText } from "../_shared/gemini";
+import { parseOpenRouterText } from "../_shared/openrouter";
 
 export default function (): CodeNodeReturn {
-  const geminiResponse = $input.first().json;
+  const classifyResponse = $input.first().json;
   const emailData = $("PrepareClassify").first().json.emails as IDataObject[];
 
+  const responseText = parseOpenRouterText(classifyResponse);
   let classifications: IDataObject[] = [];
   try {
-    const responseText = parseGeminiText(geminiResponse);
-    const jsonMatch = (responseText as string).match(/\[[\s\S]*\]/);
-    if (jsonMatch) {
-      classifications = JSON.parse(jsonMatch[0]);
+    const parsed = JSON.parse(responseText as string);
+    if (Array.isArray(parsed)) {
+      classifications = parsed;
+    } else if (Array.isArray((parsed as any)?.classifications)) {
+      classifications = (parsed as any).classifications;
+    } else {
+      throw new Error(
+        "BuildNotionBody: 分類結果が配列でもclassificationsキーでもない: " +
+          (responseText as string).substring(0, 200),
+      );
     }
-  } catch (e: any) {
-    throw new Error(
-      "BuildNotionBody: Gemini分類結果のパースに失敗: " + e.message,
-    );
+  } catch (_e) {
+    // JSONパース失敗時は素のテキスト内から配列を抽出してフォールバック
+    const jsonMatch = (responseText as string).match(/\[[\s\S]*\]/);
+    if (!jsonMatch) {
+      throw new Error(
+        "BuildNotionBody: 分類結果のパースに失敗（JSON形式でも配列抽出でも取得不可）: " +
+          (responseText as string).substring(0, 200),
+      );
+    }
+    try {
+      classifications = JSON.parse(jsonMatch[0]);
+    } catch (e: any) {
+      throw new Error(
+        "BuildNotionBody: 抽出した配列のパースに失敗: " + e.message,
+      );
+    }
   }
 
   const classMap: Record<number, string> = {};

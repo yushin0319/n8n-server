@@ -1,4 +1,4 @@
-import { buildGeminiRequest } from "../_shared/gemini";
+import { buildOpenRouterRequest } from "../_shared/openrouter";
 
 export default function (): CodeNodeReturn {
   const items = $input.all();
@@ -46,14 +46,21 @@ export default function (): CodeNodeReturn {
 メール一覧:
 ${emailList}
 
-JSON配列で返答してください（他のテキストは不要）:
-[{"index": 1, "importance": "重要"}, {"index": 2, "importance": "不要"}, ...]`;
+以下のJSON形式で返答してください（他のテキストは不要）:
+{"classifications": [{"index": 1, "importance": "重要"}, {"index": 2, "importance": "不要"}, ...]}`;
 
-  const geminiBody = buildGeminiRequest({
+  const qwenBody = buildOpenRouterRequest({
     prompt,
+    model: "qwen/qwen3-30b-a3b:free",
     temperature: 0.1,
-    maxOutputTokens: 1000,
+    maxTokens: 1000,
+  });
+  const deepseekBody = buildOpenRouterRequest({
+    prompt,
+    model: "deepseek/deepseek-chat-v3.1:free",
+    temperature: 0.1,
+    maxTokens: 1000,
   });
 
-  return [{ json: { geminiBody, emails } }];
+  return [{ json: { qwenBody, deepseekBody, emails } }];
 }
