@@ -14,7 +14,7 @@ import subprocess
 import sys
 import textwrap
 
-# Windows では npx を shell 経由で呼ぶ必要がある
+# Windows では bunx を shell 経由で呼ぶ必要がある
 _SHELL = platform.system() == "Windows"
 
 sys.stdout.reconfigure(encoding="utf-8")
@@ -78,7 +78,7 @@ def extract_function_body(esbuild_output):
         # (C) ヘルパー関数あり: ヘルパー部分はそのまま残し、_default のボディだけアンラップ
         helper_lines = lines[:default_idx]
         # _default 関数の宣言行と閉じ } を除去してボディを取得
-        default_body = lines[default_idx + 1:-1]
+        default_body = lines[default_idx + 1 : -1]
         dedented_body = textwrap.dedent("\n".join(default_body))
         return "\n".join(helper_lines).strip("\n") + "\n" + dedented_body.strip("\n")
 
@@ -94,7 +94,9 @@ def compile_ts(file_path):
     """esbuild で .ts → .js にコンパイルする（import解決 + 型除去）."""
     result = subprocess.run(
         [
-            "npx", "esbuild", file_path,
+            "bunx",
+            "esbuild",
+            file_path,
             "--bundle",
             "--format=esm",
             "--target=es2022",
@@ -106,9 +108,7 @@ def compile_ts(file_path):
         shell=_SHELL,
     )
     if result.returncode != 0:
-        raise RuntimeError(
-            f"esbuild コンパイルエラー: {file_path}\n{result.stderr}"
-        )
+        raise RuntimeError(f"esbuild コンパイルエラー: {file_path}\n{result.stderr}")
     return result.stdout
 
 
@@ -117,7 +117,7 @@ def resolve_external(js_code):
     if not js_code.startswith(EXTERNAL_PREFIX):
         return js_code
 
-    ref_path = js_code[len(EXTERNAL_PREFIX):].strip()
+    ref_path = js_code[len(EXTERNAL_PREFIX) :].strip()
     file_path = os.path.join(CODE_NODES_DIR, ref_path)
 
     if not os.path.isfile(file_path):
