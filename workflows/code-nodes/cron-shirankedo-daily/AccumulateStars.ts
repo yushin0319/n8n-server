@@ -12,7 +12,7 @@ export default function (): CodeNodeReturn {
   const repoMap = ($input.first().json.repoMap || {}) as Record<string, string>;
   for (const key of Object.keys(data)) {
     const repo = data[key] as IDataObject | null;
-    if (!repo || !repo.nameWithOwner) continue;
+    if (!repo?.nameWithOwner) continue;
     (staticData.stars as IDataObject[]).push({
       repo: repo.nameWithOwner,
       stars: repo.stargazerCount,

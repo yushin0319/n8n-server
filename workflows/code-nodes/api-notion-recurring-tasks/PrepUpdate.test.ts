@@ -25,7 +25,7 @@ describe("PrepUpdate", () => {
     expect(result[0].json.pageId).toBe("p-001");
     const body = JSON.parse(result[0].json.requestBody as string);
     expect(body.properties[""].title[0].text.content).toBe("新しい名前");
-    expect(body.properties["頻度"]).toBeUndefined();
+    expect(body.properties.頻度).toBeUndefined();
   });
 
   it("全項目を更新する", () => {
@@ -47,12 +47,12 @@ describe("PrepUpdate", () => {
     const result = prepUpdate() as INodeExecutionData[];
     const body = JSON.parse(result[0].json.requestBody as string);
     expect(body.properties[""].title[0].text.content).toBe("更新タスク");
-    expect(body.properties["頻度"].multi_select[0].name).toBe("毎月");
-    expect(body.properties["次回予定日"].date.start).toBe("2026-05-01");
-    expect(body.properties["テンプレ本文"].rich_text[0].text.content).toBe(
+    expect(body.properties.頻度.multi_select[0].name).toBe("毎月");
+    expect(body.properties.次回予定日.date.start).toBe("2026-05-01");
+    expect(body.properties.テンプレ本文.rich_text[0].text.content).toBe(
       "更新テンプレ",
     );
-    expect(body.properties["有効"].checkbox).toBe(false);
+    expect(body.properties.有効.checkbox).toBe(false);
   });
 
   it("next_date を null にクリアできる", () => {
@@ -64,7 +64,7 @@ describe("PrepUpdate", () => {
 
     const result = prepUpdate() as INodeExecutionData[];
     const body = JSON.parse(result[0].json.requestBody as string);
-    expect(body.properties["次回予定日"].date).toBeNull();
+    expect(body.properties.次回予定日.date).toBeNull();
   });
 
   it("指定しない項目は properties に含まない", () => {

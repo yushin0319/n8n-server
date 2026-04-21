@@ -1,4 +1,13 @@
-export default async function (this: any): Promise<CodeNodeReturn> {
+interface IExecuteContext {
+  helpers: {
+    getBinaryDataBuffer(
+      itemIndex: number,
+      propertyName: string,
+    ): Promise<{ toString(encoding: BufferEncoding): string }>;
+  };
+}
+
+export default async function (this: IExecuteContext): Promise<CodeNodeReturn> {
   const fileId = $("PrepDownload").first().json.fileId;
 
   // n8n最新版はバイナリをfilesystem-v2に格納するため、

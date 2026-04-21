@@ -20,7 +20,7 @@ export default function (): CodeNodeReturn {
   };
 
   if (parentId) {
-    (body.properties as IDataObject)["親タスク"] = {
+    (body.properties as IDataObject).親タスク = {
       relation: [{ id: parentId }],
     };
   }

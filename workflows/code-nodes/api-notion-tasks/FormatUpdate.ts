@@ -7,7 +7,7 @@ export default function (): CodeNodeReturn {
     pageId = prepData.pageId as string;
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
-    throw new Error("PrepAppend取得エラー: " + msg);
+    throw new Error(`PrepAppend取得エラー: ${msg}`);
   }
 
   const data = $input.first().json;
@@ -20,7 +20,7 @@ export default function (): CodeNodeReturn {
         success: true,
         id: pageId,
         url: pageId
-          ? "https://www.notion.so/" + pageId.replace(/-/g, "")
+          ? `https://www.notion.so/${pageId.replace(/-/g, "")}`
           : null,
         hasContent,
         contentAppended,

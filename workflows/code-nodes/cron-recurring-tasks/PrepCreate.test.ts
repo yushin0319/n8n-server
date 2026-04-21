@@ -33,7 +33,7 @@ describe("PrepCreate", () => {
       "2a02570f-e49f-802b-a67c-fe4c230a5699",
     );
     expect(parsed.properties[""].title[0].text.content).toBe("週次レビュー");
-    expect(parsed.properties["ステータス"].status.name).toBe("未着手");
+    expect(parsed.properties.ステータス.status.name).toBe("未着手");
     expect(parsed.cover.type).toBe("external");
     // テンプレ本文があるのでchildrenが含まれる
     expect(parsed.children).toHaveLength(1);

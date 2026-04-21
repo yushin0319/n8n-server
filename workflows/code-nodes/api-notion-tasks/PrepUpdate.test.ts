@@ -37,7 +37,7 @@ describe("PrepUpdate", () => {
 
     const result = prepUpdate() as INodeExecutionData[];
     const body = JSON.parse(result[0].json.requestBody as string);
-    expect(body.properties["ステータス"]).toEqual({
+    expect(body.properties.ステータス).toEqual({
       status: { name: "完了" },
     });
   });
@@ -51,7 +51,7 @@ describe("PrepUpdate", () => {
 
     const result = prepUpdate() as INodeExecutionData[];
     const body = JSON.parse(result[0].json.requestBody as string);
-    expect(body.properties["親タスク"]).toEqual({
+    expect(body.properties.親タスク).toEqual({
       relation: [{ id: "parent-1" }],
     });
   });
@@ -65,7 +65,7 @@ describe("PrepUpdate", () => {
 
     const result = prepUpdate() as INodeExecutionData[];
     const body = JSON.parse(result[0].json.requestBody as string);
-    expect(body.properties["親タスク"]).toEqual({ relation: [] });
+    expect(body.properties.親タスク).toEqual({ relation: [] });
   });
 
   it("cover_url を含む", () => {

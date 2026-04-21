@@ -42,7 +42,7 @@ describe("PrepCreate", () => {
 
     const result = prepCreate() as INodeExecutionData[];
     const body = JSON.parse(result[0].json.requestBody as string);
-    expect(body.properties["親タスク"].relation[0].id).toBe("parent-123");
+    expect(body.properties.親タスク.relation[0].id).toBe("parent-123");
   });
 
   it("contentがある場合childrenブロックを含む", () => {

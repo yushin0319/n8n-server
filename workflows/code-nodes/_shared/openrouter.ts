@@ -2,6 +2,10 @@
  * OpenRouter API (OpenAI互換) リクエスト/レスポンスのユーティリティ.
  */
 
+interface OpenRouterResponseShape {
+  choices?: { message?: { role?: string; content?: string } }[];
+}
+
 /** OpenRouter APIリクエストボディを生成する */
 export function buildOpenRouterRequest(params: {
   prompt: string;
@@ -29,7 +33,8 @@ export function parseOpenRouterText(
   response: IDataObject,
   fallback?: string,
 ): string {
-  const text = (response as any)?.choices?.[0]?.message?.content || "";
+  const text =
+    (response as OpenRouterResponseShape)?.choices?.[0]?.message?.content || "";
   return text || (fallback ?? "");
 }
 
@@ -42,7 +47,8 @@ export function mockOpenRouterResponse(text: string): IDataObject {
 
 /** OpenRouterレスポンスからテキストを取得してJSONパースする */
 export function parseOpenRouterJson<T = unknown>(response: IDataObject): T {
-  const text = (response as any)?.choices?.[0]?.message?.content || "";
+  const text =
+    (response as OpenRouterResponseShape)?.choices?.[0]?.message?.content || "";
   if (!text) {
     throw new Error("OpenRouterレスポンスが空です");
   }
