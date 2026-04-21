@@ -1,24 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import buildNotionBody from "./BuildNotionBody";
 
-function openRouterResponse(text: string): unknown {
-  return {
-    choices: [{ message: { role: "assistant", content: text } }],
-  };
-}
-
-function geminiResponse(text: string): unknown {
-  return {
-    candidates: [{ content: { parts: [{ text }] } }],
-  };
-}
-
 describe("BuildNotionBody", () => {
   beforeEach(() => {
     vi.unstubAllGlobals();
   });
 
-  it("OpenRouter形式のJSONオブジェクトレスポンスをNotionボディに変換する", () => {
+  it("事前パース済み classifications から Notion ボディを組み立てる", () => {
     const emails = [
       {
         subject: "銀行通知",
@@ -38,14 +26,12 @@ describe("BuildNotionBody", () => {
 
     vi.stubGlobal("$input", {
       first: () => ({
-        json: openRouterResponse(
-          JSON.stringify({
-            classifications: [
-              { index: 1, importance: "重要" },
-              { index: 2, importance: "不要" },
-            ],
-          }),
-        ),
+        json: {
+          classifications: [
+            { index: 1, importance: "重要" },
+            { index: 2, importance: "不要" },
+          ],
+        },
       }),
     });
     vi.stubGlobal("$", (_name: string) => ({
@@ -55,67 +41,14 @@ describe("BuildNotionBody", () => {
     const result = buildNotionBody() as INodeExecutionData[];
     expect(result).toHaveLength(2);
     const body1 = JSON.parse(result[0].json.requestBody as string);
-    expect(body1.properties["importance"].select.name).toBe("重要");
+    expect(body1.properties.importance.select.name).toBe("重要");
     const body2 = JSON.parse(result[1].json.requestBody as string);
-    expect(body2.properties["importance"].select.name).toBe("不要");
+    expect(body2.properties.importance.select.name).toBe("不要");
   });
 
-  it("Gemini形式のレスポンスも同じロジックで変換できる", () => {
-    const emails = [
-      {
-        subject: "セキュリティ通知",
-        from: "sec@example.com",
-        snippet: "ログイン",
-        messageId: "msg-g1",
-        dateISO: "2024-01-03T00:00:00.000Z",
-      },
-    ];
-
+  it("classifications が空なら全て『確認』を使う", () => {
     vi.stubGlobal("$input", {
-      first: () => ({
-        json: geminiResponse(
-          JSON.stringify({
-            classifications: [{ index: 1, importance: "重要" }],
-          }),
-        ),
-      }),
-    });
-    vi.stubGlobal("$", () => ({ first: () => ({ json: { emails } }) }));
-
-    const result = buildNotionBody() as INodeExecutionData[];
-    const body = JSON.parse(result[0].json.requestBody as string);
-    expect(body.properties["importance"].select.name).toBe("重要");
-  });
-
-  it("素の配列レスポンス（OpenRouter）にもフォールバック対応する", () => {
-    const emails = [
-      {
-        subject: "t",
-        from: "a@b.com",
-        snippet: "",
-        messageId: "m1",
-        dateISO: "2024-01-01T00:00:00.000Z",
-      },
-    ];
-    vi.stubGlobal("$input", {
-      first: () => ({
-        json: openRouterResponse(
-          JSON.stringify([{ index: 1, importance: "重要" }]),
-        ),
-      }),
-    });
-    vi.stubGlobal("$", () => ({ first: () => ({ json: { emails } }) }));
-
-    const result = buildNotionBody() as INodeExecutionData[];
-    const body = JSON.parse(result[0].json.requestBody as string);
-    expect(body.properties["importance"].select.name).toBe("重要");
-  });
-
-  it("分類がない場合デフォルトで確認を使う", () => {
-    vi.stubGlobal("$input", {
-      first: () => ({
-        json: openRouterResponse(JSON.stringify({ classifications: [] })),
-      }),
+      first: () => ({ json: { classifications: [] } }),
     });
     vi.stubGlobal("$", () => ({
       first: () => ({
@@ -135,19 +68,28 @@ describe("BuildNotionBody", () => {
 
     const result = buildNotionBody() as INodeExecutionData[];
     const body = JSON.parse(result[0].json.requestBody as string);
-    expect(body.properties["importance"].select.name).toBe("確認");
+    expect(body.properties.importance.select.name).toBe("確認");
   });
 
-  it("レスポンスがinvalid JSONでエラーを投げる", () => {
-    vi.stubGlobal("$input", {
-      first: () => ({ json: openRouterResponse("invalid json") }),
-    });
+  it("classifications キーが欠落していても『確認』で埋める", () => {
+    vi.stubGlobal("$input", { first: () => ({ json: {} }) });
     vi.stubGlobal("$", () => ({
-      first: () => ({ json: { emails: [] } }),
+      first: () => ({
+        json: {
+          emails: [
+            {
+              subject: "t",
+              from: "a@b.com",
+              snippet: "",
+              messageId: "m1",
+              dateISO: "2024-01-01T00:00:00.000Z",
+            },
+          ],
+        },
+      }),
     }));
-
-    expect(() => buildNotionBody()).toThrow(
-      "BuildNotionBody: 分類結果のパースに失敗",
-    );
+    const result = buildNotionBody() as INodeExecutionData[];
+    const body = JSON.parse(result[0].json.requestBody as string);
+    expect(body.properties.importance.select.name).toBe("確認");
   });
 });

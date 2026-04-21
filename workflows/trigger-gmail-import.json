@@ -252,6 +252,62 @@
     },
     {
       "parameters": {
+        "jsCode": "// @external trigger-gmail-import/ValidateClassify.ts"
+      },
+      "id": "gm-0020-4000-8000-000000000020",
+      "name": "ValidateQwen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "onError": "continueErrorOutput",
+      "position": [
+        1220,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external trigger-gmail-import/ValidateClassify.ts"
+      },
+      "id": "gm-0021-4000-8000-000000000021",
+      "name": "ValidateGemma",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "onError": "continueErrorOutput",
+      "position": [
+        1220,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external trigger-gmail-import/ValidateClassify.ts"
+      },
+      "id": "gm-0022-4000-8000-000000000022",
+      "name": "ValidateGptoss",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "onError": "continueErrorOutput",
+      "position": [
+        1220,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external trigger-gmail-import/ValidateClassify.ts"
+      },
+      "id": "gm-0023-4000-8000-000000000023",
+      "name": "ValidateGemini",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "onError": "continueErrorOutput",
+      "position": [
+        1220,
+        580
+      ]
+    },
+    {
+      "parameters": {
         "jsCode": "// @external trigger-gmail-import/BuildNotionBody.ts"
       },
       "id": "a3c",
@@ -498,6 +554,24 @@
       "main": [
         [
           {
+            "node": "ValidateQwen",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "GemmaClassify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ValidateQwen": {
+      "main": [
+        [
+          {
             "node": "BuildNotionBody",
             "type": "main",
             "index": 0
@@ -513,6 +587,24 @@
       ]
     },
     "GemmaClassify": {
+      "main": [
+        [
+          {
+            "node": "ValidateGemma",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "GptossClassify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ValidateGemma": {
       "main": [
         [
           {
@@ -534,6 +626,24 @@
       "main": [
         [
           {
+            "node": "ValidateGptoss",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "GeminiClassify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ValidateGptoss": {
+      "main": [
+        [
+          {
             "node": "BuildNotionBody",
             "type": "main",
             "index": 0
@@ -549,6 +659,24 @@
       ]
     },
     "GeminiClassify": {
+      "main": [
+        [
+          {
+            "node": "ValidateGemini",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "NotifyClassifyFailure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ValidateGemini": {
       "main": [
         [
           {
