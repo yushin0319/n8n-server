@@ -34,7 +34,7 @@ function normalizeUrl(url: string): string {
     }
     const path = u.pathname.replace(/\/+$/, "") || "/";
     const qs = params.toString();
-    return "https://" + host + path + (qs ? "?" + qs : "");
+    return `https://${host}${path}${qs ? `?${qs}` : ""}`;
   } catch {
     return url;
   }

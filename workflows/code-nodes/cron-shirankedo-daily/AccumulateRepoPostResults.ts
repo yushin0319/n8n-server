@@ -10,7 +10,7 @@ export default function (): CodeNodeReturn {
     errors: number;
   };
   const res = $input.first().json;
-  if (res && res.ok) {
+  if (res?.ok) {
     counter.total += (res.inserted as number) || 0;
   } else {
     counter.errors += 1;

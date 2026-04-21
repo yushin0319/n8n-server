@@ -2,6 +2,10 @@
  * Gemini API リクエスト/レスポンスのユーティリティ.
  */
 
+interface GeminiResponseShape {
+  candidates?: { content?: { parts?: { text?: string }[] } }[];
+}
+
 /** Gemini APIリクエストボディを生成する */
 export function buildGeminiRequest(params: {
   prompt: string;
@@ -33,7 +37,8 @@ export function parseGeminiText(
   fallback?: string,
 ): string {
   const text =
-    (response as any)?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    (response as GeminiResponseShape)?.candidates?.[0]?.content?.parts?.[0]
+      ?.text || "";
   return text || (fallback ?? "");
 }
 
@@ -47,7 +52,8 @@ export function mockGeminiResponse(text: string): IDataObject {
 /** Geminiレスポンスからテキストを取得してJSONパースする */
 export function parseGeminiJson<T = unknown>(response: IDataObject): T {
   const text =
-    (response as any)?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    (response as GeminiResponseShape)?.candidates?.[0]?.content?.parts?.[0]
+      ?.text || "";
   if (!text) {
     throw new Error("Geminiレスポンスが空です");
   }

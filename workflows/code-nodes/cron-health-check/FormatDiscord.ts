@@ -5,7 +5,7 @@ export default function (): CodeNodeReturn {
       json: {
         embed: {
           title: "HistLink Backend DOWN",
-          description: now + " にヘルスチェックが失敗しました。",
+          description: `${now} にヘルスチェックが失敗しました。`,
           color: 15158332,
         },
       },

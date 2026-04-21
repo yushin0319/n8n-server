@@ -27,7 +27,7 @@ export default function (): CodeNodeReturn {
 
   for (const key of Object.keys(data)) {
     const repo = data[key];
-    if (!repo || !repo.releases) continue;
+    if (!repo?.releases) continue;
     const repoName = repo.nameWithOwner;
     for (const rel of repo.releases.nodes) {
       if (rel.isPrerelease) continue;
@@ -35,19 +35,22 @@ export default function (): CodeNodeReturn {
 
       const tag = rel.tagName;
       // モノレポのスコープ付きタグ (xxx@1.0.0) からバージョン部分を取得
-      const rawVer = tag.includes("@") ? tag.split("@").pop()! : tag;
+      const rawVer = tag.includes("@") ? (tag.split("@").pop() ?? tag) : tag;
       const version = rawVer.replace(/^v/, "");
       const parts = version.split(".");
 
       let type: string | null = null;
       if (parts.length >= 3) {
-        const [maj, min, pat] = parts.map((p) => parseInt(p));
-        if (!isNaN(maj) && !isNaN(min) && !isNaN(pat)) {
+        const [maj, min, pat] = parts.map((p) => parseInt(p, 10));
+        if (!Number.isNaN(maj) && !Number.isNaN(min) && !Number.isNaN(pat)) {
           if (min === 0 && pat === 0) type = "major";
           else if (pat === 0) type = "minor";
         }
       } else if (parts.length === 2) {
-        if (!isNaN(parseInt(parts[0])) && !isNaN(parseInt(parts[1])))
+        if (
+          !Number.isNaN(parseInt(parts[0], 10)) &&
+          !Number.isNaN(parseInt(parts[1], 10))
+        )
           type = "minor";
       }
       if (!type) continue;

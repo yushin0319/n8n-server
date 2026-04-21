@@ -9,7 +9,7 @@ export default function (): CodeNodeReturn {
         typeof r === "string" ? r : (r.repo as string) || "",
       )
     : [];
-  const valid = repoList.filter((r) => r && r.includes("/"));
+  const valid = repoList.filter((r) => r?.includes("/"));
 
   if (valid.length === 0) {
     return [{ json: { releases: [], count: 0, empty: true } }];

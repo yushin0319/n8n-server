@@ -14,14 +14,14 @@ export default function (): CodeNodeReturn {
   }
 
   if (input.status !== undefined) {
-    props["ステータス"] = { status: { name: input.status } };
+    props.ステータス = { status: { name: input.status } };
   }
 
   if (input.parent_id !== undefined) {
     if (input.parent_id) {
-      props["親タスク"] = { relation: [{ id: input.parent_id }] };
+      props.親タスク = { relation: [{ id: input.parent_id }] };
     } else {
-      props["親タスク"] = { relation: [] };
+      props.親タスク = { relation: [] };
     }
   }
 

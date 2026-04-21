@@ -103,7 +103,7 @@ describe("ParseSelection", () => {
 
     const paperItem = items.find((i) => i.json.isPaper === 1);
     expect(paperItem).toBeDefined();
-    expect(paperItem!.json.source).toBe("arxiv");
+    expect(paperItem?.json.source).toBe("arxiv");
   });
 
   it("選定結果が0件の場合はエラーを投げる", () => {

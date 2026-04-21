@@ -8,7 +8,7 @@ export default function (): CodeNodeReturn {
       id: f.id,
       name: f.name,
       type: f.mimeType,
-      size: f.size ? parseInt(f.size as string) : null,
+      size: f.size ? parseInt(f.size as string, 10) : null,
       modified: f.modifiedTime,
       url: f.webViewLink,
       parents: f.parents,

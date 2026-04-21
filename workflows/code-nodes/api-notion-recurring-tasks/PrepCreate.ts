@@ -14,10 +14,10 @@ export default function (): CodeNodeReturn {
     有効: { checkbox: enabled },
   };
   if (nextDate) {
-    properties["次回予定日"] = { date: { start: nextDate } };
+    properties.次回予定日 = { date: { start: nextDate } };
   }
   if (taskTemplate) {
-    properties["テンプレ本文"] = {
+    properties.テンプレ本文 = {
       rich_text: [{ text: { content: taskTemplate } }],
     };
   }
