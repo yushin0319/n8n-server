@@ -1,48 +1,20 @@
-import { parseGeminiText } from "../_shared/gemini";
-import { parseOpenRouterText } from "../_shared/openrouter";
-
+/**
+ * 事前に ValidateClassify / MockClassify で抽出された
+ * `{ classifications: [{index, importance}, ...] }` を受け取り、
+ * Notion ページ作成用のリクエストボディを組み立てる.
+ *
+ * classify のパース失敗は ValidateClassify 側で検知し、
+ * そこで continueErrorOutput → 次段 classify にフォールバックする設計.
+ * BuildNotionBody は classifications が無い / 空ならデフォルト「確認」を使う.
+ */
 export default function (): CodeNodeReturn {
-  const classifyResponse = $input.first().json;
+  const classifications =
+    ($input.first().json.classifications as IDataObject[]) || [];
   const emailData = $("PrepareClassify").first().json.emails as IDataObject[];
-
-  // OpenRouter形式とGemini形式の両方に対応（どちらで成功したか不明なので両方試す）
-  const responseText =
-    parseOpenRouterText(classifyResponse) || parseGeminiText(classifyResponse);
-
-  let classifications: IDataObject[] = [];
-  try {
-    const parsed = JSON.parse(responseText as string);
-    if (Array.isArray(parsed)) {
-      classifications = parsed;
-    } else if (Array.isArray((parsed as any)?.classifications)) {
-      classifications = (parsed as any).classifications;
-    } else {
-      throw new Error(
-        "BuildNotionBody: 分類結果が配列でもclassificationsキーでもない: " +
-          (responseText as string).substring(0, 200),
-      );
-    }
-  } catch (_e) {
-    // JSONパース失敗時は素のテキスト内から配列を抽出してフォールバック
-    const jsonMatch = (responseText as string).match(/\[[\s\S]*\]/);
-    if (!jsonMatch) {
-      throw new Error(
-        "BuildNotionBody: 分類結果のパースに失敗（JSON形式でも配列抽出でも取得不可）: " +
-          (responseText as string).substring(0, 200),
-      );
-    }
-    try {
-      classifications = JSON.parse(jsonMatch[0]);
-    } catch (e: any) {
-      throw new Error(
-        "BuildNotionBody: 抽出した配列のパースに失敗: " + e.message,
-      );
-    }
-  }
 
   const classMap: Record<number, string> = {};
   for (const c of classifications) {
-    classMap[c.index as number] = (c.importance as string) || "確認";
+    classMap[c.index as number] = c.importance as string;
   }
 
   return emailData.map((email, i) => {
