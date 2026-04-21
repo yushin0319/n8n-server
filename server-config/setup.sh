@@ -81,8 +81,10 @@ if ! systemctl is-active --quiet unattended-upgrades; then
   sudo systemctl enable --now unattended-upgrades
 fi
 
-# Automatic-Reboot: カーネル更新後の reboot を自動化 (04:00 JST)
-# n8n は docker-compose の restart: always で自動復帰、SSL cert も時刻非依存
+# ==========================================================================
+# 5. Automatic-Reboot: カーネル更新後の reboot を自動化 (04:00 JST)
+#    n8n は docker-compose の restart: always で自動復帰、SSL cert も時刻非依存
+# ==========================================================================
 APT_CUSTOM=/etc/apt/apt.conf.d/52unattended-upgrades-local
 APT_EXPECTED='Unattended-Upgrade::Automatic-Reboot "true";
 Unattended-Upgrade::Automatic-Reboot-Time "04:00";
@@ -95,7 +97,7 @@ else
 fi
 
 # ==========================================================================
-# 5. Timezone: JST (Automatic-Reboot-Time は local time 解釈のため必須)
+# 6. Timezone: JST (Automatic-Reboot-Time は local time 解釈のため必須)
 # ==========================================================================
 CURRENT_TZ=$(timedatectl show --property=Timezone --value)
 if [ "$CURRENT_TZ" != "Asia/Tokyo" ]; then
@@ -106,7 +108,7 @@ else
 fi
 
 # ==========================================================================
-# 6. iptables (既存): 80/443/5678 ACCEPT は n8n 運用で必要、既存設定を維持
+# 7. iptables (既存): 80/443/5678 ACCEPT は n8n 運用で必要、既存設定を維持
 #    具体的な iptables 設定はこのサーバーに既に適用済み (initial setup 時)
 # ==========================================================================
 
