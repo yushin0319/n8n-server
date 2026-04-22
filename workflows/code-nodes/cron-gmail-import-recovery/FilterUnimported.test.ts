@@ -14,7 +14,7 @@ function makeGmail(id: string, extra: Record<string, unknown> = {}) {
   };
 }
 
-function makeNotionPage(messageId: string) {
+function makeNotionItem(messageId: string) {
   return {
     json: {
       properties: {
@@ -31,18 +31,13 @@ describe("FilterUnimported", () => {
 
   it("Notion に全件登録済みなら空を返す", () => {
     const gmailItems = [makeGmail("m1"), makeGmail("m2")];
-    const notionResults = [
-      makeNotionPage("m1").json,
-      makeNotionPage("m2").json,
-    ];
+    const notionItems = [makeNotionItem("m1"), makeNotionItem("m2")];
 
     vi.stubGlobal("$", (name: string) => {
       if (name === "GmailGetMany") return { all: () => gmailItems };
       throw new Error(`unexpected $(${name})`);
     });
-    vi.stubGlobal("$input", {
-      first: () => ({ json: { results: notionResults } }),
-    });
+    vi.stubGlobal("$input", { all: () => notionItems });
 
     const result = filterUnimported() as INodeExecutionData[];
     expect(result).toHaveLength(0);
@@ -50,15 +45,13 @@ describe("FilterUnimported", () => {
 
   it("一部未登録があれば未登録分のみ返す", () => {
     const gmailItems = [makeGmail("m1"), makeGmail("m2"), makeGmail("m3")];
-    const notionResults = [makeNotionPage("m1").json];
+    const notionItems = [makeNotionItem("m1")];
 
     vi.stubGlobal("$", (name: string) => {
       if (name === "GmailGetMany") return { all: () => gmailItems };
       throw new Error(`unexpected $(${name})`);
     });
-    vi.stubGlobal("$input", {
-      first: () => ({ json: { results: notionResults } }),
-    });
+    vi.stubGlobal("$input", { all: () => notionItems });
 
     const result = filterUnimported() as INodeExecutionData[];
     expect(result).toHaveLength(2);
@@ -66,30 +59,45 @@ describe("FilterUnimported", () => {
     expect(ids).toEqual(["m2", "m3"]);
   });
 
-  it("Notion 側 results が空なら Gmail 全件を返す", () => {
+  it("Notion 側が空なら Gmail 全件を返す", () => {
     const gmailItems = [makeGmail("m1"), makeGmail("m2")];
 
     vi.stubGlobal("$", (name: string) => {
       if (name === "GmailGetMany") return { all: () => gmailItems };
       throw new Error(`unexpected $(${name})`);
     });
-    vi.stubGlobal("$input", { first: () => ({ json: { results: [] } }) });
+    vi.stubGlobal("$input", { all: () => [] });
 
     const result = filterUnimported() as INodeExecutionData[];
     expect(result).toHaveLength(2);
   });
 
-  it("Notion ページの messageId が空文字/未設定なら照合対象から除外する", () => {
+  it("Notion 側に alwaysOutputData の空アイテムがあっても全件登録済み判定を壊さない", () => {
     const gmailItems = [makeGmail("m1")];
-    const notionResults = [{ properties: { messageId: { rich_text: [] } } }];
+    const notionItems = [{ json: {} }];
 
     vi.stubGlobal("$", (name: string) => {
       if (name === "GmailGetMany") return { all: () => gmailItems };
       throw new Error(`unexpected $(${name})`);
     });
-    vi.stubGlobal("$input", {
-      first: () => ({ json: { results: notionResults } }),
+    vi.stubGlobal("$input", { all: () => notionItems });
+
+    const result = filterUnimported() as INodeExecutionData[];
+    expect(result).toHaveLength(1);
+    expect(result[0].json.id).toBe("m1");
+  });
+
+  it("Notion ページの messageId が空 rich_text なら照合対象から除外する", () => {
+    const gmailItems = [makeGmail("m1")];
+    const notionItems = [
+      { json: { properties: { messageId: { rich_text: [] } } } },
+    ];
+
+    vi.stubGlobal("$", (name: string) => {
+      if (name === "GmailGetMany") return { all: () => gmailItems };
+      throw new Error(`unexpected $(${name})`);
     });
+    vi.stubGlobal("$input", { all: () => notionItems });
 
     const result = filterUnimported() as INodeExecutionData[];
     expect(result).toHaveLength(1);
@@ -103,7 +111,7 @@ describe("FilterUnimported", () => {
       if (name === "GmailGetMany") return { all: () => gmailItems };
       throw new Error(`unexpected $(${name})`);
     });
-    vi.stubGlobal("$input", { first: () => ({ json: { results: [] } }) });
+    vi.stubGlobal("$input", { all: () => [] });
 
     const result = filterUnimported() as INodeExecutionData[];
     expect(result).toHaveLength(1);

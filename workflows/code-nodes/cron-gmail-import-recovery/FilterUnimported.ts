@@ -6,13 +6,11 @@ import { notionRichText } from "../_shared/notionProps";
  */
 export default function (): CodeNodeReturn {
   const gmailItems = $("GmailGetMany").all();
-  const notionResponse =
-    ($input.first()?.json as IDataObject | undefined) ?? {};
-  const results = (notionResponse.results as IDataObject[] | undefined) ?? [];
+  const notionPages = $input.all();
 
   const notionMessageIds = new Set<string>();
-  for (const page of results) {
-    const props = (page.properties as IDataObject | undefined) ?? {};
+  for (const page of notionPages) {
+    const props = (page.json?.properties as IDataObject | undefined) ?? {};
     const text = notionRichText(props, "messageId");
     if (text) notionMessageIds.add(text);
   }
