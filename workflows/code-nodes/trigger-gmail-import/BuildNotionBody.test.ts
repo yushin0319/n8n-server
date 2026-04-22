@@ -42,8 +42,10 @@ describe("BuildNotionBody", () => {
     expect(result).toHaveLength(2);
     const body1 = JSON.parse(result[0].json.requestBody as string);
     expect(body1.properties.importance.select.name).toBe("重要");
+    expect(body1.properties.messageId.rich_text[0].text.content).toBe("msg-1");
     const body2 = JSON.parse(result[1].json.requestBody as string);
     expect(body2.properties.importance.select.name).toBe("不要");
+    expect(body2.properties.messageId.rich_text[0].text.content).toBe("msg-2");
   });
 
   it("classifications が空なら全て『確認』を使う", () => {

@@ -51,6 +51,17 @@
       "webhookId": "gm-0010-4000-8000-000000000010"
     },
     {
+      "parameters": {},
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        -200
+      ],
+      "name": "ExecuteWorkflowTrigger",
+      "id": "gm-0018-4000-8000-000000000018"
+    },
+    {
       "parameters": {
         "jsCode": "// @external trigger-gmail-import/CheckTestMode.ts"
       },
@@ -489,6 +500,17 @@
       ]
     },
     "WebhookTest": {
+      "main": [
+        [
+          {
+            "node": "CheckTestMode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ExecuteWorkflowTrigger": {
       "main": [
         [
           {

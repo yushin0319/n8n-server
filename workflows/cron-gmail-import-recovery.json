@@ -1,0 +1,309 @@
+{
+  "id": "XOyP7Yg1ke8B7oxB",
+  "name": "cron/gmail-import-recovery",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "triggerAtHour": 8,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "name": "Schedule",
+      "id": "gr-0001-4000-8000-000000000001"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "test-gmail-import-recovery",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        200
+      ],
+      "name": "WebhookTest",
+      "id": "gr-0010-4000-8000-000000000010",
+      "webhookId": "gr-0010-4000-8000-000000000010"
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external cron-gmail-import-recovery/CheckTestMode.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        100
+      ],
+      "name": "CheckTestMode",
+      "id": "gr-0011-4000-8000-000000000011"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "gr-cond-skip-recovery",
+              "leftValue": "={{ $execution.customData.get('isTest') }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        100
+      ],
+      "name": "IfSkipRecovery",
+      "id": "gr-0012-4000-8000-000000000012"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "returnAll": false,
+        "limit": 500,
+        "simple": true,
+        "filters": {
+          "q": "newer_than:3d"
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        660,
+        200
+      ],
+      "name": "GmailGetMany",
+      "id": "gr-0002-4000-8000-000000000002",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "rqMLM5TDLPFAXf6K",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.notion.com/v1/databases/2ff2570f-e49f-8119-aaaf-f688605e5aa3/query",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ filter: { property: 'date', date: { on_or_after: $now.minus({ days: 4 }).toFormat('yyyy-MM-dd') } }, page_size: 100 }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        200
+      ],
+      "name": "NotionQuery",
+      "id": "gr-0003-4000-8000-000000000003",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "notionApi": {
+          "id": "StdChbKZz3co4jDO",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external cron-gmail-import-recovery/FilterUnimported.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        200
+      ],
+      "name": "FilterUnimported",
+      "id": "gr-0004-4000-8000-000000000004"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "oGx9uiLsxLGfGDcJ",
+          "mode": "id"
+        },
+        "mode": "once",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1320,
+        200
+      ],
+      "name": "InvokeGmailImport",
+      "id": "gr-0005-4000-8000-000000000005"
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external cron-gmail-import-recovery/TestResponse.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        0
+      ],
+      "name": "TestResponse",
+      "id": "gr-0013-4000-8000-000000000013"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        880,
+        0
+      ],
+      "name": "RespondTest",
+      "id": "gr-0014-4000-8000-000000000014"
+    }
+  ],
+  "connections": {
+    "Schedule": {
+      "main": [
+        [
+          {
+            "node": "CheckTestMode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WebhookTest": {
+      "main": [
+        [
+          {
+            "node": "CheckTestMode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CheckTestMode": {
+      "main": [
+        [
+          {
+            "node": "IfSkipRecovery",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IfSkipRecovery": {
+      "main": [
+        [
+          {
+            "node": "TestResponse",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "GmailGetMany",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GmailGetMany": {
+      "main": [
+        [
+          {
+            "node": "NotionQuery",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "NotionQuery": {
+      "main": [
+        [
+          {
+            "node": "FilterUnimported",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FilterUnimported": {
+      "main": [
+        [
+          {
+            "node": "InvokeGmailImport",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TestResponse": {
+      "main": [
+        [
+          {
+            "node": "RespondTest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "aHM9O6mSwMNPTwdI"
+  }
+}
