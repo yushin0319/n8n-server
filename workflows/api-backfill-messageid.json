@@ -24,10 +24,10 @@
       "parameters": {
         "operation": "getAll",
         "returnAll": false,
-        "limit": 500,
+        "limit": 100,
         "simple": true,
         "filters": {
-          "q": "newer_than:5d"
+          "q": "newer_than:3d"
         }
       },
       "type": "n8n-nodes-base.gmail",
@@ -57,10 +57,11 @@
           "mode": "id",
           "value": "2ff2570f-e49f-8119-aaaf-f688605e5aa3"
         },
-        "returnAll": true,
+        "returnAll": false,
+        "limit": 100,
         "simple": false,
         "filterType": "json",
-        "filterJson": "={{ JSON.stringify({ property: 'date', date: { on_or_after: $now.minus({ days: 5 }).toFormat('yyyy-MM-dd') } }) }}",
+        "filterJson": "={{ JSON.stringify({ property: 'date', date: { on_or_after: $now.minus({ days: 3 }).toFormat('yyyy-MM-dd') } }) }}",
         "options": {}
       },
       "type": "n8n-nodes-base.notion",
