@@ -32,6 +32,9 @@ export default function (): CodeNodeReturn {
         importance: { select: { name: importance } },
         snippet: { rich_text: [{ text: { content: email.snippet } }] },
         status: { select: { name: "未読" } },
+        messageId: {
+          rich_text: [{ text: { content: (email.messageId as string) || "" } }],
+        },
       },
     };
     return {
