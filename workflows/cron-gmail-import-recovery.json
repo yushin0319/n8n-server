@@ -141,6 +141,7 @@
       "maxTries": 3,
       "waitBetweenTries": 2000,
       "alwaysOutputData": true,
+      "executeOnce": true,
       "credentials": {
         "notionApi": {
           "id": "StdChbKZz3co4jDO",
