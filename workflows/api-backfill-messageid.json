@@ -24,7 +24,7 @@
       "parameters": {
         "operation": "getAll",
         "returnAll": false,
-        "limit": 10,
+        "limit": 100,
         "simple": true,
         "filters": {
           "q": "newer_than:3d"
@@ -58,7 +58,7 @@
           "value": "2ff2570f-e49f-8119-aaaf-f688605e5aa3"
         },
         "returnAll": false,
-        "limit": 10,
+        "limit": 100,
         "simple": false,
         "filterType": "json",
         "filterJson": "={{ JSON.stringify({ property: 'date', date: { on_or_after: $now.minus({ days: 3 }).toFormat('yyyy-MM-dd') } }) }}",
