@@ -1,7 +1,7 @@
 {
   "id": "XOyP7Yg1ke8B7oxB",
   "name": "cron/gmail-import-recovery",
-  "active": false,
+  "active": true,
   "nodes": [
     {
       "parameters": {
