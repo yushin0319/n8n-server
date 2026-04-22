@@ -51,7 +51,9 @@
       "webhookId": "gm-0010-4000-8000-000000000010"
     },
     {
-      "parameters": {},
+      "parameters": {
+        "inputSource": "passthrough"
+      },
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
       "position": [
