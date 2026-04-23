@@ -1,4 +1,5 @@
 import { discordMessage } from "../_shared/discordMessage";
+import { formatError } from "../_shared/formatError";
 
 export default function (): CodeNodeReturn {
   const input = $input.first().json;
@@ -12,7 +13,7 @@ export default function (): CodeNodeReturn {
     label: "shirankedo セキュリティ日次更新完了",
     isError: !!isError,
     detail: isError
-      ? String(input.error || input.message || "unknown")
+      ? formatError(input.error ?? input.message ?? input)
       : `脆弱性${vulnCount}件、リリース${releaseCount}件`,
   });
   return [{ json: { message: msg } }];
