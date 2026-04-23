@@ -1,4 +1,5 @@
 import { discordMessage } from "../_shared/discordMessage";
+import { formatError } from "../_shared/formatError";
 
 export default function (): CodeNodeReturn {
   const input = $input.first().json;
@@ -9,11 +10,7 @@ export default function (): CodeNodeReturn {
     label: "shirankedo リリース更新完了",
     isError: !!isError,
     detail: isError
-      ? String(
-          typeof input.error === "object"
-            ? JSON.stringify(input.error)
-            : input.error || input.message || "unknown",
-        )
+      ? formatError(input.error ?? input.message ?? input)
       : `${count}件`,
   });
   return [{ json: { message: msg } }];
