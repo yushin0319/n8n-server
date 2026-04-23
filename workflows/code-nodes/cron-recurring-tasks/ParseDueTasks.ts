@@ -1,4 +1,8 @@
-import { notionMultiSelectFirst, notionRichText } from "../_shared/notionProps";
+import {
+  notionDate,
+  notionMultiSelectFirst,
+  notionRichText,
+} from "../_shared/notionProps";
 
 export default function (): CodeNodeReturn {
   const allItems = $input.all();
@@ -19,9 +23,18 @@ export default function (): CodeNodeReturn {
         : "(無題)";
     const frequency = notionMultiSelectFirst(props, "頻度", "monthly");
     const templateText = notionRichText(props, "テンプレ本文");
+    // 次回予定日を下流に渡し、PrepUpdate で曜日固定の加算ベースにする
+    const currentNextDate = notionDate(props, "次回予定日");
     const defPageId = page.id;
     return {
-      json: { hasDue: true, defPageId, taskName, frequency, templateText },
+      json: {
+        hasDue: true,
+        defPageId,
+        taskName,
+        frequency,
+        templateText,
+        currentNextDate,
+      },
     };
   });
   return items;

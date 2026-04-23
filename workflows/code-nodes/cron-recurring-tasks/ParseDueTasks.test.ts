@@ -48,6 +48,9 @@ describe("ParseDueTasks", () => {
               テンプレ本文: {
                 rich_text: [{ plain_text: "テンプレ内容" }],
               },
+              次回予定日: {
+                date: { start: "2026-04-19" },
+              },
             },
           },
         },
@@ -61,6 +64,7 @@ describe("ParseDueTasks", () => {
     expect(items[0].json.taskName).toBe("週次レビュー");
     expect(items[0].json.frequency).toBe("weekly");
     expect(items[0].json.templateText).toBe("テンプレ内容");
+    expect(items[0].json.currentNextDate).toBe("2026-04-19");
   });
 
   it("頻度が未設定の場合monthlyになる", () => {
