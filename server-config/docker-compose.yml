@@ -44,7 +44,7 @@ services:
         limits:
           memory: 256M
 
-  # Promtail: journald + docker container logs + n8n_data の WF 系 log を Grafana
+う  # Promtail: journald + docker container logs + n8n_data の WF 系 log を Grafana
   # Cloud Loki に転送する（L14 観測性強化）。
   # 認証情報は host の .env に記載:
   #   LOKI_URL=https://logs-prod-XX.grafana.net/loki/api/v1/push
