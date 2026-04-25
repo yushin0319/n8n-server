@@ -1,3 +1,8 @@
+# Compose プロジェクト名を n8n-docker に固定。これは既存 OCI 上のプロジェクト名
+# （旧 ~/n8n-docker/docker-compose.yml 由来）と一致させ、既存の n8n_data ボリュームを
+# 継承するための措置。旧ディレクトリ廃止後も名前は維持する。
+name: n8n-docker
+
 services:
   n8n:
     image: n8nio/n8n:latest

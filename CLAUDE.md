@@ -20,7 +20,9 @@ Oracle Cloud 上の n8n ワークフロー管理リポジトリ。全ワーク�
 - `scripts/smoke_test.py` - デプロイ後の疎通確認
 - `tests/` - バリデーション・ビルドパイプラインのテスト
 - `types/n8n-code-node.d.ts` - n8n グローバル変数の型定義
-- `server-config/` - docker-compose.yml, nginx 設定
+- `server-config/` - docker-compose.yml, nginx-n8n.conf, setup.sh（OCI 反映は `bash setup.sh` のみ）
+  - Compose プロジェクト名は `n8n-docker`（ボリューム継承のため固定）
+  - Uptime Kuma (監視) も同 compose に同居（`/kuma/` で公開）
 
 ## コマンド
 
