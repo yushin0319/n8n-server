@@ -79,7 +79,8 @@ deploy_workflow() {
   # Secret 経由のプレースホルダー差し込み（GitHub Actions の env で渡される）
   # 公開リポに UUID を直書きしないため、デプロイ時のみ置換する
   if [ -n "${HEALTHCHECKS_UUID:-}" ]; then
-    sed -i "s/PLACEHOLDER_HC_UUID/${HEALTHCHECKS_UUID}/g" "$embedded_file"
+    # 区切り文字に '#' を使い、将来 Secret 値に '/' が含まれても破綻しないようにする
+    sed -i "s#PLACEHOLDER_HC_UUID#${HEALTHCHECKS_UUID}#g" "$embedded_file"
   fi
 
   jq "$BODY_FILTER" "$embedded_file" > "$bodyfile"
