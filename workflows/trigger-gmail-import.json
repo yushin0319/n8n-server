@@ -378,9 +378,6 @@
       "name": "CreateNotionPage",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "retryOnFail": true,
-      "maxTries": 3,
-      "waitBetweenTries": 2000,
       "position": [
         1760,
         100
