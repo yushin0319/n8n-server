@@ -34,6 +34,7 @@ import json
 import os
 import sys
 from typing import Any
+from urllib.parse import urlparse
 
 sys.stdout.reconfigure(encoding="utf-8")
 sys.stderr.reconfigure(encoding="utf-8")
@@ -49,6 +50,19 @@ SPLITBATCH_TYPE = "n8n-nodes-base.splitInBatches"
 SPLITBATCH_LOOP_OUTPUT_V3 = 1  # v3: [0]=done, [1]=loop
 
 
+def _is_notion_host(url: str) -> bool:
+    """URL のホスト名が api.notion.com (or サブドメイン) か判定する。
+
+    substring match だと https://attacker.com/api.notion.com/x のような偽装に
+    ヒットしてしまうため urlparse でホスト名を厳密に取り出す。
+    """
+    try:
+        host = (urlparse(url).hostname or "").lower()
+    except ValueError:
+        return False
+    return host == "api.notion.com" or host.endswith(".api.notion.com")
+
+
 def _is_notion_node(node: dict[str, Any]) -> bool:
     """Notion 系のノード全般を判定する（読み書き両方）。"""
     node_type = node.get("type", "")
@@ -57,7 +71,7 @@ def _is_notion_node(node: dict[str, Any]) -> bool:
     if node_type == HTTP_NODE_TYPE:
         params = node.get("parameters", {}) or {}
         url = str(params.get("url", "") or "")
-        if "api.notion.com" in url:
+        if _is_notion_host(url):
             return True
     return False
 
@@ -76,7 +90,7 @@ def _is_notion_create(node: dict[str, Any]) -> bool:
     if node_type == HTTP_NODE_TYPE:
         url = str(params.get("url", "") or "")
         method = str(params.get("method", "GET") or "GET").upper()
-        if "api.notion.com" in url and method == "POST":
+        if _is_notion_host(url) and method == "POST":
             return True
     return False
 
