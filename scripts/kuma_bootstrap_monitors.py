@@ -15,7 +15,6 @@ crypto-ai-trader / n8n の heartbeat 送信実装で参照する。
 from __future__ import annotations
 
 import argparse
-import contextlib
 import json
 import os
 import sys
@@ -153,8 +152,11 @@ def main() -> int:
         for name, tok in push_tokens.items():
             print(f"  {name}: {args.kuma_url.rstrip('/')}/api/push/{tok}")
     finally:
-        with contextlib.suppress(Exception):
+        try:
             api.disconnect()
+        except Exception as e:
+            # 終了処理。失敗してもログだけ残して握りつぶす（本処理は完了済み）。
+            print(f"WARN: api.disconnect() failed: {e}", file=sys.stderr)
 
     return 0
 
