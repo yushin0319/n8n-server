@@ -148,7 +148,11 @@ fi
 COMPOSE_FILE="$SCRIPT_DIR/docker-compose.yml"
 if [ -f "$COMPOSE_FILE" ]; then
   log "docker compose up -d --pull always (file: $COMPOSE_FILE)"
-  sudo docker compose -f "$COMPOSE_FILE" up -d --pull always
+  # set -e で失敗時に即 exit するが、ログで明示的に失敗を示すため明示チェック。
+  if ! sudo docker compose -f "$COMPOSE_FILE" up -d --pull always; then
+    log "ERROR: docker compose up failed"
+    exit 1
+  fi
 fi
 
 log "setup.sh complete"
