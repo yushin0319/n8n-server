@@ -109,21 +109,37 @@ def main() -> int:
 
         for spec in MONITORS:
             name = spec["name"]
+            mid: int | None = None
             if name in existing:
                 print(f"skip (exists): {name}")
                 mid = existing[name]["id"]
             else:
                 print(f"add:           {name}")
-                r = api.add_monitor(**spec)
-                mid = r.get("monitorID")
-                # 直後の get_monitor で push_token を取得するため再取得が必要
-                existing[name] = api.get_monitor(mid)
+                try:
+                    r = api.add_monitor(**spec)
+                    mid = r.get("monitorID")
+                    if mid is None:
+                        print(
+                            f"  ERROR: monitorID 取得失敗 ({name}): response={r}",
+                            file=sys.stderr,
+                        )
+                        continue
+                    existing[name] = api.get_monitor(mid)
+                except Exception as e:
+                    print(f"  ERROR: add_monitor 失敗 ({name}): {e}", file=sys.stderr)
+                    continue
 
             if spec["type"] == MonitorType.PUSH and mid is not None:
-                mon = api.get_monitor(mid)
-                token = mon.get("pushToken") or mon.get("push_token")
-                if token:
-                    push_tokens[name] = token
+                try:
+                    mon = api.get_monitor(mid)
+                    token = mon.get("pushToken") or mon.get("push_token")
+                    if token:
+                        push_tokens[name] = token
+                except Exception as e:
+                    print(
+                        f"  WARN: push_token 取得失敗 ({name}): {e}",
+                        file=sys.stderr,
+                    )
 
         PUSH_URLS_PATH.parent.mkdir(parents=True, exist_ok=True)
         PUSH_URLS_PATH.write_text(
