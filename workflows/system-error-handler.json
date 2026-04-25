@@ -71,6 +71,40 @@
       ],
       "name": "LogDiscordFailure",
       "id": "err-0004-4000-8000-000000000004"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://hc-ping.com/PLACEHOLDER_HC_UUID/fail",
+        "options": {
+          "timeout": 10000
+        },
+        "onError": "continueErrorOutput"
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        200
+      ],
+      "name": "HealthchecksFail",
+      "id": "err-0005-4000-8000-000000000005",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external system-error-handler/LogHealthchecksFailure.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        300
+      ],
+      "name": "LogHealthchecksFailure",
+      "id": "err-0006-4000-8000-000000000006"
     }
   ],
   "connections": {
@@ -79,6 +113,11 @@
         [
           {
             "node": "FormatError",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "HealthchecksFail",
             "type": "main",
             "index": 0
           }
@@ -102,6 +141,18 @@
         [
           {
             "node": "LogDiscordFailure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HealthchecksFail": {
+      "main": [
+        [],
+        [
+          {
+            "node": "LogHealthchecksFailure",
             "type": "main",
             "index": 0
           }
