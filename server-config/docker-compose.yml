@@ -23,6 +23,13 @@ services:
       # NOTE: env 設定済みだが n8n v2.17.7 で /metrics は 404 を返す状況を確認。
       # 別タスク (Q3a) で原因調査予定。env 自体は将来の解決時のため残す。
       N8N_METRICS: "true"
+      # Sentry backend error reporting (L15-extra 観測性強化)。n8n プロセスの
+      # uncaught exception / 起動時クラッシュ / task-runner エラー等を Sentry に
+      # 自動送信する。実装: packages/@n8n/config/src/configs/sentry.config.ts
+      # 認証情報は host の .env に記載:
+      #   N8N_SENTRY_DSN=https://<key>@<id>.ingest.<region>.sentry.io/<project>
+      # 未設定時は空文字 → Sentry SDK は init をスキップ（fail-safe）。
+      N8N_SENTRY_DSN: ${N8N_SENTRY_DSN:-}
     volumes:
       - n8n_data:/home/node/.n8n
     deploy:
