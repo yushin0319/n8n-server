@@ -176,4 +176,50 @@ if [ -f "$COMPOSE_FILE" ]; then
   fi
 fi
 
+# ==========================================================================
+# 10. Netdata Agent (観測性強化 L13)
+#     host CPU/mem/disk/network/process と Docker cgroups (n8n / kuma) を
+#     agent 側 2秒粒度で収集し Netdata Cloud に送信。1GB RAM Micro かつ既に
+#     n8n が swap に食い込んでいる構成なので、ml/python.d/charts.d を無効化、
+#     db を ram モード + retention 3600 (= 直近1時間のみメモリ保持) に絞る。
+#
+#     初回 install 時のみ NETDATA_CLAIM_TOKEN/ROOMS が必要。既にインストール
+#     済みなら token 不要 (no-op)。CI 等で誤実行を避けるため、未インストール
+#     かつ token 未設定の場合は install 自体をスキップ。
+# ==========================================================================
+NETDATA_SRC="$SCRIPT_DIR/netdata.conf"
+NETDATA_DST=/etc/netdata/netdata.conf
+
+if ! command -v netdata >/dev/null 2>&1; then
+  if [ -n "${NETDATA_CLAIM_TOKEN:-}" ] && [ -n "${NETDATA_CLAIM_ROOMS:-}" ]; then
+    log "Installing Netdata + claiming to Cloud"
+    curl -fsSL https://get.netdata.cloud/kickstart.sh -o /tmp/netdata-kickstart.sh
+    sudo sh /tmp/netdata-kickstart.sh \
+      --non-interactive \
+      --stable-channel \
+      --disable-telemetry \
+      --claim-token "$NETDATA_CLAIM_TOKEN" \
+      --claim-rooms "$NETDATA_CLAIM_ROOMS" \
+      --claim-url https://app.netdata.cloud
+    rm -f /tmp/netdata-kickstart.sh
+  else
+    log "Netdata not installed and NETDATA_CLAIM_TOKEN/ROOMS not set — skipping install"
+  fi
+else
+  log "Netdata already installed: $(netdata -v 2>/dev/null | head -1)"
+fi
+
+# 低メモリ用 conf の同期 (Netdata 導入済みのときのみ)
+if command -v netdata >/dev/null 2>&1 && [ -f "$NETDATA_SRC" ]; then
+  if ! sudo diff -q "$NETDATA_SRC" "$NETDATA_DST" >/dev/null 2>&1; then
+    log "Syncing netdata.conf → $NETDATA_DST"
+    sudo cp "$NETDATA_SRC" "$NETDATA_DST"
+    sudo chown root:netdata "$NETDATA_DST"
+    sudo chmod 0644 "$NETDATA_DST"
+    sudo systemctl restart netdata
+  else
+    log "netdata.conf already in sync"
+  fi
+fi
+
 log "setup.sh complete"
