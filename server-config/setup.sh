@@ -165,12 +165,18 @@ fi
 # ==========================================================================
 # 9. docker compose up -d: server-config/docker-compose.yml のサービスを起動/更新
 #    --pull always で latest タグ利用サービスの最新 image 取得も兼ねる
+#
+#    --project-directory はリポルート (~/n8n-server) を明示。compose は -f 指定時
+#    に compose ファイルの親 (server-config/) を project directory とみなし、
+#    そこから .env を読むため、ルートの .env が拾われない問題を回避する。
+#    対象 env: N8N_SENTRY_DSN / LOKI_USER / LOKI_PASSWORD など `${VAR}` 補間。
 # ==========================================================================
 COMPOSE_FILE="$SCRIPT_DIR/docker-compose.yml"
+PROJECT_ROOT=$(cd "$SCRIPT_DIR/.." && pwd)
 if [ -f "$COMPOSE_FILE" ]; then
-  log "docker compose up -d --pull always (file: $COMPOSE_FILE)"
+  log "docker compose up -d --pull always (project: $PROJECT_ROOT, file: $COMPOSE_FILE)"
   # set -e で失敗時に即 exit するが、ログで明示的に失敗を示すため明示チェック。
-  if ! sudo docker compose -f "$COMPOSE_FILE" up -d --pull always; then
+  if ! sudo docker compose --project-directory "$PROJECT_ROOT" -f "$COMPOSE_FILE" up -d --pull always; then
     log "ERROR: docker compose up failed"
     exit 1
   fi
