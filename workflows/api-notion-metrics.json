@@ -1,7 +1,7 @@
 {
   "id": "iNo6jlzmQuAGiVto",
   "name": "api/notion-metrics",
-  "active": false,
+  "active": true,
   "nodes": [
     {
       "parameters": {
