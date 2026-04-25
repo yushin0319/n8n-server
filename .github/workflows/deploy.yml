@@ -42,6 +42,7 @@ jobs:
       - name: Deploy workflows
         env:
           N8N_API_KEY: ${{ secrets.N8N_API_KEY }}
+          HEALTHCHECKS_UUID: ${{ secrets.HEALTHCHECKS_UUID }}
           DEPLOY_ALL: ${{ github.event.inputs.deploy_all || 'false' }}
           DEPLOYED_LIST: deployed_files.txt
         run: |
