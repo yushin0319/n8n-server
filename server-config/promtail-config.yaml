@@ -1,0 +1,65 @@
+# Promtail config for n8n-server OCI (L14)
+# - journald (systemd)
+# - docker container logs (n8n / uptime-kuma)
+# 出力先: Grafana Cloud Loki（環境変数で LOKI_URL / LOKI_USER / LOKI_PASSWORD を渡す）
+
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+  log_level: warn
+
+positions:
+  filename: /var/promtail/positions.yaml
+
+clients:
+  - url: ${LOKI_URL}
+    basic_auth:
+      username: ${LOKI_USER}
+      password: ${LOKI_PASSWORD}
+    # 認証失敗時のリトライ間隔。デフォルトより長めにして 1GB OCI のメモリ圧迫を抑える
+    backoff_config:
+      min_period: 5s
+      max_period: 5m
+      max_retries: 10
+    batchwait: 5s
+    batchsize: 524288  # 512KB
+
+scrape_configs:
+  # systemd journald 全サービス
+  - job_name: journal
+    journal:
+      max_age: 12h
+      labels:
+        job: journal
+        host: ${HOSTNAME}
+      path: /var/log/journal
+    relabel_configs:
+      - source_labels: ["__journal__systemd_unit"]
+        target_label: unit
+      - source_labels: ["__journal_priority_keyword"]
+        target_label: level
+      - source_labels: ["__journal__hostname"]
+        target_label: hostname
+
+  # docker container logs（n8n / uptime-kuma / promtail 自身）
+  - job_name: docker
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 30s
+    relabel_configs:
+      - source_labels: ["__meta_docker_container_name"]
+        regex: "/(.*)"
+        target_label: container
+      - source_labels: ["__meta_docker_container_log_stream"]
+        target_label: stream
+      - target_label: host
+        replacement: ${HOSTNAME}
+    pipeline_stages:
+      # JSONL ログ（cron/system-metrics-summary 等）から level / type を抽出
+      - json:
+          expressions:
+            level: level
+            type: type
+      - labels:
+          level:
+          type:
