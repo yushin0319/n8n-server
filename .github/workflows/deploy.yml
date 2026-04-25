@@ -36,6 +36,9 @@ jobs:
       - name: Validate workflows
         run: python tests/validate_workflows.py
 
+      - name: Lint executeOnce / retryOnFail (Q5)
+        run: python scripts/lint_execute_once.py
+
       - name: Deploy workflows
         env:
           N8N_API_KEY: ${{ secrets.N8N_API_KEY }}
