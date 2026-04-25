@@ -124,16 +124,25 @@ NGINX_DST=/etc/nginx/sites-available/n8n
 if [ -f "$NGINX_SRC" ]; then
   if ! sudo diff -q "$NGINX_SRC" "$NGINX_DST" >/dev/null 2>&1; then
     log "Syncing nginx-n8n.conf → $NGINX_DST"
-    NGINX_BAK="${NGINX_DST}.bak.$(date +%s)"
-    sudo cp -a "$NGINX_DST" "$NGINX_BAK"
+    NGINX_BAK=""
+    # 既存設定があればバックアップ (初回はバックアップ不要)
+    if sudo test -f "$NGINX_DST"; then
+      NGINX_BAK="${NGINX_DST}.bak.$(date +%s)"
+      sudo cp -a "$NGINX_DST" "$NGINX_BAK"
+    fi
     sudo cp "$NGINX_SRC" "$NGINX_DST"
     if sudo nginx -t; then
       sudo systemctl reload nginx
-      sudo rm -f "$NGINX_BAK"
+      [ -n "$NGINX_BAK" ] && sudo rm -f "$NGINX_BAK"
     else
-      log "ERROR: nginx config invalid, rolling back from $NGINX_BAK"
-      sudo cp -a "$NGINX_BAK" "$NGINX_DST"
-      sudo rm -f "$NGINX_BAK"
+      if [ -n "$NGINX_BAK" ]; then
+        log "ERROR: nginx config invalid, rolling back from $NGINX_BAK"
+        sudo cp -a "$NGINX_BAK" "$NGINX_DST"
+        sudo rm -f "$NGINX_BAK"
+      else
+        log "ERROR: nginx config invalid on initial install, removing $NGINX_DST"
+        sudo rm -f "$NGINX_DST"
+      fi
       exit 1
     fi
   else
