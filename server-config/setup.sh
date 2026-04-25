@@ -112,4 +112,37 @@ fi
 #    具体的な iptables 設定はこのサーバーに既に適用済み (initial setup 時)
 # ==========================================================================
 
+# ==========================================================================
+# 8. Nginx 設定の同期: server-config/nginx-n8n.conf を
+#    /etc/nginx/sites-available/n8n に反映。差分があれば構文チェック後 reload。
+#    これまで手動コピーが必要でリポと実機のドリフトが発生していた (2026-03-20 NFB)。
+# ==========================================================================
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+NGINX_SRC="$SCRIPT_DIR/nginx-n8n.conf"
+NGINX_DST=/etc/nginx/sites-available/n8n
+if [ -f "$NGINX_SRC" ]; then
+  if ! sudo diff -q "$NGINX_SRC" "$NGINX_DST" >/dev/null 2>&1; then
+    log "Syncing nginx-n8n.conf → $NGINX_DST"
+    sudo cp "$NGINX_SRC" "$NGINX_DST"
+    if sudo nginx -t; then
+      sudo systemctl reload nginx
+    else
+      log "ERROR: nginx config invalid, reverting not performed (manual check required)"
+      exit 1
+    fi
+  else
+    log "nginx config already in sync"
+  fi
+fi
+
+# ==========================================================================
+# 9. docker compose up -d: server-config/docker-compose.yml のサービスを起動/更新
+#    image が latest の場合は pull も併せて行う (--pull always)
+# ==========================================================================
+COMPOSE_FILE="$SCRIPT_DIR/docker-compose.yml"
+if [ -f "$COMPOSE_FILE" ]; then
+  log "docker compose up -d (file: $COMPOSE_FILE)"
+  sudo docker compose -f "$COMPOSE_FILE" up -d
+fi
+
 log "setup.sh complete"
