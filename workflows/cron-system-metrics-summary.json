@@ -1,7 +1,7 @@
 {
   "id": "RVgbNn7QkJpxLavz",
   "name": "cron/system-metrics-summary",
-  "active": false,
+  "active": true,
   "nodes": [
     {
       "parameters": {
@@ -140,7 +140,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external cron-system-metrics-summary/FormatDiscord.ts"
+        "jsCode": "// @external cron-system-metrics-summary/FormatNotion.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -148,7 +148,7 @@
         1100,
         100
       ],
-      "name": "FormatDiscord",
+      "name": "FormatNotion",
       "id": "sm-0005-4000-8000-000000000005"
     },
     {
@@ -161,7 +161,7 @@
           },
           "conditions": [
             {
-              "id": "sm-cond-skip-discord",
+              "id": "sm-cond-skip-notion",
               "leftValue": "={{ $execution.customData.get('isTest') }}",
               "rightValue": "true",
               "operator": {
@@ -180,39 +180,32 @@
         1320,
         100
       ],
-      "name": "IfSkipDiscord",
+      "name": "IfSkipNotion",
       "id": "sm-0012-4000-8000-000000000012"
     },
     {
       "parameters": {
-        "authentication": "webhook",
-        "content": "",
+        "method": "POST",
+        "url": "http://localhost:5678/webhook/notion-metrics",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
         "options": {
-          "username": "n8n Metrics"
+          "timeout": 30000
         },
-        "embeds": {
-          "values": [
-            {
-              "inputMethod": "json",
-              "json": "={{ JSON.stringify($json.embed) }}"
-            }
-          ]
-        }
+        "onError": "stopAndFail"
       },
-      "type": "n8n-nodes-base.discord",
-      "typeVersion": 2,
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [
         1540,
         200
       ],
-      "name": "SendToDiscord",
+      "name": "PostMetricsApi",
       "id": "sm-0006-4000-8000-000000000006",
-      "credentials": {
-        "discordWebhookApi": {
-          "id": "Q1WzkHihMyOyHODS",
-          "name": "Discord Webhook account"
-        }
-      }
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000
     },
     {
       "parameters": {
@@ -303,25 +296,25 @@
       "main": [
         [
           {
-            "node": "FormatDiscord",
+            "node": "FormatNotion",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "FormatDiscord": {
+    "FormatNotion": {
       "main": [
         [
           {
-            "node": "IfSkipDiscord",
+            "node": "IfSkipNotion",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "IfSkipDiscord": {
+    "IfSkipNotion": {
       "main": [
         [
           {
@@ -332,14 +325,14 @@
         ],
         [
           {
-            "node": "SendToDiscord",
+            "node": "PostMetricsApi",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "SendToDiscord": {
+    "PostMetricsApi": {
       "main": [
         [
           {

@@ -14,11 +14,70 @@
       "typeVersion": 2.1,
       "position": [
         0,
-        0
+        300
       ],
       "name": "Webhook",
       "id": "nm-0001-4000-8000-000000000001",
       "webhookId": "nm-0001-4000-8000-000000000001"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": ""
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.action }}",
+                    "rightValue": "latest",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "latest"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": ""
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.action }}",
+                    "rightValue": "create",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "create"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        220,
+        300
+      ],
+      "name": "Switch",
+      "id": "nm-0010-4000-8000-000000000010"
     },
     {
       "parameters": {
@@ -38,8 +97,8 @@
       "type": "n8n-nodes-base.notion",
       "typeVersion": 2.2,
       "position": [
-        220,
-        0
+        500,
+        100
       ],
       "name": "ListLatest",
       "id": "nm-0002-4000-8000-000000000002",
@@ -59,8 +118,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        440,
-        0
+        720,
+        100
       ],
       "name": "FormatLatest",
       "id": "nm-0003-4000-8000-000000000003"
@@ -74,11 +133,89 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        660,
-        0
+        940,
+        100
       ],
-      "name": "Respond",
+      "name": "RespondLatest",
       "id": "nm-0004-4000-8000-000000000004"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// @external api-notion-metrics/PrepCreate.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        500,
+        500
+      ],
+      "name": "PrepCreate",
+      "id": "nm-0020-4000-8000-000000000020"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.notion.com/v1/pages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2022-06-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.requestBody }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        720,
+        500
+      ],
+      "name": "CreatePage",
+      "id": "nm-0021-4000-8000-000000000021",
+      "credentials": {
+        "notionApi": {
+          "id": "StdChbKZz3co4jDO",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// @external api-notion-metrics/FormatCreate.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        940,
+        500
+      ],
+      "name": "FormatCreate",
+      "id": "nm-0022-4000-8000-000000000022"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1160,
+        500
+      ],
+      "name": "RespondCreate",
+      "id": "nm-0023-4000-8000-000000000023"
     }
   ],
   "connections": {
@@ -86,7 +223,25 @@
       "main": [
         [
           {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
             "node": "ListLatest",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PrepCreate",
             "type": "main",
             "index": 0
           }
@@ -108,7 +263,40 @@
       "main": [
         [
           {
-            "node": "Respond",
+            "node": "RespondLatest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepCreate": {
+      "main": [
+        [
+          {
+            "node": "CreatePage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CreatePage": {
+      "main": [
+        [
+          {
+            "node": "FormatCreate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FormatCreate": {
+      "main": [
+        [
+          {
+            "node": "RespondCreate",
             "type": "main",
             "index": 0
           }
