@@ -43,6 +43,7 @@
       ],
       "name": "ListLatest",
       "id": "nm-0002-4000-8000-000000000002",
+      "alwaysOutputData": true,
       "credentials": {
         "notionApi": {
           "id": "StdChbKZz3co4jDO",
