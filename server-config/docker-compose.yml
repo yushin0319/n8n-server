@@ -17,7 +17,6 @@ services:
       N8N_EDITOR_BASE_URL: https://yushin-n8n.duckdns.org
       GENERIC_TIMEZONE: Asia/Tokyo
       N8N_SECURE_COOKIE: true
-      N8N_RUNNERS_ENABLED: false
       N8N_PROXY_HOPS: 1
       # Prometheus metrics endpoint /metrics を有効化（Q3 観測性強化）
       # localhost:5678/metrics のみアクセス可（nginx は /webhook/ と / のみ proxy）
