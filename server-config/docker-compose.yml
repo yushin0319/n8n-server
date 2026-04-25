@@ -20,9 +20,9 @@ services:
       N8N_PROXY_HOPS: 1
       # Prometheus metrics endpoint /metrics を有効化（Q3 観測性強化）
       # localhost:5678/metrics のみアクセス可（nginx は /webhook/ と / のみ proxy）
+      # NOTE: env 設定済みだが n8n v2.17.7 で /metrics は 404 を返す状況を確認。
+      # 別タスク (Q3a) で原因調査予定。env 自体は将来の解決時のため残す。
       N8N_METRICS: "true"
-      # 一時的: metrics endpoint mount 過程を追うため debug ログ。原因特定後に削除。
-      N8N_LOG_LEVEL: "debug"
     volumes:
       - n8n_data:/home/node/.n8n
     deploy:
