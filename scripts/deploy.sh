@@ -75,6 +75,14 @@ deploy_workflow() {
   # shellcheck disable=SC2064
   trap "rm -f '$bodyfile' '$embedded_file'" RETURN
   python3 "$(dirname "$0")/embed_code.py" "$file" > "$embedded_file"
+
+  # Secret 経由のプレースホルダー差し込み（GitHub Actions の env で渡される）
+  # 公開リポに UUID を直書きしないため、デプロイ時のみ置換する
+  if [ -n "${HEALTHCHECKS_UUID:-}" ]; then
+    # 区切り文字に '#' を使い、将来 Secret 値に '/' が含まれても破綻しないようにする
+    sed -i "s#PLACEHOLDER_HC_UUID#${HEALTHCHECKS_UUID}#g" "$embedded_file"
+  fi
+
   jq "$BODY_FILTER" "$embedded_file" > "$bodyfile"
 
   # 既存ワークフローの存在確認 → PUT(更新) or POST(新規)
