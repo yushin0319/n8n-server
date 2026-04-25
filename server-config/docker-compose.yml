@@ -44,6 +44,40 @@ services:
         limits:
           memory: 256M
 
+  # Promtail: journald + docker container logs + n8n_data の WF 系 log を Grafana
+  # Cloud Loki に転送する（L14 観測性強化）。
+  # 認証情報は host の .env に記載:
+  #   LOKI_URL=https://logs-prod-XX.grafana.net/loki/api/v1/push
+  #   LOKI_USER=<numeric user id>
+  #   LOKI_PASSWORD=<api key>
+  # 未設定でも container は起動するが Loki への push は HTTP 401 で fail し続ける。
+  # 完全に止めたければ docker compose stop promtail で OK。
+  promtail:
+    image: grafana/promtail:3.5.5
+    restart: unless-stopped
+    command: -config.file=/etc/promtail/config.yaml -config.expand-env=true
+    environment:
+      LOKI_URL: ${LOKI_URL:-https://logs-prod-001.grafana.net/loki/api/v1/push}
+      LOKI_USER: ${LOKI_USER:-PLACEHOLDER}
+      LOKI_PASSWORD: ${LOKI_PASSWORD:-PLACEHOLDER}
+      HOSTNAME: n8n-server
+    volumes:
+      - ./promtail-config.yaml:/etc/promtail/config.yaml:ro
+      # Docker コンテナログ + service discovery
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # systemd journal
+      - /var/log/journal:/var/log/journal:ro
+      - /run/log/journal:/run/log/journal:ro
+      - /etc/machine-id:/etc/machine-id:ro
+      # promtail の position 永続化（restart 後の重複読み回避）
+      - promtail_positions:/var/promtail
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+
 volumes:
   n8n_data:
   uptime_kuma_data:
+  promtail_positions:
