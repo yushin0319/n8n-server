@@ -21,6 +21,8 @@ services:
       # Prometheus metrics endpoint /metrics を有効化（Q3 観測性強化）
       # localhost:5678/metrics のみアクセス可（nginx は /webhook/ と / のみ proxy）
       N8N_METRICS: "true"
+      # 一時的: metrics endpoint mount 過程を追うため debug ログ。原因特定後に削除。
+      N8N_LOG_LEVEL: "debug"
     volumes:
       - n8n_data:/home/node/.n8n
     deploy:
