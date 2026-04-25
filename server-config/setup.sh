@@ -113,6 +113,18 @@ fi
 # ==========================================================================
 
 # ==========================================================================
+# 7b. uv (Python package manager) ユーザーローカルインストール
+#     scripts/kuma_bootstrap_monitors.py 等の Python スクリプト実行用。
+#     ~/.local/bin に配置（apt 不要、OS layer 非変更）。
+# ==========================================================================
+if [ ! -x "$HOME/.local/bin/uv" ]; then
+  log "Installing uv (~/.local/bin)"
+  curl -LsSf https://astral.sh/uv/install.sh | sh
+else
+  log "uv already installed: $($HOME/.local/bin/uv --version)"
+fi
+
+# ==========================================================================
 # 8. Nginx 設定の同期: server-config/nginx-n8n.conf を
 #    /etc/nginx/sites-available/n8n に反映。差分があれば構文チェック後 reload。
 #    これまで手動コピーが必要でリポと実機のドリフトが発生していた (2026-03-20 NFB)。
