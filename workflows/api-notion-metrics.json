@@ -1,0 +1,123 @@
+{
+  "id": "iNo6jlzmQuAGiVto",
+  "name": "api/notion-metrics",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "notion-metrics",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "name": "Webhook",
+      "id": "nm-0001-4000-8000-000000000001",
+      "webhookId": "nm-0001-4000-8000-000000000001"
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "getAll",
+        "databaseId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "34d2570f-e49f-800e-82f8-dca2c6b1f1d3"
+        },
+        "returnAll": false,
+        "limit": 1,
+        "simple": false,
+        "filterType": "none",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        220,
+        0
+      ],
+      "name": "ListLatest",
+      "id": "nm-0002-4000-8000-000000000002",
+      "credentials": {
+        "notionApi": {
+          "id": "StdChbKZz3co4jDO",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// @external api-notion-metrics/FormatLatest.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ],
+      "name": "FormatLatest",
+      "id": "nm-0003-4000-8000-000000000003"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        660,
+        0
+      ],
+      "name": "Respond",
+      "id": "nm-0004-4000-8000-000000000004"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "ListLatest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ListLatest": {
+      "main": [
+        [
+          {
+            "node": "FormatLatest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FormatLatest": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "aHM9O6mSwMNPTwdI"
+  }
+}
