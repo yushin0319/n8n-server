@@ -1,0 +1,370 @@
+{
+  "id": "RVgbNn7QkJpxLavz",
+  "name": "cron/system-metrics-summary",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "triggerAtHour": 9,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "name": "Schedule",
+      "id": "sm-0001-4000-8000-000000000001"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "test-system-metrics-summary",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        200
+      ],
+      "name": "WebhookTest",
+      "id": "sm-0010-4000-8000-000000000010",
+      "webhookId": "sm-0010-4000-8000-000000000010"
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external cron-system-metrics-summary/CheckTestMode.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        100
+      ],
+      "name": "CheckTestMode",
+      "id": "sm-0011-4000-8000-000000000011"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "http://localhost:5678/api/v1/executions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "limit",
+              "value": "250"
+            },
+            {
+              "name": "includeData",
+              "value": "false"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        },
+        "onError": "stopAndFail"
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        100
+      ],
+      "name": "FetchExecutions",
+      "id": "sm-0002-4000-8000-000000000002",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "X95dCNmKQIc7yD8N",
+          "name": "n8n API self"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "http://localhost:5678/api/v1/workflows",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 30000
+        },
+        "onError": "stopAndFail"
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        100
+      ],
+      "name": "FetchWorkflows",
+      "id": "sm-0003-4000-8000-000000000003",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "X95dCNmKQIc7yD8N",
+          "name": "n8n API self"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external cron-system-metrics-summary/AggregateStats.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        100
+      ],
+      "name": "AggregateStats",
+      "id": "sm-0004-4000-8000-000000000004"
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external cron-system-metrics-summary/FormatDiscord.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        100
+      ],
+      "name": "FormatDiscord",
+      "id": "sm-0005-4000-8000-000000000005"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "sm-cond-skip-discord",
+              "leftValue": "={{ $execution.customData.get('isTest') }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1320,
+        100
+      ],
+      "name": "IfSkipDiscord",
+      "id": "sm-0012-4000-8000-000000000012"
+    },
+    {
+      "parameters": {
+        "authentication": "webhook",
+        "content": "",
+        "options": {
+          "username": "n8n Metrics"
+        },
+        "embeds": {
+          "values": [
+            {
+              "inputMethod": "json",
+              "json": "={{ JSON.stringify($json.embed) }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        1540,
+        200
+      ],
+      "name": "SendToDiscord",
+      "id": "sm-0006-4000-8000-000000000006",
+      "credentials": {
+        "discordWebhookApi": {
+          "id": "Q1WzkHihMyOyHODS",
+          "name": "Discord Webhook account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external cron-system-metrics-summary/TestResponse.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1540,
+        0
+      ],
+      "name": "TestResponse",
+      "id": "sm-0013-4000-8000-000000000013"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1760,
+        0
+      ],
+      "name": "RespondTest",
+      "id": "sm-0014-4000-8000-000000000014"
+    }
+  ],
+  "connections": {
+    "Schedule": {
+      "main": [
+        [
+          {
+            "node": "CheckTestMode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WebhookTest": {
+      "main": [
+        [
+          {
+            "node": "CheckTestMode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CheckTestMode": {
+      "main": [
+        [
+          {
+            "node": "FetchExecutions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FetchExecutions": {
+      "main": [
+        [
+          {
+            "node": "FetchWorkflows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FetchWorkflows": {
+      "main": [
+        [
+          {
+            "node": "AggregateStats",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AggregateStats": {
+      "main": [
+        [
+          {
+            "node": "FormatDiscord",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FormatDiscord": {
+      "main": [
+        [
+          {
+            "node": "IfSkipDiscord",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IfSkipDiscord": {
+      "main": [
+        [
+          {
+            "node": "TestResponse",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "SendToDiscord",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SendToDiscord": {
+      "main": [
+        [
+          {
+            "node": "TestResponse",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TestResponse": {
+      "main": [
+        [
+          {
+            "node": "RespondTest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "aHM9O6mSwMNPTwdI"
+  }
+}
