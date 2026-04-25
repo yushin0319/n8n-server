@@ -1,0 +1,79 @@
+{
+  "id": "kWvbDblwP83k84Xt",
+  "name": "cron/system-heartbeat",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 5
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "name": "Schedule",
+      "id": "sh-0001-4000-8000-000000000001"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "http://uptime-kuma:3001/api/push/SD1MTSslsV",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "status",
+              "value": "up"
+            },
+            {
+              "name": "msg",
+              "value": "ok"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 5000
+        },
+        "onError": "continueErrorOutput"
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        0
+      ],
+      "name": "PushKuma",
+      "id": "sh-0002-4000-8000-000000000002",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000
+    }
+  ],
+  "connections": {
+    "Schedule": {
+      "main": [
+        [
+          {
+            "node": "PushKuma",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "aHM9O6mSwMNPTwdI"
+  }
+}
