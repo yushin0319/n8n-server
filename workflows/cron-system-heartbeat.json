@@ -43,7 +43,7 @@
         "options": {
           "timeout": 5000
         },
-        "onError": "continueErrorOutput"
+        "onError": "stopAndFail"
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
