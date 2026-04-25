@@ -31,13 +31,15 @@ MONITORS: list[dict] = [
         "name": "crypto-ai-trader heartbeat",
         "type": MonitorType.PUSH,
         "interval": 300,
-        "maxretries": 0,
+        # maxretries=1: push 遅延（数秒〜十数秒）での即 DOWN flap を防ぐ。
+        # 実質 600s 猶予となり、5分 cron + jitter を吸収。
+        "maxretries": 1,
     },
     {
         "name": "n8n heartbeat",
         "type": MonitorType.PUSH,
         "interval": 300,
-        "maxretries": 0,
+        "maxretries": 1,
     },
     {
         "name": "n8n HTTP",
@@ -110,8 +112,23 @@ def main() -> int:
             name = spec["name"]
             mid: int | None = None
             if name in existing:
-                print(f"skip (exists): {name}")
                 mid = existing[name]["id"]
+                # 既存 monitor は spec 通りに edit して同期（interval / maxretries
+                # 等を後から変更したい場合、本 script を再実行すれば反映される）。
+                # name と type はキーなので変更しない方針。
+                edit_kwargs = {k: v for k, v in spec.items() if k != "type"}
+                drifted = any(existing[name].get(k) != v for k, v in edit_kwargs.items())
+                if drifted:
+                    print(f"edit:          {name} (drifted)")
+                    try:
+                        api.edit_monitor(mid, **edit_kwargs)
+                    except Exception as e:
+                        print(
+                            f"  ERROR: edit_monitor 失敗 ({name}): {e}",
+                            file=sys.stderr,
+                        )
+                else:
+                    print(f"skip (in sync): {name}")
             else:
                 print(f"add:           {name}")
                 try:
