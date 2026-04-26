@@ -69,7 +69,7 @@ services:
       LOKI_PASSWORD: ${LOKI_PASSWORD:-PLACEHOLDER}
       HOSTNAME: n8n-server
     volumes:
-      - ./promtail-config.yaml:/etc/promtail/config.yaml:ro
+      - ./server-config/promtail-config.yaml:/etc/promtail/config.yaml:ro
       # Docker コンテナログ + service discovery
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
