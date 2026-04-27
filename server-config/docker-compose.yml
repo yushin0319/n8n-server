@@ -35,6 +35,10 @@ services:
       # 未設定時は ping URL が hc-ping.com//slug となり 404 → ping 不達 → 通知発火。
       # host の .env に HC_PING_KEY=<32文字英数> を記載すること。
       HC_PING_KEY: ${HC_PING_KEY:-}
+      # n8n v2 デフォルトで Code Node / expression からの $env アクセスがブロック
+      # される (N8N_BLOCK_ENV_ACCESS_IN_NODE=true)。HC_PING_KEY を URL expression で
+      # 参照するために false へ。Code Node 側で $env 参照は現状 0 件のため影響なし。
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: ${N8N_BLOCK_ENV_ACCESS_IN_NODE:-false}
     volumes:
       - n8n_data:/home/node/.n8n
     deploy:
