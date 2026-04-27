@@ -212,7 +212,7 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "https://hc-ping.com/{{ $env.HC_PING_KEY }}/gmail-import-recovery",
+        "url": "=https://hc-ping.com/{{ $env.HC_PING_KEY }}/gmail-import-recovery",
         "options": {
           "timeout": 5000
         },

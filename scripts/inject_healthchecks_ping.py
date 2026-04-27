@@ -31,10 +31,11 @@ PING_NODE_NAME = "PingHealthchecks"
 
 
 def build_ping_node(slug: str, sched_position: list[int], node_id: str) -> dict:
+    # n8n の expression として評価させるため URL は "=" プレフィックスが必須
     return {
         "parameters": {
             "method": "GET",
-            "url": f"https://hc-ping.com/{{{{ $env.HC_PING_KEY }}}}/{slug}",
+            "url": f"=https://hc-ping.com/{{{{ $env.HC_PING_KEY }}}}/{slug}",
             "options": {
                 "timeout": 5000,
             },
@@ -61,27 +62,37 @@ def process_workflow(wf_path: Path, dry_run: bool) -> str:
         return "skip:not-cron"
 
     nodes = d.get("nodes", [])
-    if any(n.get("name") == PING_NODE_NAME for n in nodes):
-        return "noop:already-injected"
-
     sched_node = next((n for n in nodes if n.get("type") == SCHED_TYPE), None)
     if sched_node is None:
         return "skip:no-schedule"
     sched_name = sched_node["name"]
+
+    slug = name.removeprefix("cron/")
+    node_id = f"hc-ping-{slug[:30]}"
+    new_ping_node = build_ping_node(slug, sched_node["position"], node_id)
+
+    existing_ping = next((n for n in nodes if n.get("name") == PING_NODE_NAME), None)
+    if existing_ping is not None:
+        # 既存 PingHealthchecks があれば parameters / id を上書き（接続はそのまま）
+        if existing_ping.get("parameters") == new_ping_node["parameters"]:
+            return "noop:up-to-date"
+        if dry_run:
+            return f"update:{slug}"
+        existing_ping["parameters"] = new_ping_node["parameters"]
+        with wf_path.open("w", encoding="utf-8") as fp:
+            json.dump(d, fp, indent=2, ensure_ascii=False)
+            fp.write("\n")
+        return f"update:{slug}"
 
     sched_conns = d.get("connections", {}).get(sched_name, {}).get("main", [])
     if not sched_conns or not sched_conns[0]:
         return "skip:schedule-has-no-downstream"
     original_targets = sched_conns[0]
 
-    slug = name.removeprefix("cron/")
-    node_id = f"hc-ping-{slug[:30]}"
-    ping_node = build_ping_node(slug, sched_node["position"], node_id)
-
     if dry_run:
         return f"create:{slug}"
 
-    d.setdefault("nodes", []).append(ping_node)
+    d.setdefault("nodes", []).append(new_ping_node)
     d.setdefault("connections", {})[sched_name] = {
         "main": [[{"node": PING_NODE_NAME, "type": "main", "index": 0}]],
     }

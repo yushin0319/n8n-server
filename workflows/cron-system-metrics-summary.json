@@ -238,7 +238,7 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "https://hc-ping.com/{{ $env.HC_PING_KEY }}/system-metrics-summary",
+        "url": "=https://hc-ping.com/{{ $env.HC_PING_KEY }}/system-metrics-summary",
         "options": {
           "timeout": 5000
         },

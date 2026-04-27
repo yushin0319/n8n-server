@@ -60,7 +60,7 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "https://hc-ping.com/{{ $env.HC_PING_KEY }}/system-heartbeat",
+        "url": "=https://hc-ping.com/{{ $env.HC_PING_KEY }}/system-heartbeat",
         "options": {
           "timeout": 5000
         },

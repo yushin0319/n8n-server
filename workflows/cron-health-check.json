@@ -193,7 +193,7 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "https://hc-ping.com/{{ $env.HC_PING_KEY }}/health-check",
+        "url": "=https://hc-ping.com/{{ $env.HC_PING_KEY }}/health-check",
         "options": {
           "timeout": 5000
         },

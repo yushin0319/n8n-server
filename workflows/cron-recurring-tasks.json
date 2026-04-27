@@ -352,7 +352,7 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "https://hc-ping.com/{{ $env.HC_PING_KEY }}/recurring-tasks",
+        "url": "=https://hc-ping.com/{{ $env.HC_PING_KEY }}/recurring-tasks",
         "options": {
           "timeout": 5000
         },
