@@ -98,7 +98,10 @@
           "id": "GMg4fnokNoF4q4MU",
           "name": "GitHub account"
         }
-      }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 60000
     },
     {
       "parameters": {
