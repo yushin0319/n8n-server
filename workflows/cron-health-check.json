@@ -189,6 +189,27 @@
       ],
       "name": "RespondTest",
       "id": "hc-0014-4000-8000-000000000014"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://hc-ping.com/{{ $env.HC_PING_KEY }}/health-check",
+        "options": {
+          "timeout": 5000
+        },
+        "onError": "continueRegularOutput"
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        200,
+        0
+      ],
+      "name": "PingHealthchecks",
+      "id": "hc-ping-health-check",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000
     }
   ],
   "connections": {
@@ -196,7 +217,7 @@
       "main": [
         [
           {
-            "node": "CheckTestMode",
+            "node": "PingHealthchecks",
             "type": "main",
             "index": 0
           }
@@ -299,6 +320,17 @@
         [
           {
             "node": "RespondTest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PingHealthchecks": {
+      "main": [
+        [
+          {
+            "node": "CheckTestMode",
             "type": "main",
             "index": 0
           }

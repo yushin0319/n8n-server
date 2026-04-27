@@ -455,6 +455,27 @@
       ],
       "name": "MockFetchExchangeRate",
       "id": "sw-llm-mock-fx"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://hc-ping.com/{{ $env.HC_PING_KEY }}/shirankedo-weekly-llm",
+        "options": {
+          "timeout": 5000
+        },
+        "onError": "continueRegularOutput"
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        400,
+        400
+      ],
+      "name": "PingHealthchecks",
+      "id": "hc-ping-shirankedo-weekly-llm",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000
     }
   ],
   "connections": {
@@ -462,7 +483,7 @@
       "main": [
         [
           {
-            "node": "CheckTestMode",
+            "node": "PingHealthchecks",
             "type": "main",
             "index": 0
           }
@@ -724,6 +745,17 @@
             "node": "MergeLLMInputs",
             "type": "main",
             "index": 1
+          }
+        ]
+      ]
+    },
+    "PingHealthchecks": {
+      "main": [
+        [
+          {
+            "node": "CheckTestMode",
+            "type": "main",
+            "index": 0
           }
         ]
       ]

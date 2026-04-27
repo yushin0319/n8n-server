@@ -419,6 +419,27 @@
           "name": "Header Auth account"
         }
       }
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://hc-ping.com/{{ $env.HC_PING_KEY }}/shirankedo-daily-stars",
+        "options": {
+          "timeout": 5000
+        },
+        "onError": "continueRegularOutput"
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        400,
+        400
+      ],
+      "name": "PingHealthchecks",
+      "id": "hc-ping-shirankedo-daily-stars",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000
     }
   ],
   "connections": {
@@ -426,7 +447,7 @@
       "main": [
         [
           {
-            "node": "CheckTestMode",
+            "node": "PingHealthchecks",
             "type": "main",
             "index": 0
           }
@@ -678,6 +699,17 @@
         [
           {
             "node": "DiscordNotifyStars",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PingHealthchecks": {
+      "main": [
+        [
+          {
+            "node": "CheckTestMode",
             "type": "main",
             "index": 0
           }

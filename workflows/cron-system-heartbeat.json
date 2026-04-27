@@ -56,10 +56,42 @@
       "retryOnFail": true,
       "maxTries": 2,
       "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://hc-ping.com/{{ $env.HC_PING_KEY }}/system-heartbeat",
+        "options": {
+          "timeout": 5000
+        },
+        "onError": "continueRegularOutput"
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        200,
+        0
+      ],
+      "name": "PingHealthchecks",
+      "id": "hc-ping-system-heartbeat",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000
     }
   ],
   "connections": {
     "Schedule": {
+      "main": [
+        [
+          {
+            "node": "PingHealthchecks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PingHealthchecks": {
       "main": [
         [
           {

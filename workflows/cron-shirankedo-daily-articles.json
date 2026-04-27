@@ -636,6 +636,27 @@
       ],
       "name": "IfSkipDiscordArXivWarn",
       "id": "sd-0046-4000-8000-000000000046"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://hc-ping.com/{{ $env.HC_PING_KEY }}/shirankedo-daily-articles",
+        "options": {
+          "timeout": 5000
+        },
+        "onError": "continueRegularOutput"
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        200,
+        400
+      ],
+      "name": "PingHealthchecks",
+      "id": "hc-ping-shirankedo-daily-articles",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000
     }
   ],
   "connections": {
@@ -643,7 +664,7 @@
       "main": [
         [
           {
-            "node": "CheckTestMode",
+            "node": "PingHealthchecks",
             "type": "main",
             "index": 0
           }
@@ -1074,6 +1095,17 @@
         [
           {
             "node": "DiscordArXivWarn",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PingHealthchecks": {
+      "main": [
+        [
+          {
+            "node": "CheckTestMode",
             "type": "main",
             "index": 0
           }
