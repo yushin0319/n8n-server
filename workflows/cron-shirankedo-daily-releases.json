@@ -369,7 +369,7 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "https://hc-ping.com/{{ $env.HC_PING_KEY }}/shirankedo-daily-releases",
+        "url": "=https://hc-ping.com/{{ $env.HC_PING_KEY }}/shirankedo-daily-releases",
         "options": {
           "timeout": 5000
         },

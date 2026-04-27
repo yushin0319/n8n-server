@@ -640,7 +640,7 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "https://hc-ping.com/{{ $env.HC_PING_KEY }}/shirankedo-daily-articles",
+        "url": "=https://hc-ping.com/{{ $env.HC_PING_KEY }}/shirankedo-daily-articles",
         "options": {
           "timeout": 5000
         },

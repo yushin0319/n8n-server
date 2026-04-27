@@ -423,7 +423,7 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "https://hc-ping.com/{{ $env.HC_PING_KEY }}/shirankedo-daily-stars",
+        "url": "=https://hc-ping.com/{{ $env.HC_PING_KEY }}/shirankedo-daily-stars",
         "options": {
           "timeout": 5000
         },

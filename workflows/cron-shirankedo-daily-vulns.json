@@ -428,7 +428,7 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "https://hc-ping.com/{{ $env.HC_PING_KEY }}/shirankedo-daily-vulns",
+        "url": "=https://hc-ping.com/{{ $env.HC_PING_KEY }}/shirankedo-daily-vulns",
         "options": {
           "timeout": 5000
         },

@@ -601,7 +601,7 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "https://hc-ping.com/{{ $env.HC_PING_KEY }}/shirankedo-daily-repos",
+        "url": "=https://hc-ping.com/{{ $env.HC_PING_KEY }}/shirankedo-daily-repos",
         "options": {
           "timeout": 5000
         },

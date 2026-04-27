@@ -593,7 +593,7 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "https://hc-ping.com/{{ $env.HC_PING_KEY }}/shirankedo-weekly-comments",
+        "url": "=https://hc-ping.com/{{ $env.HC_PING_KEY }}/shirankedo-weekly-comments",
         "options": {
           "timeout": 5000
         },
