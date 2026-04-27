@@ -48,7 +48,10 @@
           "id": "4p2w1eRfbdSRVCJe",
           "name": "artificial-analysis-api-key"
         }
-      }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 10000
     },
     {
       "parameters": {
