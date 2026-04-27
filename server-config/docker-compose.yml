@@ -30,6 +30,11 @@ services:
       #   N8N_SENTRY_DSN=https://<key>@<id>.ingest.<region>.sentry.io/<project>
       # 未設定時は空文字 → Sentry SDK は init をスキップ（fail-safe）。
       N8N_SENTRY_DSN: ${N8N_SENTRY_DSN:-}
+      # Healthchecks.io Slug ping key (A7 cron 実行欠落リアルタイム検知)。各 cron WF
+      # 末尾の PingHealthchecks ノードが {{ $env.HC_PING_KEY }} で参照する。
+      # 未設定時は ping URL が hc-ping.com//slug となり 404 → ping 不達 → 通知発火。
+      # host の .env に HC_PING_KEY=<32文字英数> を記載すること。
+      HC_PING_KEY: ${HC_PING_KEY:-}
     volumes:
       - n8n_data:/home/node/.n8n
     deploy:

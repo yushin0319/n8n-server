@@ -424,6 +424,27 @@
       ],
       "name": "IfSkipDiscordNotifyVulns",
       "id": "sd-0043-4000-8000-000000000043"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://hc-ping.com/{{ $env.HC_PING_KEY }}/shirankedo-daily-vulns",
+        "options": {
+          "timeout": 5000
+        },
+        "onError": "continueRegularOutput"
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        200,
+        0
+      ],
+      "name": "PingHealthchecks",
+      "id": "hc-ping-shirankedo-daily-vulns",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000
     }
   ],
   "connections": {
@@ -431,7 +452,7 @@
       "main": [
         [
           {
-            "node": "CheckTestMode",
+            "node": "PingHealthchecks",
             "type": "main",
             "index": 0
           }
@@ -681,6 +702,17 @@
         [
           {
             "node": "DiscordNotifyVulns",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PingHealthchecks": {
+      "main": [
+        [
+          {
+            "node": "CheckTestMode",
             "type": "main",
             "index": 0
           }
