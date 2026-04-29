@@ -75,7 +75,7 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "https://hc-ping.com/PLACEHOLDER_HC_UUID/fail",
+        "url": "=https://hc-ping.com/{{ $env.HC_PING_KEY }}/n8n-error-handler/fail",
         "options": {
           "timeout": 10000
         },
