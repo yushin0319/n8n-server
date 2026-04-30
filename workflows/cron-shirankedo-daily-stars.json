@@ -1,7 +1,7 @@
 {
   "id": "S54gDOkbmgh7vDGm",
   "name": "cron/shirankedo-daily-stars",
-  "active": true,
+  "active": false,
   "nodes": [
     {
       "parameters": {
