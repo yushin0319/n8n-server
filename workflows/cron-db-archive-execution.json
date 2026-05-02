@@ -47,6 +47,35 @@
     },
     {
       "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "dba-cond-test",
+              "leftValue": "={{ $execution.customData.get('isTest') }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [440, 100],
+      "name": "IfTestMode",
+      "id": "dba-0017-4000-8000-000000000017"
+    },
+    {
+      "parameters": {
         "method": "GET",
         "url": "http://localhost:5678/api/v1/executions",
         "authentication": "genericCredentialType",
@@ -71,7 +100,7 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [440, 100],
+      "position": [660, 200],
       "name": "FetchExecutions",
       "id": "dba-0002-4000-8000-000000000002",
       "retryOnFail": true,
@@ -90,7 +119,7 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [660, 100],
+      "position": [880, 200],
       "name": "PrepUpload",
       "id": "dba-0003-4000-8000-000000000003"
     },
@@ -119,7 +148,7 @@
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [880, 100],
+      "position": [1100, 200],
       "name": "IfHasData",
       "id": "dba-0012-4000-8000-000000000012"
     },
@@ -143,7 +172,7 @@
       },
       "type": "n8n-nodes-base.googleDrive",
       "typeVersion": 3,
-      "position": [1100, 0],
+      "position": [1320, 100],
       "name": "UploadFile",
       "id": "dba-0004-4000-8000-000000000004",
       "retryOnFail": true,
@@ -162,38 +191,9 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1320, 0],
+      "position": [1540, 100],
       "name": "PrepDeleteList",
       "id": "dba-0013-4000-8000-000000000013"
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict"
-          },
-          "conditions": [
-            {
-              "id": "dba-cond-test",
-              "leftValue": "={{ $execution.customData.get('isTest') }}",
-              "rightValue": "true",
-              "operator": {
-                "type": "string",
-                "operation": "equals"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [1540, 0],
-      "name": "IfSkipDelete",
-      "id": "dba-0014-4000-8000-000000000014"
     },
     {
       "parameters": {
@@ -238,7 +238,7 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1760, -100],
+      "position": [660, 0],
       "name": "TestResponse",
       "id": "dba-0015-4000-8000-000000000015"
     },
@@ -250,7 +250,7 @@
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
-      "position": [1980, -100],
+      "position": [880, 0],
       "name": "RespondTest",
       "id": "dba-0016-4000-8000-000000000016"
     },
@@ -311,6 +311,24 @@
       "main": [
         [
           {
+            "node": "IfTestMode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IfTestMode": {
+      "main": [
+        [
+          {
+            "node": "TestResponse",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
             "node": "FetchExecutions",
             "type": "main",
             "index": 0
@@ -349,13 +367,7 @@
             "index": 0
           }
         ],
-        [
-          {
-            "node": "TestResponse",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        []
       ]
     },
     "UploadFile": {
@@ -371,24 +383,6 @@
     },
     "PrepDeleteList": {
       "main": [
-        [
-          {
-            "node": "IfSkipDelete",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "IfSkipDelete": {
-      "main": [
-        [
-          {
-            "node": "TestResponse",
-            "type": "main",
-            "index": 0
-          }
-        ],
         [
           {
             "node": "SplitForDelete",
