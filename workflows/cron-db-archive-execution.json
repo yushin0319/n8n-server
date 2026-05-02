@@ -1,0 +1,448 @@
+{
+  "id": "vBJtySMLfu2huzyu",
+  "name": "cron/db-archive-execution",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "triggerAtHour": 3,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0],
+      "name": "Schedule",
+      "id": "dba-0001-4000-8000-000000000001"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "test-db-archive-execution",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [0, 200],
+      "name": "WebhookTest",
+      "id": "dba-0010-4000-8000-000000000010",
+      "webhookId": "dba-0010-4000-8000-000000000010"
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external cron-db-archive-execution/CheckTestMode.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [220, 100],
+      "name": "CheckTestMode",
+      "id": "dba-0011-4000-8000-000000000011"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "http://localhost:5678/api/v1/executions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "limit",
+              "value": "250"
+            },
+            {
+              "name": "includeData",
+              "value": "true"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 60000
+        },
+        "onError": "stopAndFail"
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 100],
+      "name": "FetchExecutions",
+      "id": "dba-0002-4000-8000-000000000002",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "X95dCNmKQIc7yD8N",
+          "name": "n8n API self"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external cron-db-archive-execution/PrepUpload.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [660, 100],
+      "name": "PrepUpload",
+      "id": "dba-0003-4000-8000-000000000003"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "dba-cond-empty",
+              "leftValue": "={{ $json.count }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [880, 100],
+      "name": "IfHasData",
+      "id": "dba-0012-4000-8000-000000000012"
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "upload",
+        "inputDataFieldName": "file",
+        "name": "={{ $json.name }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "root"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.folderId }}"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [1100, 0],
+      "name": "UploadFile",
+      "id": "dba-0004-4000-8000-000000000004",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "AeFJzyeByGcfTH8r",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external cron-db-archive-execution/PrepDeleteList.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1320, 0],
+      "name": "PrepDeleteList",
+      "id": "dba-0013-4000-8000-000000000013"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "dba-cond-test",
+              "leftValue": "={{ $execution.customData.get('isTest') }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1540, 0],
+      "name": "IfSkipDelete",
+      "id": "dba-0014-4000-8000-000000000014"
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [1760, 100],
+      "name": "SplitForDelete",
+      "id": "dba-0005-4000-8000-000000000005"
+    },
+    {
+      "parameters": {
+        "method": "DELETE",
+        "url": "=http://localhost:5678/api/v1/executions/{{ $json.id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 15000
+        },
+        "onError": "continueErrorOutput"
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1980, 200],
+      "name": "DeleteExecution",
+      "id": "dba-0006-4000-8000-000000000006",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 1000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "X95dCNmKQIc7yD8N",
+          "name": "n8n API self"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external cron-db-archive-execution/TestResponse.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1760, -100],
+      "name": "TestResponse",
+      "id": "dba-0015-4000-8000-000000000015"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [1980, -100],
+      "name": "RespondTest",
+      "id": "dba-0016-4000-8000-000000000016"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://hc-ping.com/{{ $env.HC_PING_KEY }}/db-archive-execution",
+        "options": {
+          "timeout": 5000
+        },
+        "onError": "continueRegularOutput"
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [200, 0],
+      "name": "PingHealthchecks",
+      "id": "hc-ping-db-archive-execution",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000
+    }
+  ],
+  "connections": {
+    "Schedule": {
+      "main": [
+        [
+          {
+            "node": "PingHealthchecks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WebhookTest": {
+      "main": [
+        [
+          {
+            "node": "CheckTestMode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PingHealthchecks": {
+      "main": [
+        [
+          {
+            "node": "CheckTestMode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CheckTestMode": {
+      "main": [
+        [
+          {
+            "node": "FetchExecutions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FetchExecutions": {
+      "main": [
+        [
+          {
+            "node": "PrepUpload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepUpload": {
+      "main": [
+        [
+          {
+            "node": "IfHasData",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IfHasData": {
+      "main": [
+        [
+          {
+            "node": "UploadFile",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "TestResponse",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "UploadFile": {
+      "main": [
+        [
+          {
+            "node": "PrepDeleteList",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepDeleteList": {
+      "main": [
+        [
+          {
+            "node": "IfSkipDelete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IfSkipDelete": {
+      "main": [
+        [
+          {
+            "node": "TestResponse",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "SplitForDelete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SplitForDelete": {
+      "main": [
+        [
+          {
+            "node": "TestResponse",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "DeleteExecution",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DeleteExecution": {
+      "main": [
+        [
+          {
+            "node": "SplitForDelete",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "TestResponse": {
+      "main": [
+        [
+          {
+            "node": "RespondTest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "aHM9O6mSwMNPTwdI"
+  }
+}
