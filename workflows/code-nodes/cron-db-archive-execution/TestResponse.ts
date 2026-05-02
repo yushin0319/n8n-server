@@ -1,5 +1,8 @@
+/**
+ * test mode で IfTestMode 経由でのみ呼ばれる。本番モード (Schedule) では実行されない。
+ * PrepUpload など下流ノードは未実行なので $('PrepUpload') 参照は禁止。
+ */
 export default function (): CodeNodeReturn {
-  const upstream = $("PrepUpload").first().json as IDataObject;
   return [
     {
       json: {
@@ -7,8 +10,7 @@ export default function (): CodeNodeReturn {
         workflow: "db-archive-execution",
         test: true,
         timestamp: new Date().toISOString(),
-        message: "スモークテスト正常終了",
-        archived_count: upstream?.count || 0,
+        message: "スモークテスト正常終了 (副作用なし)",
       },
     },
   ];
