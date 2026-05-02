@@ -1,7 +1,7 @@
 {
   "id": "vBJtySMLfu2huzyu",
   "name": "cron/db-archive-execution",
-  "active": false,
+  "active": true,
   "nodes": [
     {
       "parameters": {
@@ -215,7 +215,7 @@
         "options": {
           "timeout": 15000
         },
-        "onError": "continueErrorOutput"
+        "onError": "stopAndFail"
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -400,13 +400,7 @@
     },
     "SplitForDelete": {
       "main": [
-        [
-          {
-            "node": "TestResponse",
-            "type": "main",
-            "index": 0
-          }
-        ],
+        [],
         [
           {
             "node": "DeleteExecution",
@@ -424,8 +418,7 @@
             "type": "main",
             "index": 0
           }
-        ],
-        []
+        ]
       ]
     },
     "TestResponse": {
