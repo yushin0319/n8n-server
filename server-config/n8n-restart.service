@@ -13,6 +13,6 @@ Requires=docker.service
 Type=oneshot
 # docker restart は SIGTERM → 10 秒 grace → SIGKILL。n8n は通常 graceful shutdown が
 # 数秒で完了するため十分。コンテナの restart policy (unless-stopped) で自動再起動される。
+# 失敗時は systemctl status / journalctl で検知できるよう、追加の SuccessExitStatus は
+# 設定しない (デフォルト動作: exit 0 のみ成功)。timer は次回トリガーで自動リトライ。
 ExecStart=/usr/bin/docker restart n8n-docker-n8n-1
-# 失敗してもログだけ残して continue (timer は次回トリガーでリトライ)
-SuccessExitStatus=0
