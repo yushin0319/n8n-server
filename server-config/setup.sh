@@ -228,4 +228,37 @@ if command -v netdata >/dev/null 2>&1 && [ -f "$NETDATA_SRC" ]; then
   fi
 fi
 
+# ==========================================================================
+# 11. n8n daily restart timer (memory leak workaround)
+#     2026-05-03 のインシデント (5/2 09:00 JST から 15.5h zombie 化) を受けて、
+#     04:00 JST に毎日 docker restart n8n-docker-n8n-1 を発行。upstream の
+#     memory leak 修正待ちの対症療法。timer/service ファイル更新時のみ
+#     daemon-reload + enable --now を走らせる (冪等)。
+# ==========================================================================
+N8N_RESTART_SVC_SRC="$SCRIPT_DIR/n8n-restart.service"
+N8N_RESTART_TIMER_SRC="$SCRIPT_DIR/n8n-restart.timer"
+N8N_RESTART_SVC_DST=/etc/systemd/system/n8n-restart.service
+N8N_RESTART_TIMER_DST=/etc/systemd/system/n8n-restart.timer
+
+NEED_DAEMON_RELOAD=0
+for pair in "$N8N_RESTART_SVC_SRC|$N8N_RESTART_SVC_DST" "$N8N_RESTART_TIMER_SRC|$N8N_RESTART_TIMER_DST"; do
+  src="${pair%|*}"
+  dst="${pair#*|}"
+  if [ -f "$src" ] && ! sudo diff -q "$src" "$dst" >/dev/null 2>&1; then
+    log "Syncing $(basename "$src") → $dst"
+    sudo cp "$src" "$dst"
+    sudo chown root:root "$dst"
+    sudo chmod 0644 "$dst"
+    NEED_DAEMON_RELOAD=1
+  fi
+done
+
+if [ "$NEED_DAEMON_RELOAD" = "1" ]; then
+  sudo systemctl daemon-reload
+  sudo systemctl enable --now n8n-restart.timer
+  log "n8n-restart.timer enabled (next: $(systemctl show n8n-restart.timer -p NextElapseUSecRealtime --value 2>/dev/null || echo unknown))"
+else
+  log "n8n-restart.timer already in sync"
+fi
+
 log "setup.sh complete"

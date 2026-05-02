@@ -1,0 +1,19 @@
+# n8n daily restart timer
+# 04:00 JST (= 19:00 UTC 前日) に毎日発火。深夜 cron の谷間 (shirankedo daily 系の
+# 後、日中 cron の前) を狙う。
+# OS の Automatic-Reboot-Time とも一致 (カーネル更新時はそちらで再起動)。
+
+[Unit]
+Description=Trigger daily n8n container restart at 04:00 JST
+Documentation=https://github.com/yushin0319/n8n-server
+
+[Timer]
+# OnCalendar はサーバーローカルタイム解釈。setup.sh で Asia/Tokyo に固定済。
+OnCalendar=*-*-* 04:00:00
+# サーバー停止中に発火時刻が来ていた場合、起動後すぐに実行 (catch up)
+Persistent=true
+# サブ秒のずれは無視
+AccuracySec=1m
+
+[Install]
+WantedBy=timers.target

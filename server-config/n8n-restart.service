@@ -1,0 +1,18 @@
+# n8n コンテナ日次再起動 (memory leak 対症療法)
+# 2026-05-03 のインシデント (5/2 09:00 JST から 15.5h zombie 化) を受けて導入。
+# 真因 (n8n プロセス内部の累積) は upstream 修正待ちのため、24h 毎にリセット。
+# n8n-restart.timer から起動される oneshot サービス。
+
+[Unit]
+Description=Daily restart of n8n container to flush memory leak
+Documentation=https://github.com/yushin0319/n8n-server
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+# docker restart は SIGTERM → 10 秒 grace → SIGKILL。n8n は通常 graceful shutdown が
+# 数秒で完了するため十分。コンテナの restart policy (unless-stopped) で自動再起動される。
+ExecStart=/usr/bin/docker restart n8n-docker-n8n-1
+# 失敗してもログだけ残して continue (timer は次回トリガーでリトライ)
+SuccessExitStatus=0
