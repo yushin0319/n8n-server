@@ -1,7 +1,7 @@
 {
   "id": "Txnzz6v7lM6RMTmf",
   "name": "cron/shirankedo-daily-releases",
-  "active": true,
+  "active": false,
   "nodes": [
     {
       "parameters": {
