@@ -67,10 +67,7 @@
         0
       ],
       "name": "SendDiscord",
-      "id": "obs-0003-4000-8000-000000000003",
-      "retryOnFail": true,
-      "maxTries": 3,
-      "waitBetweenTries": 1000
+      "id": "obs-0003-4000-8000-000000000003"
     },
     {
       "parameters": {
@@ -117,10 +114,7 @@
           "id": "StdChbKZz3co4jDO",
           "name": "Notion account"
         }
-      },
-      "retryOnFail": true,
-      "maxTries": 3,
-      "waitBetweenTries": 1000
+      }
     },
     {
       "parameters": {
