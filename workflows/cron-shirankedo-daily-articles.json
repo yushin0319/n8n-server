@@ -1,7 +1,7 @@
 {
   "id": "qBVsxJnVYbOVNgJm",
   "name": "cron/shirankedo-daily-articles",
-  "active": true,
+  "active": false,
   "nodes": [
     {
       "parameters": {

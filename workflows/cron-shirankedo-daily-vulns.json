@@ -1,7 +1,7 @@
 {
   "id": "yVKfIE6Kt7xKQ7WL",
   "name": "cron/shirankedo-daily-vulns",
-  "active": true,
+  "active": false,
   "nodes": [
     {
       "parameters": {

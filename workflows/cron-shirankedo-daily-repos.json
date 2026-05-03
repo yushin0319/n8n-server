@@ -1,7 +1,7 @@
 {
   "id": "OQZpNlGXAPaij7Rl",
   "name": "cron/shirankedo-daily-repos",
-  "active": true,
+  "active": false,
   "nodes": [
     {
       "parameters": {
