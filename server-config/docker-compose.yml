@@ -43,6 +43,15 @@ services:
       # される (N8N_BLOCK_ENV_ACCESS_IN_NODE=true)。HC_PING_KEY を URL expression で
       # 参照するために false へ。Code Node 側で $env 参照は現状 0 件のため影響なし。
       N8N_BLOCK_ENV_ACCESS_IN_NODE: ${N8N_BLOCK_ENV_ACCESS_IN_NODE:-false}
+      # 観測性ログ統一エンドポイント api/obs-notify (#529) の Discord channel 別
+      # webhook URL。SendDiscord ノードが {{ $env.OBS_WEBHOOK_<SEVERITY>_URL }} で
+      # severity (critical/warning/info) 別 channel に振り分ける。
+      # host の .env に OBS_WEBHOOK_INFO_URL / OBS_WEBHOOK_WARNING_URL /
+      # OBS_WEBHOOK_CRITICAL_URL を記載すること。未設定時は SendDiscord が空 URL で
+      # 失敗するが neverError=true で WF は止まらない（Notion DB 書き込みは継続）。
+      OBS_WEBHOOK_INFO_URL: ${OBS_WEBHOOK_INFO_URL:-}
+      OBS_WEBHOOK_WARNING_URL: ${OBS_WEBHOOK_WARNING_URL:-}
+      OBS_WEBHOOK_CRITICAL_URL: ${OBS_WEBHOOK_CRITICAL_URL:-}
     volumes:
       - n8n_data:/home/node/.n8n
     deploy:
