@@ -18,6 +18,10 @@ services:
       GENERIC_TIMEZONE: Asia/Tokyo
       N8N_SECURE_COOKIE: true
       N8N_PROXY_HOPS: 1
+      # 実行タイムアウト: zombie 化時に unfinished execution が積み上がって
+      # 再起動時 OOM を引き起こす問題の緩和 (2026-05-03 21,312件 OOM 障害)。
+      # 1時間以上かかる WF は存在しないため 3600s を上限にする。
+      N8N_EXECUTION_TIMEOUT: "3600"
       # Prometheus metrics endpoint /metrics を有効化（Q3 観測性強化）
       # localhost:5678/metrics のみアクセス可（nginx は /webhook/ と / のみ proxy）
       # NOTE: env 設定済みだが n8n v2.17.7 で /metrics は 404 を返す状況を確認。
