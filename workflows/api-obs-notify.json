@@ -36,7 +36,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env[$json.envKey] }}",
+        "url": "={{ $json.severity === 'critical' ? $env.OBS_WEBHOOK_CRITICAL_URL : $json.severity === 'warning' ? $env.OBS_WEBHOOK_WARNING_URL : $env.OBS_WEBHOOK_INFO_URL }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
