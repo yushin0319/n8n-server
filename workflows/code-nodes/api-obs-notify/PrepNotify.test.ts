@@ -182,6 +182,19 @@ describe("PrepNotify", () => {
     expect(() => prepNotify()).toThrow("subject is required");
   });
 
+  it("url が非 http(s) ($URL placeholder 等) なら Discord/Notion 共に omit", () => {
+    vi.stubGlobal("$input", {
+      first: () => ({
+        json: { body: { ...minimalBody, url: "$URL" } },
+      }),
+    });
+    const items = callAndGetItems();
+    const discord = JSON.parse(items[0].json.discordBody as string);
+    expect(discord.embeds[0].url).toBeUndefined();
+    const notion = JSON.parse(items[0].json.notionBody as string);
+    expect(notion.properties.url).toBeUndefined();
+  });
+
   it("repo が許可リスト外で throw", () => {
     vi.stubGlobal("$input", {
       first: () => ({

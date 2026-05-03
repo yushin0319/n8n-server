@@ -59,7 +59,9 @@ export default function (): CodeNodeReturn {
   const envKey = `OBS_WEBHOOK_${severity.toUpperCase()}_URL`;
 
   const summary = (body.summary as string) || "";
-  const url = (body.url as string) || "";
+  const rawUrl = (body.url as string) || "";
+  // adapter 側のガード漏れに備えた二重保険: 非 http(s) URL は Discord/Notion 共に弾く。
+  const url = /^https?:\/\//.test(rawUrl) ? rawUrl : "";
   const rawPayload = body.raw_payload;
   const rawPayloadStr =
     typeof rawPayload === "string"
