@@ -5,7 +5,20 @@ export default function (): CodeNodeReturn {
   const name = monitor.name as string;
 
   if (!name) {
-    throw new Error("Uptime Kuma payload missing monitor.name");
+    // 想定外の Uptime Kuma payload (test_notification 等は monitor を含まない)。
+    // throw せず warning で受け流し、raw_payload を Notion DB に残す。
+    return [
+      {
+        json: {
+          severity: "warning",
+          service: "uptime-kuma",
+          subject: "⚠ Uptime Kuma unknown payload (monitor.name 欠如)",
+          summary:
+            "test_notification 等の簡易 payload か未対応形式。raw_payload で確認してください。",
+          raw_payload: body,
+        },
+      },
+    ];
   }
 
   const status = heartbeat.status as number | undefined;

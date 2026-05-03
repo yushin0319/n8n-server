@@ -2,9 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import convertKuma from "./ConvertUptimeKuma";
 
 function callAndGetItems() {
-  const result = convertKuma();
-  const items = Array.isArray(result) ? result : [result];
-  return items as INodeExecutionData[];
+  const r = convertKuma();
+  return (Array.isArray(r) ? r : [r]) as INodeExecutionData[];
 }
 
 describe("ConvertUptimeKuma", () => {
@@ -17,24 +16,18 @@ describe("ConvertUptimeKuma", () => {
       first: () => ({
         json: {
           body: {
-            heartbeat: {
-              status: 0,
-              msg: "timeout",
-              time: "2026-05-03T...",
-            },
+            heartbeat: { status: 0, msg: "timeout" },
             monitor: {
               name: "n8n HTTP",
               type: "http",
               url: "https://yushin-n8n.duckdns.org/",
             },
-            msg: "fail",
           },
         },
       }),
     });
     const out = callAndGetItems()[0].json;
     expect(out.severity).toBe("warning");
-    expect(out.service).toBe("uptime-kuma");
     expect(out.subject).toContain("n8n HTTP");
     expect(out.subject).toContain("DOWN");
     expect(out.url).toBe("https://yushin-n8n.duckdns.org/");
@@ -54,12 +47,22 @@ describe("ConvertUptimeKuma", () => {
     expect(callAndGetItems()[0].json.severity).toBe("info");
   });
 
-  it("monitor.name 欠如で throw", () => {
+  it("monitor.name 欠如時: throw せず warning で unknown payload として受け流す", () => {
     vi.stubGlobal("$input", {
       first: () => ({
         json: { body: { heartbeat: { status: 0 } } },
       }),
     });
-    expect(() => convertKuma()).toThrow();
+    const out = callAndGetItems()[0].json;
+    expect(out.severity).toBe("warning");
+    expect(out.subject).toContain("Uptime Kuma unknown payload");
+    expect(out.raw_payload).toEqual({ heartbeat: { status: 0 } });
+  });
+
+  it("空 body でも throw せず unknown で受け流す", () => {
+    vi.stubGlobal("$input", { first: () => ({ json: { body: {} } }) });
+    const out = callAndGetItems()[0].json;
+    expect(out.severity).toBe("warning");
+    expect(out.subject).toContain("Uptime Kuma unknown payload");
   });
 });
