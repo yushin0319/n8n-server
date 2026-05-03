@@ -69,6 +69,7 @@ _EXCLUDE_WFS = {
     # body 必須の adapter / 構造化エンドポイント。空 body で叩くと PrepNotify / Convert*
     # の validation throw → error-handler 経由で通知ノイズになるためスキップ。
     "api-notion-db-update",
+    "api-notion-db-query",
     "api-obs-notify",
     "api-obs-from-sentry",
     "api-obs-from-healthchecks",
