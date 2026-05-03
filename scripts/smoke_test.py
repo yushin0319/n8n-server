@@ -63,7 +63,17 @@ _WEBHOOK_BODIES: dict[str, dict | list[dict]] = {
 }
 
 # スモークテスト対象外WF
-_EXCLUDE_WFS = {"system-error-handler", "api-discord-notify"}
+_EXCLUDE_WFS = {
+    "system-error-handler",
+    "api-discord-notify",
+    # body 必須の adapter / 構造化エンドポイント。空 body で叩くと PrepNotify / Convert*
+    # の validation throw → error-handler 経由で通知ノイズになるためスキップ。
+    "api-notion-db-update",
+    "api-obs-notify",
+    "api-obs-from-sentry",
+    "api-obs-from-healthchecks",
+    "api-obs-from-uptime-kuma",
+}
 
 
 def scan_workflows() -> tuple[list[dict], list[dict]]:
