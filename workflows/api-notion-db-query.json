@@ -1,0 +1,102 @@
+{
+  "id": "7lLeHY6153KrN3tf",
+  "name": "api/notion-db-query",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "notion-db-query",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "name": "Webhook",
+      "id": "ndq-0001-4000-8000-000000000001",
+      "webhookId": "ndq-0001-4000-8000-000000000001"
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external api-notion-db-query/PrepQuery.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [220, 0],
+      "name": "PrepQuery",
+      "id": "ndq-0002-4000-8000-000000000002"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.url }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "Notion-Version", "value": "2022-06-28"},
+            {"name": "Content-Type", "value": "application/json"}
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.requestBody }}",
+        "options": {
+          "timeout": 15000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 0],
+      "name": "QueryDatabase",
+      "id": "ndq-0003-4000-8000-000000000003",
+      "credentials": {
+        "notionApi": {
+          "id": "StdChbKZz3co4jDO",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external api-notion-db-query/FormatResponse.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [660, 0],
+      "name": "FormatResponse",
+      "id": "ndq-0004-4000-8000-000000000004"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [880, 0],
+      "name": "Respond",
+      "id": "ndq-0005-4000-8000-000000000005"
+    }
+  ],
+  "connections": {
+    "Webhook": {"main": [[{"node": "PrepQuery", "type": "main", "index": 0}]]},
+    "PrepQuery": {"main": [[{"node": "QueryDatabase", "type": "main", "index": 0}]]},
+    "QueryDatabase": {"main": [[{"node": "FormatResponse", "type": "main", "index": 0}]]},
+    "FormatResponse": {"main": [[{"node": "Respond", "type": "main", "index": 0}]]}
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "aHM9O6mSwMNPTwdI"
+  }
+}
