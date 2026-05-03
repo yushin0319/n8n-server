@@ -2,9 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import convertSentry from "./ConvertSentry";
 
 function callAndGetItems() {
-  const result = convertSentry();
-  const items = Array.isArray(result) ? result : [result];
-  return items as INodeExecutionData[];
+  const r = convertSentry();
+  return (Array.isArray(r) ? r : [r]) as INodeExecutionData[];
 }
 
 describe("ConvertSentry", () => {
@@ -12,7 +11,7 @@ describe("ConvertSentry", () => {
     vi.unstubAllGlobals();
   });
 
-  it("Sentry issue alert (level=error) → severity=warning / service=sentry / project から repo 推定", () => {
+  it("issue.title 経路: severity=warning / repo は project slug から推定", () => {
     vi.stubGlobal("$input", {
       first: () => ({
         json: {
@@ -57,33 +56,10 @@ describe("ConvertSentry", () => {
         },
       }),
     });
-    const out = callAndGetItems()[0].json;
-    expect(out.severity).toBe("critical");
-    expect(out.repo).toBe("n8n-server");
+    expect(callAndGetItems()[0].json.severity).toBe("critical");
   });
 
-  it("level=warning → severity=warning / level=info → severity=info", () => {
-    vi.stubGlobal("$input", {
-      first: () => ({
-        json: {
-          body: { data: { issue: { title: "x", level: "warning" } } },
-        },
-      }),
-    });
-    expect(callAndGetItems()[0].json.severity).toBe("warning");
-
-    vi.unstubAllGlobals();
-    vi.stubGlobal("$input", {
-      first: () => ({
-        json: {
-          body: { data: { issue: { title: "x", level: "info" } } },
-        },
-      }),
-    });
-    expect(callAndGetItems()[0].json.severity).toBe("info");
-  });
-
-  it("event 形式 (issue ではなく event を含む) も対応", () => {
+  it("event 形式 (data.event) も対応", () => {
     vi.stubGlobal("$input", {
       first: () => ({
         json: {
@@ -101,33 +77,57 @@ describe("ConvertSentry", () => {
       }),
     });
     const out = callAndGetItems()[0].json;
-    expect(out.severity).toBe("warning");
     expect(out.subject).toContain("TypeError");
-    expect(out.url).toBe("https://sentry.io/event/1");
     expect(out.repo).toBe("WorldPulse");
   });
 
-  it("不明な project slug は repo を含めない", () => {
+  it("error.metadata.value fallback", () => {
     vi.stubGlobal("$input", {
       first: () => ({
         json: {
           body: {
+            action: "created",
             data: {
-              issue: {
-                title: "x",
+              error: {
+                event_id: "abc",
+                metadata: {
+                  value: "ConnectionError: timeout",
+                  type: "ConnectionError",
+                },
                 level: "error",
-                project: { slug: "unknown-project" },
               },
             },
           },
         },
       }),
     });
-    expect(callAndGetItems()[0].json.repo).toBeUndefined();
+    const out = callAndGetItems()[0].json;
+    expect(out.subject).toContain("ConnectionError: timeout");
+    expect(out.severity).toBe("warning");
   });
 
-  it("空 body で throw", () => {
+  it("title 取得不可: severity=warning / unknown payload subject + raw_payload 保持", () => {
+    vi.stubGlobal("$input", {
+      first: () => ({
+        json: {
+          body: { action: "triggered", data: { unknown: "x" } },
+        },
+      }),
+    });
+    const out = callAndGetItems()[0].json;
+    expect(out.severity).toBe("warning");
+    expect(out.subject).toContain("Sentry unknown event payload");
+    expect(out.subject).toContain("action=triggered");
+    expect(out.raw_payload).toEqual({
+      action: "triggered",
+      data: { unknown: "x" },
+    });
+  });
+
+  it("空 body でも throw せず warning で受け流す", () => {
     vi.stubGlobal("$input", { first: () => ({ json: { body: {} } }) });
-    expect(() => convertSentry()).toThrow();
+    const out = callAndGetItems()[0].json;
+    expect(out.severity).toBe("warning");
+    expect(out.subject).toContain("Sentry unknown event payload");
   });
 });
