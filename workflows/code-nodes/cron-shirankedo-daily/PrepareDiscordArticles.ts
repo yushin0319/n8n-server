@@ -1,5 +1,5 @@
-import { discordMessage } from "../_shared/discordMessage";
 import { formatError } from "../_shared/formatError";
+import { obsNotifyFromCron } from "../_shared/obsNotifyPayload";
 
 export default function (): CodeNodeReturn {
   const result = $input.first().json;
@@ -7,12 +7,18 @@ export default function (): CodeNodeReturn {
   const isError =
     !!result.error ||
     (result.statusCode && (result.statusCode as number) >= 400);
-  const msg = discordMessage({
-    label: "shirankedo 記事更新完了",
-    isError: !!isError,
-    detail: isError
-      ? formatError(result.error ?? result.message ?? result)
-      : `${count}件追加`,
-  });
-  return [{ json: { message: msg } }];
+  return [
+    {
+      json: obsNotifyFromCron({
+        label: "shirankedo 記事更新完了",
+        isError: !!isError,
+        detail: isError
+          ? formatError(result.error ?? result.message ?? result)
+          : `${count}件追加`,
+        service: "n8n",
+        repo: "shirankedo",
+        raw_payload: isError ? result : undefined,
+      }),
+    },
+  ];
 }

@@ -12,39 +12,36 @@ describe("PrepareDiscordVulns", () => {
     vi.unstubAllGlobals();
   });
 
-  it("成功時は件数付き成功メッセージを生成する", () => {
-    vi.stubGlobal("$input", {
-      first: () => ({ json: { ok: true } }),
-    });
-    vi.stubGlobal("$", (nodeName: string) => {
-      if (nodeName === "MergeVulnPaths") {
+  it("成功時: info / 件数 / shirankedo", () => {
+    vi.stubGlobal("$input", { first: () => ({ json: { ok: true } }) });
+    vi.stubGlobal("$", (n: string) => {
+      if (n === "MergeVulnPaths")
         return { first: () => ({ json: { count: 4 } }) };
-      }
-      throw new Error(`Unknown node: ${nodeName}`);
+      throw new Error(`Unknown: ${n}`);
     });
 
-    const items = callAndGetItems();
-    const msg = items[0].json.message as string;
-
-    expect(msg).toContain("✅");
-    expect(msg).toContain("4件");
+    const out = callAndGetItems()[0].json;
+    expect(out.severity).toBe("info");
+    expect(out.subject).toContain("✅");
+    expect(out.subject).toContain("shirankedo 脆弱性更新完了");
+    expect(out.summary).toContain("4件");
+    expect(out.repo).toBe("shirankedo");
   });
 
-  it("エラー時はエラーメッセージを生成する", () => {
+  it("エラー時: warning / ❌ / NVD API error / raw_payload", () => {
     vi.stubGlobal("$input", {
       first: () => ({ json: { error: "NVD API error" } }),
     });
-    vi.stubGlobal("$", (nodeName: string) => {
-      if (nodeName === "MergeVulnPaths") {
+    vi.stubGlobal("$", (n: string) => {
+      if (n === "MergeVulnPaths")
         return { first: () => ({ json: { count: 0 } }) };
-      }
-      throw new Error(`Unknown node: ${nodeName}`);
+      throw new Error(`Unknown: ${n}`);
     });
 
-    const items = callAndGetItems();
-    const msg = items[0].json.message as string;
-
-    expect(msg).toContain("❌");
-    expect(msg).toContain("NVD API error");
+    const out = callAndGetItems()[0].json;
+    expect(out.severity).toBe("warning");
+    expect(out.subject).toContain("❌");
+    expect(out.summary).toContain("NVD API error");
+    expect(out.raw_payload).toEqual({ error: "NVD API error" });
   });
 });

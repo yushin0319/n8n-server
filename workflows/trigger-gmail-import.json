@@ -248,10 +248,10 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "http://localhost:5678/webhook/discord-notify",
+        "url": "http://localhost:5678/webhook/obs-notify",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ message: '⚠ gmail-import: Qwen/Gemma/Gptoss/Gemini 全て失敗、この回の分類をスキップ（次回実行で再試行）' }) }}",
+        "jsonBody": "={{ JSON.stringify({severity: 'warning', service: 'n8n', repo: 'n8n-server', subject: '⚠ gmail-import 分類失敗', summary: 'Qwen/Gemma/Gptoss/Gemini 全て失敗、この回の分類をスキップ（次回実行で再試行）'}) }}",
         "options": {}
       },
       "id": "a3e",

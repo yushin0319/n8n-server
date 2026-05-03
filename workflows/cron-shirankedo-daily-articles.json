@@ -157,10 +157,10 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "http://localhost:5678/webhook/discord-notify",
+        "url": "http://localhost:5678/webhook/obs-notify",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "{\"message\":\"⚠ shirankedo: arXiv API エラー（3回リトライ後も失敗、論文取得スキップ）\"}",
+        "jsonBody": "={{ JSON.stringify({severity: 'warning', service: 'n8n', repo: 'shirankedo', subject: '⚠ shirankedo arXiv エラー', summary: 'arXiv API エラー（3回リトライ後も失敗、論文取得スキップ）'}) }}",
         "options": {}
       },
       "id": "a1000002-0001-0001-0001-000000000031",
@@ -378,10 +378,10 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "http://localhost:5678/webhook/discord-notify",
+        "url": "http://localhost:5678/webhook/obs-notify",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ message: $json.message }) }}",
+        "jsonBody": "={{ JSON.stringify($json) }}",
         "options": {}
       },
       "id": "a1000002-0001-0001-0001-000000000022",

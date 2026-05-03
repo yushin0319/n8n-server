@@ -11,24 +11,24 @@ describe("PrepareDiscordLLM", () => {
     vi.unstubAllGlobals();
   });
 
-  it("成功時に件数を含むメッセージを返す", () => {
+  it("成功時: info / 件数を summary に", () => {
     vi.stubGlobal("$input", {
       first: () => ({ json: { ok: true, inserted: 5, updated: 3 } }),
     });
 
-    const items = callAndGetItems();
-    expect((items[0].json.message as string).startsWith("\u2705")).toBe(true);
-    expect(items[0].json.message).toContain("5件追加");
-    expect(items[0].json.message).toContain("3件更新");
+    const out = callAndGetItems()[0].json;
+    expect(out.severity).toBe("info");
+    expect(out.subject).toContain("✅");
+    expect(out.summary).toContain("5件追加");
+    expect(out.summary).toContain("3件更新");
   });
 
-  it("失敗時にエラーメッセージを返す", () => {
-    vi.stubGlobal("$input", {
-      first: () => ({ json: { ok: false } }),
-    });
+  it("失敗時: warning / ❌ / LLM価格更新失敗", () => {
+    vi.stubGlobal("$input", { first: () => ({ json: { ok: false } }) });
 
-    const items = callAndGetItems();
-    expect((items[0].json.message as string).startsWith("\u274C")).toBe(true);
-    expect(items[0].json.message).toContain("LLM価格更新失敗");
+    const out = callAndGetItems()[0].json;
+    expect(out.severity).toBe("warning");
+    expect(out.subject).toContain("❌");
+    expect(out.subject).toContain("LLM価格更新失敗");
   });
 });

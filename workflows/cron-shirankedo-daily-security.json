@@ -280,10 +280,10 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "http://localhost:5678/webhook/discord-notify",
+        "url": "http://localhost:5678/webhook/obs-notify",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ message: $json.message }) }}",
+        "jsonBody": "={{ JSON.stringify($json) }}",
         "options": {}
       },
       "id": "b2000001-0001-0001-0001-000000000014",

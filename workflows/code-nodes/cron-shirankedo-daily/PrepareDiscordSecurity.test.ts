@@ -12,40 +12,38 @@ describe("PrepareDiscordSecurity", () => {
     vi.unstubAllGlobals();
   });
 
-  it("成功時は脆弱性件数とリリース件数を含む成功メッセージを生成する", () => {
-    vi.stubGlobal("$input", {
-      first: () => ({ json: { ok: true } }),
-    });
-    vi.stubGlobal("$", (nodeName: string) => {
-      if (nodeName === "PrepareSecurityComment") {
-        return { first: () => ({ json: { vulnCount: 2, releaseCount: 5 } }) };
-      }
-      throw new Error(`Unknown node: ${nodeName}`);
+  it("成功時: info / 脆弱性件数とリリース件数を summary に", () => {
+    vi.stubGlobal("$input", { first: () => ({ json: { ok: true } }) });
+    vi.stubGlobal("$", (n: string) => {
+      if (n === "PrepareSecurityComment")
+        return {
+          first: () => ({ json: { vulnCount: 2, releaseCount: 5 } }),
+        };
+      throw new Error(`Unknown: ${n}`);
     });
 
-    const items = callAndGetItems();
-    const msg = items[0].json.message as string;
-
-    expect(msg).toContain("✅");
-    expect(msg).toContain("脆弱性2件");
-    expect(msg).toContain("リリース5件");
+    const out = callAndGetItems()[0].json;
+    expect(out.severity).toBe("info");
+    expect(out.subject).toContain("✅");
+    expect(out.summary).toContain("脆弱性2件");
+    expect(out.summary).toContain("リリース5件");
   });
 
-  it("エラー時はエラーメッセージを生成する", () => {
+  it("エラー時: warning / ❌ / connection failed を summary に", () => {
     vi.stubGlobal("$input", {
       first: () => ({ json: { error: "connection failed" } }),
     });
-    vi.stubGlobal("$", (nodeName: string) => {
-      if (nodeName === "PrepareSecurityComment") {
-        return { first: () => ({ json: { vulnCount: 0, releaseCount: 0 } }) };
-      }
-      throw new Error(`Unknown node: ${nodeName}`);
+    vi.stubGlobal("$", (n: string) => {
+      if (n === "PrepareSecurityComment")
+        return {
+          first: () => ({ json: { vulnCount: 0, releaseCount: 0 } }),
+        };
+      throw new Error(`Unknown: ${n}`);
     });
 
-    const items = callAndGetItems();
-    const msg = items[0].json.message as string;
-
-    expect(msg).toContain("❌");
-    expect(msg).toContain("connection failed");
+    const out = callAndGetItems()[0].json;
+    expect(out.severity).toBe("warning");
+    expect(out.subject).toContain("❌");
+    expect(out.summary).toContain("connection failed");
   });
 });
