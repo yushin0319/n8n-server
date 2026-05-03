@@ -1,0 +1,145 @@
+{
+  "id": "dzyhl1XzIe9OX6aN",
+  "name": "api/obs-from-sentry",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "obs-from-sentry",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "name": "Webhook",
+      "id": "ofs-0001-4000-8000-000000000001",
+      "webhookId": "ofs-0001-4000-8000-000000000001"
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external api-obs-from-sentry/ConvertSentry.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "name": "ConvertSentry",
+      "id": "ofs-0002-4000-8000-000000000002"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:5678/webhook/obs-notify",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        0
+      ],
+      "name": "ForwardToObsNotify",
+      "id": "ofs-0003-4000-8000-000000000003"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        880,
+        0
+      ],
+      "name": "Respond",
+      "id": "ofs-0004-4000-8000-000000000004"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { success: true, forwarded: true } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        0
+      ],
+      "name": "FormatResponse",
+      "id": "ofs-0005-4000-8000-000000000005"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "ConvertSentry",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ConvertSentry": {
+      "main": [
+        [
+          {
+            "node": "ForwardToObsNotify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ForwardToObsNotify": {
+      "main": [
+        [
+          {
+            "node": "FormatResponse",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FormatResponse": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "aHM9O6mSwMNPTwdI"
+  }
+}
