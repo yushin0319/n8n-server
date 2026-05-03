@@ -1,18 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import formatError from "./FormatError";
 
-/** テスト用: CodeNodeReturn を配列として扱う */
 function callAndGetItems() {
   const result = formatError();
   const items = Array.isArray(result) ? result : [result];
   return items as INodeExecutionData[];
 }
 
-/** $input.first() のモックを設定する */
 function mockInput(json: IDataObject) {
-  vi.stubGlobal("$input", {
-    first: () => ({ json }),
-  });
+  vi.stubGlobal("$input", { first: () => ({ json }) });
 }
 
 describe("FormatError", () => {
@@ -20,7 +16,7 @@ describe("FormatError", () => {
     vi.restoreAllMocks();
   });
 
-  it("正常なエラーデータから正しいembed構造を返す", () => {
+  it("正常なエラーデータから obs-notify schema を返す (severity=warning, service=n8n)", () => {
     mockInput({
       execution: {
         url: "https://example.com/workflow/c8ZI0oriZgjePMud/executions/123",
@@ -29,18 +25,22 @@ describe("FormatError", () => {
       },
     });
 
-    const items = callAndGetItems();
+    const out = callAndGetItems()[0].json;
 
-    expect(items).toHaveLength(1);
-    expect(items[0]).toHaveProperty("json.embed");
-
-    const embed = items[0].json.embed as Record<string, unknown>;
-    expect(embed.title).toBe("n8nエラー発生");
-    expect(embed.color).toBe(15158332);
-    expect(embed.fields).toHaveLength(3);
+    expect(out.severity).toBe("warning");
+    expect(out.service).toBe("n8n");
+    expect(out.repo).toBe("n8n-server");
+    expect(out.subject).toContain("Notion Tasks");
+    expect(out.subject).toContain("❌");
+    expect(out.summary).toContain("HTTP Request");
+    expect(out.summary).toContain("Connection refused");
+    expect(out.url).toBe(
+      "https://example.com/workflow/c8ZI0oriZgjePMud/executions/123",
+    );
+    expect(out.raw_payload).toBeDefined();
   });
 
-  it("WF_MAPに存在するID → WF名に変換される", () => {
+  it("WF_MAP に存在する ID → WF 名に変換", () => {
     mockInput({
       execution: {
         url: "https://example.com/workflow/oGx9uiLsxLGfGDcJ/executions/456",
@@ -48,15 +48,10 @@ describe("FormatError", () => {
         error: { message: "Test error" },
       },
     });
-
-    const items = callAndGetItems();
-    const embed = items[0].json.embed as Record<string, unknown>;
-    const fields = embed.fields as Array<Record<string, unknown>>;
-
-    expect(fields[0].value).toBe("Gmail to Notion");
+    expect(callAndGetItems()[0].json.subject).toContain("Gmail to Notion");
   });
 
-  it("WF_MAPに存在しないID → IDがそのまま使われる", () => {
+  it("WF_MAP に無い ID → ID がそのまま使われる", () => {
     mockInput({
       execution: {
         url: "https://example.com/workflow/unknownWfId123/executions/789",
@@ -64,15 +59,10 @@ describe("FormatError", () => {
         error: { message: "Test error" },
       },
     });
-
-    const items = callAndGetItems();
-    const embed = items[0].json.embed as Record<string, unknown>;
-    const fields = embed.fields as Array<Record<string, unknown>>;
-
-    expect(fields[0].value).toBe("unknownWfId123");
+    expect(callAndGetItems()[0].json.subject).toContain("unknownWfId123");
   });
 
-  it("エラー詳細が200文字に切り詰められる", () => {
+  it("エラー詳細が 200 文字に切り詰められる", () => {
     const longMessage = "A".repeat(300);
     mockInput({
       execution: {
@@ -81,25 +71,16 @@ describe("FormatError", () => {
         error: { message: longMessage },
       },
     });
-
-    const items = callAndGetItems();
-    const embed = items[0].json.embed as Record<string, unknown>;
-    const fields = embed.fields as Array<Record<string, unknown>>;
-
-    expect((fields[2].value as string).length).toBe(200);
+    const summary = callAndGetItems()[0].json.summary as string;
+    expect(summary.length).toBeLessThanOrEqual(220);
+    expect(summary).toContain("AAA");
   });
 
-  it("execution情報が欠落していてもエラーにならない", () => {
+  it("execution 情報が欠落していてもエラーにならない", () => {
     mockInput({});
-
-    const items = callAndGetItems();
-
-    expect(items).toHaveLength(1);
-    const embed = items[0].json.embed as Record<string, unknown>;
-    const fields = embed.fields as Array<Record<string, unknown>>;
-
-    expect(fields[0].value).toBe("unknown");
-    expect(fields[1].value).toBe("unknown");
-    expect(fields[2].value).toBe("unknown");
+    const out = callAndGetItems()[0].json;
+    expect(out.severity).toBe("warning");
+    expect(out.subject).toContain("unknown");
+    expect(out.summary).toContain("unknown");
   });
 });

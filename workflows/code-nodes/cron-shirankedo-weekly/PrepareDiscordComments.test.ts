@@ -11,23 +11,24 @@ describe("PrepareDiscordComments", () => {
     vi.unstubAllGlobals();
   });
 
-  it("成功時に正しいメッセージを返す", () => {
-    vi.stubGlobal("$input", {
-      first: () => ({ json: { ok: true } }),
-    });
+  it("成功時: info / ページコメント生成完了", () => {
+    vi.stubGlobal("$input", { first: () => ({ json: { ok: true } }) });
 
-    const items = callAndGetItems();
-    expect((items[0].json.message as string).startsWith("\u2705")).toBe(true);
-    expect(items[0].json.message).toContain("ページコメント生成完了");
+    const out = callAndGetItems()[0].json;
+    expect(out.severity).toBe("info");
+    expect(out.subject).toContain("✅");
+    expect(out.subject).toContain("ページコメント生成完了");
   });
 
-  it("失敗時にエラーメッセージを返す", () => {
+  it("失敗時: warning / ❌ / ページコメント生成失敗", () => {
     vi.stubGlobal("$input", {
       first: () => ({ json: { ok: false, message: "API error" } }),
     });
 
-    const items = callAndGetItems();
-    expect((items[0].json.message as string).startsWith("\u274C")).toBe(true);
-    expect(items[0].json.message).toContain("ページコメント生成失敗");
+    const out = callAndGetItems()[0].json;
+    expect(out.severity).toBe("warning");
+    expect(out.subject).toContain("❌");
+    expect(out.subject).toContain("ページコメント生成失敗");
+    expect(out.summary).toContain("API error");
   });
 });

@@ -11,33 +11,38 @@ describe("PrepareDiscordRepos", () => {
     vi.unstubAllGlobals();
   });
 
-  it("messageフィールドがある場合はそのまま返す", () => {
+  it("上流の message を info で透過 (info / summary に格納)", () => {
     vi.stubGlobal("$input", {
       first: () => ({ json: { message: "新規リポなし、スキップ" } }),
     });
 
-    const items = callAndGetItems();
-    expect(items[0].json.message).toBe("新規リポなし、スキップ");
+    const out = callAndGetItems()[0].json;
+    expect(out.severity).toBe("info");
+    expect(out.subject).toContain("TrackingRepo更新");
+    expect(out.summary).toBe("新規リポなし、スキップ");
   });
 
-  it("成功時にtotal件数を含むメッセージを返す", () => {
+  it("成功時: info / total件数を summary に", () => {
     vi.stubGlobal("$input", {
       first: () => ({ json: { total: 10, errors: 0 } }),
     });
 
-    const items = callAndGetItems();
-    expect((items[0].json.message as string).startsWith("\u2705")).toBe(true);
-    expect(items[0].json.message).toContain("10件追加");
+    const out = callAndGetItems()[0].json;
+    expect(out.severity).toBe("info");
+    expect(out.subject).toContain("✅");
+    expect(out.summary).toContain("10件追加");
   });
 
-  it("エラーがある場合にエラーメッセージを返す", () => {
+  it("エラー時: warning / ❌ / errors を summary に / raw_payload", () => {
     vi.stubGlobal("$input", {
       first: () => ({ json: { total: 8, errors: 2 } }),
     });
 
-    const items = callAndGetItems();
-    expect((items[0].json.message as string).startsWith("\u274C")).toBe(true);
-    expect(items[0].json.message).toContain("8件追加");
-    expect(items[0].json.message).toContain("2件エラー");
+    const out = callAndGetItems()[0].json;
+    expect(out.severity).toBe("warning");
+    expect(out.subject).toContain("❌");
+    expect(out.summary).toContain("8件追加");
+    expect(out.summary).toContain("2件エラー");
+    expect(out.raw_payload).toEqual({ total: 8, errors: 2 });
   });
 });

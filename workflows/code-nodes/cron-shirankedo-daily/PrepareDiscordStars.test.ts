@@ -11,27 +11,27 @@ describe("PrepareDiscordStars", () => {
     vi.unstubAllGlobals();
   });
 
-  it("成功時に正しいメッセージを返す", () => {
+  it("成功時: info / Star取得 100件 / 絵文字 ✅", () => {
     vi.stubGlobal("$input", {
       first: () => ({ json: { total: 100, errors: 0 } }),
     });
 
-    const items = callAndGetItems();
-    expect(items[0].json.message).toContain("Star取得");
-    expect(items[0].json.message).toContain("100件");
-    // discordMessage の成功絵文字
-    expect((items[0].json.message as string).startsWith("\u2705")).toBe(true);
+    const out = callAndGetItems()[0].json;
+    expect(out.severity).toBe("info");
+    expect(out.subject).toContain("✅");
+    expect(out.subject).toContain("Star取得");
+    expect(out.summary).toContain("100件");
   });
 
-  it("エラーありの場合にエラーメッセージを返す", () => {
+  it("エラー時: warning / ❌ / 90件成功 + 2件エラー", () => {
     vi.stubGlobal("$input", {
       first: () => ({ json: { total: 90, errors: 2 } }),
     });
 
-    const items = callAndGetItems();
-    expect(items[0].json.message).toContain("90件成功");
-    expect(items[0].json.message).toContain("2件エラー");
-    // discordMessage の失敗絵文字
-    expect((items[0].json.message as string).startsWith("\u274C")).toBe(true);
+    const out = callAndGetItems()[0].json;
+    expect(out.severity).toBe("warning");
+    expect(out.subject).toContain("❌");
+    expect(out.summary).toContain("90件成功");
+    expect(out.summary).toContain("2件エラー");
   });
 });
