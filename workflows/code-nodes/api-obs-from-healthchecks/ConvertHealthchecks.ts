@@ -20,7 +20,9 @@ export default function (): CodeNodeReturn {
     summary: `status=${status} tags=${(body.tags as string) || ""}`,
     raw_payload: body,
   };
-  if (url) out.url = url;
+  // HC.io の Webhook body template で `$URL` を含めても、check 自身に URL 未設定だと
+  // placeholder が展開されず文字列 "$URL" がそのまま送られてくる。non-http(s) は弾く。
+  if (url && /^https?:\/\//.test(url)) out.url = url;
 
   return [{ json: out }];
 }

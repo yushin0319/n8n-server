@@ -48,4 +48,36 @@ describe("ConvertHealthchecks", () => {
     });
     expect(() => convertHealthchecks()).toThrow();
   });
+
+  it("url が未展開 placeholder ($URL) なら omit する", () => {
+    vi.stubGlobal("$input", {
+      first: () => ({
+        json: {
+          body: {
+            name: "n8n-error-handler",
+            status: "up",
+            tags: "n8n cron",
+            url: "$URL",
+          },
+        },
+      }),
+    });
+    const out = callAndGetItems()[0].json;
+    expect(out.url).toBeUndefined();
+  });
+
+  it("url が http(s) で始まる場合のみ通す", () => {
+    vi.stubGlobal("$input", {
+      first: () => ({
+        json: {
+          body: {
+            name: "x",
+            status: "down",
+            url: "ftp://invalid",
+          },
+        },
+      }),
+    });
+    expect(callAndGetItems()[0].json.url).toBeUndefined();
+  });
 });
