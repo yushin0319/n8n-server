@@ -187,11 +187,126 @@
     },
     {
       "parameters": {
+        "method": "GET",
+        "url": "http://localhost:5678/api/v1/executions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "limit",
+              "value": "50"
+            },
+            {
+              "name": "status",
+              "value": "error"
+            },
+            {
+              "name": "includeData",
+              "value": "true"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 60000
+        },
+        "onError": "stopAndFail"
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1540, 100],
+      "name": "FetchErrors",
+      "id": "dba-0020-4000-8000-000000000020",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "X95dCNmKQIc7yD8N",
+          "name": "n8n API self"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external cron-db-archive-execution/PrepUploadErrors.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1760, 100],
+      "name": "PrepUploadErrors",
+      "id": "dba-0021-4000-8000-000000000021"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "dba-cond-errors",
+              "leftValue": "={{ $json.count }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1980, 100],
+      "name": "IfHasErrors",
+      "id": "dba-0022-4000-8000-000000000022"
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "upload",
+        "inputDataFieldName": "file",
+        "name": "={{ $json.name }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "root"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.folderId }}"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [2200, 0],
+      "name": "UploadFileErrors",
+      "id": "dba-0023-4000-8000-000000000023",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "AeFJzyeByGcfTH8r",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
         "jsCode": "// @external cron-db-archive-execution/PrepDeleteList.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1540, 100],
+      "position": [2420, 100],
       "name": "PrepDeleteList",
       "id": "dba-0013-4000-8000-000000000013"
     },
@@ -202,7 +317,7 @@
       },
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
-      "position": [1760, 100],
+      "position": [2640, 100],
       "name": "SplitForDelete",
       "id": "dba-0005-4000-8000-000000000005"
     },
@@ -219,7 +334,7 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1980, 200],
+      "position": [2860, 200],
       "name": "DeleteExecution",
       "id": "dba-0006-4000-8000-000000000006",
       "retryOnFail": true,
@@ -371,6 +486,57 @@
       ]
     },
     "UploadFile": {
+      "main": [
+        [
+          {
+            "node": "FetchErrors",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FetchErrors": {
+      "main": [
+        [
+          {
+            "node": "PrepUploadErrors",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepUploadErrors": {
+      "main": [
+        [
+          {
+            "node": "IfHasErrors",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IfHasErrors": {
+      "main": [
+        [
+          {
+            "node": "UploadFileErrors",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PrepDeleteList",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "UploadFileErrors": {
       "main": [
         [
           {
