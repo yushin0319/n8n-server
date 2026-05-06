@@ -74,6 +74,7 @@ _EXCLUDE_WFS = {
     "api-obs-from-sentry",
     "api-obs-from-healthchecks",
     "api-obs-from-uptime-kuma",
+    "api-n8n-api-get",
     # CF Workers に移植済みのため n8n 側は deactivate → テスト不要
     "cron-shirankedo-daily-articles",
     "cron-shirankedo-daily-releases",
