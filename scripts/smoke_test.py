@@ -67,13 +67,14 @@ _EXCLUDE_WFS = {
     "system-error-handler",
     "api-discord-notify",
     # body 必須の adapter / 構造化エンドポイント。空 body で叩くと PrepNotify / Convert*
-    # の validation throw → error-handler 経由で通知ノイズになるためスキップ。
+    # / PrepRequest の validation throw → error-handler 経由で通知ノイズになるためスキップ。
     "api-notion-db-update",
     "api-notion-db-query",
     "api-obs-notify",
     "api-obs-from-sentry",
     "api-obs-from-healthchecks",
     "api-obs-from-uptime-kuma",
+    "api-n8n-api-get",  # body.action 必須 (n8n REST API endpoint), 空 body で 'action は必須' throw
     # CF Workers に移植済みのため n8n 側は deactivate → テスト不要
     "cron-shirankedo-daily-articles",
     "cron-shirankedo-daily-releases",
