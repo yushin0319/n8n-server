@@ -34,6 +34,12 @@ services:
       #   N8N_SENTRY_DSN=https://<key>@<id>.ingest.<region>.sentry.io/<project>
       # 未設定時は空文字 → Sentry SDK は init をスキップ（fail-safe）。
       N8N_SENTRY_DSN: ${N8N_SENTRY_DSN:-}
+      # EventLoopBlocked 検出閾値 (ms)。デフォルト 500ms は Web app 業界の異常値だが
+      # n8n + OCI Always Free Micro (1 OCPU/1GB) では構造的に頻発するため alert
+      # fatigue の元。2000ms に緩和して「本当に深刻なブロック」だけ拾う (#546)。
+      # 値は packages/@n8n/config/src/configs/sentry.config.ts の eventLoopBlockThreshold
+      # に対応 (z.number().int().positive())。A1-flex 移行後は 500ms に戻す検討。
+      N8N_SENTRY_EVENT_LOOP_BLOCK_THRESHOLD: "2000"
       # Healthchecks.io Slug ping key (A7 cron 実行欠落リアルタイム検知)。各 cron WF
       # 末尾の PingHealthchecks ノードが {{ $env.HC_PING_KEY }} で参照する。
       # 未設定時は ping URL が hc-ping.com//slug となり 404 → ping 不達 → 通知発火。
