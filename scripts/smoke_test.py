@@ -79,6 +79,7 @@ _EXCLUDE_WFS = {
     "cron-shirankedo-daily-releases",
     "cron-shirankedo-daily-repos",
     "cron-shirankedo-daily-security",
+    "cron-shirankedo-daily-stars",
     "cron-shirankedo-daily-vulns",
 }
 
