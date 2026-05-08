@@ -6,11 +6,6 @@ function callAndGetItems() {
   return (Array.isArray(result) ? result : [result]) as INodeExecutionData[];
 }
 
-const mockSummaries = [
-  { content: "今週のサマリー1" },
-  { content: "今週のサマリー2" },
-];
-
 const mockTrendRanking = [
   {
     repo: "vercel/next.js",
@@ -35,13 +30,10 @@ describe("PreparePageCommentPrompts", () => {
     vi.unstubAllGlobals();
   });
 
-  it("$input.all()からサマリーとトレンドランキングを受け取る", () => {
+  it("$input.first()からトレンドランキングを受け取る", () => {
     vi.stubGlobal("$input", {
-      all: () => [
-        { json: { data: mockSummaries } },
-        { json: { data: mockTrendRanking } },
-      ],
-      first: () => ({ json: { data: mockSummaries } }),
+      first: () => ({ json: { data: mockTrendRanking } }),
+      all: () => [{ json: { data: mockTrendRanking } }],
     });
 
     const items = callAndGetItems();
@@ -51,11 +43,8 @@ describe("PreparePageCommentPrompts", () => {
 
   it("プロンプトにトレンドリポのdisplayNameが含まれる", () => {
     vi.stubGlobal("$input", {
-      all: () => [
-        { json: { data: mockSummaries } },
-        { json: { data: mockTrendRanking } },
-      ],
-      first: () => ({ json: { data: mockSummaries } }),
+      first: () => ({ json: { data: mockTrendRanking } }),
+      all: () => [{ json: { data: mockTrendRanking } }],
     });
 
     const items = callAndGetItems();
@@ -66,11 +55,8 @@ describe("PreparePageCommentPrompts", () => {
 
   it("プロンプトにstar差分情報が含まれる", () => {
     vi.stubGlobal("$input", {
-      all: () => [
-        { json: { data: mockSummaries } },
-        { json: { data: mockTrendRanking } },
-      ],
-      first: () => ({ json: { data: mockSummaries } }),
+      first: () => ({ json: { data: mockTrendRanking } }),
+      all: () => [{ json: { data: mockTrendRanking } }],
     });
 
     const items = callAndGetItems();
@@ -79,63 +65,34 @@ describe("PreparePageCommentPrompts", () => {
     expect(prompt).toContain("1,200");
   });
 
-  it("プロンプトの主軸がトレンドリポになっている（週次レポートは参考扱い）", () => {
+  it("プロンプトの主軸がトレンドリポになっている", () => {
     vi.stubGlobal("$input", {
-      all: () => [
-        { json: { data: mockSummaries } },
-        { json: { data: mockTrendRanking } },
-      ],
-      first: () => ({ json: { data: mockSummaries } }),
+      first: () => ({ json: { data: mockTrendRanking } }),
+      all: () => [{ json: { data: mockTrendRanking } }],
     });
 
     const items = callAndGetItems();
     const prompt = items[0].json.trendPrompt as string;
     expect(prompt).toContain("トレンド TOP10");
-    expect(prompt).toContain("参考");
   });
 
-  it("トレンドランキングが空でもサマリーがあればhasSummaries=true", () => {
+  it("トレンドランキングが空の場合にhasSummaries=falseを返す", () => {
     vi.stubGlobal("$input", {
-      all: () => [{ json: { data: mockSummaries } }, { json: { data: [] } }],
-      first: () => ({ json: { data: mockSummaries } }),
-    });
-
-    const items = callAndGetItems();
-    expect(items[0].json.hasSummaries).toBe(true);
-    expect(items[0].json.trendPrompt).toContain("ランキングデータなし");
-  });
-
-  it("サマリーがなくてもトレンドランキングがあればプロンプト生成する", () => {
-    vi.stubGlobal("$input", {
-      all: () => [{ json: { data: [] } }, { json: { data: mockTrendRanking } }],
       first: () => ({ json: { data: [] } }),
-    });
-
-    const items = callAndGetItems();
-    expect(items[0].json.hasSummaries).toBe(true);
-    expect(items[0].json.trendPrompt).toContain("Next.js");
-  });
-
-  it("サマリーもランキングもない場合にhasSummaries=falseを返す", () => {
-    vi.stubGlobal("$input", {
-      all: () => [{ json: { data: [] } }, { json: { data: [] } }],
-      first: () => ({ json: { data: [] } }),
+      all: () => [{ json: { data: [] } }],
     });
 
     const items = callAndGetItems();
     expect(items[0].json.hasSummaries).toBe(false);
   });
 
-  it("サマリー内容もプロンプトに含まれる", () => {
+  it("$input.first()がundefinedでもhasSummaries=falseを返す", () => {
     vi.stubGlobal("$input", {
-      all: () => [
-        { json: { data: mockSummaries } },
-        { json: { data: mockTrendRanking } },
-      ],
-      first: () => ({ json: { data: mockSummaries } }),
+      first: () => undefined,
+      all: () => [],
     });
 
     const items = callAndGetItems();
-    expect(items[0].json.trendPrompt).toContain("今週のサマリー1");
+    expect(items[0].json.hasSummaries).toBe(false);
   });
 });

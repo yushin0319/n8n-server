@@ -30,29 +30,6 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "https://shirankedo.y-fudo.workers.dev/api/ingest/weekly-summaries/recent?limit=4",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "httpHeaderAuth",
-        "options": {}
-      },
-      "id": "c45651c4-b9f8-49d3-9444-092c188195d5",
-      "name": "FetchRecentSummaries",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        2640,
-        700
-      ],
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "CdkfLkdZEMFfnx8h",
-          "name": "Header Auth account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "method": "GET",
         "url": "https://shirankedo.y-fudo.workers.dev/api/ingest/trend-ranking?limit=10",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "httpHeaderAuth",
@@ -63,8 +40,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2640,
-        900
+        2880,
+        800
       ],
       "credentials": {
         "httpHeaderAuth": {
@@ -72,20 +49,6 @@
           "name": "Header Auth account"
         }
       }
-    },
-    {
-      "parameters": {
-        "mode": "append",
-        "options": {}
-      },
-      "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
-      "name": "MergeFetchResults",
-      "type": "n8n-nodes-base.merge",
-      "typeVersion": 3.1,
-      "position": [
-        2880,
-        800
-      ]
     },
     {
       "parameters": {
@@ -624,29 +587,7 @@
         ]
       ]
     },
-    "FetchRecentSummaries": {
-      "main": [
-        [
-          {
-            "node": "MergeFetchResults",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "FetchTrendRanking": {
-      "main": [
-        [
-          {
-            "node": "MergeFetchResults",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "MergeFetchResults": {
       "main": [
         [
           {
@@ -951,11 +892,6 @@
     "CheckTestMode": {
       "main": [
         [
-          {
-            "node": "FetchRecentSummaries",
-            "type": "main",
-            "index": 0
-          },
           {
             "node": "FetchTrendRanking",
             "type": "main",

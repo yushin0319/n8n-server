@@ -1,30 +1,17 @@
 export default function (): CodeNodeReturn {
-  // 週次サマリー + トレンドランキングからトレンドコメント用プロンプトを構築
-  const items = $input.all();
-  const summaries = (items[0]?.json.data || []) as IDataObject[];
-  const trendRanking = (items[1]?.json.data || []) as IDataObject[];
+  // トレンドランキングからトレンドコメント用プロンプトを構築
+  const trendRanking = ($input.first()?.json.data || []) as IDataObject[];
 
-  const summaryText = summaries
-    .map(
-      (s: IDataObject, i: number) =>
-        `【${i + 1}週前】\n${(s.content as string) || (s.reportContent as string) || ""}`,
-    )
-    .join("\n\n---\n\n");
-
-  const hasData = !!summaryText.trim() || trendRanking.length > 0;
-  if (!hasData) {
+  if (trendRanking.length === 0) {
     return [{ json: { hasSummaries: false } }];
   }
 
-  // トレンドTOP10のテキスト化
-  const trendRankingText = trendRanking.length
-    ? trendRanking
-        .map(
-          (r: IDataObject, i: number) =>
-            `${i + 1}. **${r.displayName}** (${r.repo}) — ★${r.stars?.toLocaleString()} (+${r.diff?.toLocaleString()})\n   ${r.description} [${r.language}]`,
-        )
-        .join("\n")
-    : "（ランキングデータなし）";
+  const trendRankingText = trendRanking
+    .map(
+      (r: IDataObject, i: number) =>
+        `${i + 1}. **${r.displayName}** (${r.repo}) — ★${r.stars?.toLocaleString()} (+${r.diff?.toLocaleString()})\n   ${r.description} [${r.language}]`,
+    )
+    .join("\n");
 
   const toneRules = `## 口調ルール
   「ギャルっぽい記号を貼り付けた文章」ではなく「ギャルが実際に喋りそうな文章」を書け。
@@ -58,13 +45,8 @@ export default function (): CodeNodeReturn {
   - 「なぜ今伸びてるのか」「何がすごいのか」の視点で語れ
   - 業界全体の抽象論で逃げるな。ページを見てる人が「あ、これの話してる」とわかるように
 
-  週次レポートは背景知識として参考にしてよいが、メインはトレンドリポの話。
-
   ## 今週のトレンド TOP10
-  ${trendRankingText}
-
-  ## 参考: 直近の週次レポート
-  ${summaryText}`;
+  ${trendRankingText}`;
 
   return [
     {
