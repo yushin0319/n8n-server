@@ -1,7 +1,7 @@
 {
   "id": "HgZFfm8V00zdpW7F",
   "name": "cron/shirankedo-weekly-report",
-  "active": true,
+  "active": false,
   "nodes": [
     {
       "parameters": {
