@@ -17,7 +17,10 @@
       },
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
-      "position": [0, 0],
+      "position": [
+        0,
+        0
+      ],
       "name": "Schedule",
       "id": "dba-0001-4000-8000-000000000001"
     },
@@ -30,7 +33,10 @@
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [0, 200],
+      "position": [
+        0,
+        200
+      ],
       "name": "WebhookTest",
       "id": "dba-0010-4000-8000-000000000010",
       "webhookId": "dba-0010-4000-8000-000000000010"
@@ -41,7 +47,10 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [220, 100],
+      "position": [
+        220,
+        100
+      ],
       "name": "CheckTestMode",
       "id": "dba-0011-4000-8000-000000000011"
     },
@@ -70,7 +79,10 @@
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [440, 100],
+      "position": [
+        440,
+        100
+      ],
       "name": "IfTestMode",
       "id": "dba-0017-4000-8000-000000000017"
     },
@@ -90,17 +102,43 @@
             {
               "name": "includeData",
               "value": "false"
+            },
+            {
+              "name": "startedAfter",
+              "value": "={{ $('PrepRange').first().json.from }}"
+            },
+            {
+              "name": "startedBefore",
+              "value": "={{ $('PrepRange').first().json.to }}"
             }
           ]
         },
         "options": {
-          "timeout": 60000
+          "timeout": 60000,
+          "pagination": {
+            "pagination": {
+              "parameters": {
+                "parameters": [
+                  {
+                    "name": "cursor",
+                    "value": "={{ $response.body.nextCursor }}"
+                  }
+                ]
+              },
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ !$response.body.nextCursor }}",
+              "limitPagesFetched": false
+            }
+          }
         },
         "onError": "stopAndFail"
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [660, 200],
+      "position": [
+        660,
+        200
+      ],
       "name": "FetchExecutions",
       "id": "dba-0002-4000-8000-000000000002",
       "retryOnFail": true,
@@ -119,7 +157,10 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [880, 200],
+      "position": [
+        880,
+        200
+      ],
       "name": "PrepUpload",
       "id": "dba-0003-4000-8000-000000000003"
     },
@@ -148,7 +189,10 @@
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [1100, 200],
+      "position": [
+        1100,
+        200
+      ],
       "name": "IfHasData",
       "id": "dba-0012-4000-8000-000000000012"
     },
@@ -172,7 +216,10 @@
       },
       "type": "n8n-nodes-base.googleDrive",
       "typeVersion": 3,
-      "position": [1320, 100],
+      "position": [
+        1320,
+        100
+      ],
       "name": "UploadFile",
       "id": "dba-0004-4000-8000-000000000004",
       "retryOnFail": true,
@@ -205,17 +252,43 @@
             {
               "name": "includeData",
               "value": "true"
+            },
+            {
+              "name": "startedAfter",
+              "value": "={{ $('PrepRange').first().json.from }}"
+            },
+            {
+              "name": "startedBefore",
+              "value": "={{ $('PrepRange').first().json.to }}"
             }
           ]
         },
         "options": {
-          "timeout": 60000
+          "timeout": 60000,
+          "pagination": {
+            "pagination": {
+              "parameters": {
+                "parameters": [
+                  {
+                    "name": "cursor",
+                    "value": "={{ $response.body.nextCursor }}"
+                  }
+                ]
+              },
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ !$response.body.nextCursor }}",
+              "limitPagesFetched": false
+            }
+          }
         },
         "onError": "stopAndFail"
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1540, 100],
+      "position": [
+        1540,
+        100
+      ],
       "name": "FetchErrors",
       "id": "dba-0020-4000-8000-000000000020",
       "retryOnFail": true,
@@ -234,7 +307,10 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1760, 100],
+      "position": [
+        1760,
+        100
+      ],
       "name": "PrepUploadErrors",
       "id": "dba-0021-4000-8000-000000000021"
     },
@@ -263,7 +339,10 @@
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [1980, 100],
+      "position": [
+        1980,
+        100
+      ],
       "name": "IfHasErrors",
       "id": "dba-0022-4000-8000-000000000022"
     },
@@ -287,7 +366,10 @@
       },
       "type": "n8n-nodes-base.googleDrive",
       "typeVersion": 3,
-      "position": [2200, 0],
+      "position": [
+        2200,
+        0
+      ],
       "name": "UploadFileErrors",
       "id": "dba-0023-4000-8000-000000000023",
       "retryOnFail": true,
@@ -302,58 +384,14 @@
     },
     {
       "parameters": {
-        "jsCode": "// @external cron-db-archive-execution/PrepDeleteList.ts"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [2420, 100],
-      "name": "PrepDeleteList",
-      "id": "dba-0013-4000-8000-000000000013"
-    },
-    {
-      "parameters": {
-        "batchSize": 1,
-        "options": {}
-      },
-      "type": "n8n-nodes-base.splitInBatches",
-      "typeVersion": 3,
-      "position": [2640, 100],
-      "name": "SplitForDelete",
-      "id": "dba-0005-4000-8000-000000000005"
-    },
-    {
-      "parameters": {
-        "method": "DELETE",
-        "url": "=http://localhost:5678/api/v1/executions/{{ $json.id }}",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "options": {
-          "timeout": 15000
-        },
-        "onError": "stopAndFail"
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [2860, 200],
-      "name": "DeleteExecution",
-      "id": "dba-0006-4000-8000-000000000006",
-      "retryOnFail": true,
-      "maxTries": 2,
-      "waitBetweenTries": 1000,
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "X95dCNmKQIc7yD8N",
-          "name": "n8n API self"
-        }
-      }
-    },
-    {
-      "parameters": {
         "jsCode": "// @external cron-db-archive-execution/TestResponse.ts"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [660, 0],
+      "position": [
+        660,
+        0
+      ],
       "name": "TestResponse",
       "id": "dba-0015-4000-8000-000000000015"
     },
@@ -365,7 +403,10 @@
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
-      "position": [880, 0],
+      "position": [
+        880,
+        0
+      ],
       "name": "RespondTest",
       "id": "dba-0016-4000-8000-000000000016"
     },
@@ -380,12 +421,41 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [200, 0],
+      "position": [
+        200,
+        0
+      ],
       "name": "PingHealthchecks",
       "id": "hc-ping-db-archive-execution",
       "retryOnFail": true,
       "maxTries": 2,
       "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external cron-db-archive-execution/PrepRange.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        200
+      ],
+      "name": "PrepRange",
+      "id": "dba-0030-4000-8000-000000000030"
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external cron-db-archive-execution/SaveCheckpoint.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2420,
+        100
+      ],
+      "name": "SaveCheckpoint",
+      "id": "dba-0031-4000-8000-000000000031"
     }
   ],
   "connections": {
@@ -444,6 +514,17 @@
         ],
         [
           {
+            "node": "PrepRange",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepRange": {
+      "main": [
+        [
+          {
             "node": "FetchExecutions",
             "type": "main",
             "index": 0
@@ -482,7 +563,13 @@
             "index": 0
           }
         ],
-        []
+        [
+          {
+            "node": "FetchErrors",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "UploadFile": {
@@ -529,7 +616,7 @@
         ],
         [
           {
-            "node": "PrepDeleteList",
+            "node": "SaveCheckpoint",
             "type": "main",
             "index": 0
           }
@@ -540,41 +627,7 @@
       "main": [
         [
           {
-            "node": "PrepDeleteList",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "PrepDeleteList": {
-      "main": [
-        [
-          {
-            "node": "SplitForDelete",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "SplitForDelete": {
-      "main": [
-        [],
-        [
-          {
-            "node": "DeleteExecution",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DeleteExecution": {
-      "main": [
-        [
-          {
-            "node": "SplitForDelete",
+            "node": "SaveCheckpoint",
             "type": "main",
             "index": 0
           }

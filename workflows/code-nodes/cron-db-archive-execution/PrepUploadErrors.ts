@@ -1,10 +1,12 @@
 /**
- * Phase 2: 失敗 execution の詳細スナップショット (includeData=true 取得分) を
- * YYYY-MM-DD-errors.jsonl に整形する。各 execution の data フィールド (各ノードの
- * input/output) を含むためバグ調査用。
+ * Phase 2: 失敗 execution の詳細スナップショット (includeData=true) を
+ * YYYY-MM-DD-errors.jsonl に整形する。各 execution の data フィールド
+ * (各ノードの input/output) を含むためバグ調査用。
  *
- * Phase 1 の PrepUpload と異なり ids は持たない (DELETE は Phase 1 のメタ ids で
- * 一括実行する設計のため)。
+ * pagination 対応: HTTP Request node の pagination 機能で複数 page 来るとき、
+ * 各 page が個別 item として渡るため $input.all() で全 page を集約する。
+ *
+ * 1 行目に {"_meta":{"from":..., "to":...}} を入れて対象範囲を明示 (Notion #561)。
  */
 interface ExecutionRow {
   id?: string;
@@ -18,18 +20,30 @@ interface ExecutionRow {
 const N8N_LOGS_FOLDER_ID = "1aOOhc_tKh7ZD3Mnr4LSbj6lSGWze_0Jl";
 
 export default function (): CodeNodeReturn {
-  const resp = $input.first().json as IDataObject;
-  const executions = (resp?.data || []) as ExecutionRow[];
+  const items = $input.all();
+  const executions: ExecutionRow[] = [];
+  for (const it of items) {
+    const j = (it.json || {}) as IDataObject;
+    const data = (j.data || []) as ExecutionRow[];
+    if (Array.isArray(data)) executions.push(...data);
+  }
 
-  // 1 行 1 execution の JSONL に整形 (data フィールド含む詳細版)
-  const jsonl = executions.map((ex) => JSON.stringify(ex)).join("\n");
+  const range = $("PrepRange").first().json as IDataObject;
+  const from = String(range?.from || "");
+  const to = String(range?.to || "");
+  let fileDate = String(range?.file_date || "");
+  if (!fileDate) {
+    const now = new Date();
+    const jst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+    fileDate = jst.toISOString().slice(0, 10);
+  }
 
-  // ファイル名 (JST 日付 + -errors サフィックス)
-  const now = new Date();
-  const jst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
-  const dateStr = jst.toISOString().slice(0, 10);
-  const fileName = `${dateStr}-errors.jsonl`;
+  const meta = JSON.stringify({ _meta: { from, to } });
+  const jsonl = [meta, ...executions.map((ex) => JSON.stringify(ex))].join(
+    "\n",
+  );
 
+  const fileName = `${fileDate}-errors.jsonl`;
   const base64 = Buffer.from(jsonl, "utf-8").toString("base64");
 
   return [
@@ -38,6 +52,8 @@ export default function (): CodeNodeReturn {
         name: fileName,
         folderId: N8N_LOGS_FOLDER_ID,
         count: executions.length,
+        from,
+        to,
       },
       binary: {
         file: {

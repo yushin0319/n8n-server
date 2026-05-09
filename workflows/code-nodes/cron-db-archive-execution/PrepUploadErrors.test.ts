@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import prepUploadErrors from "./PrepUploadErrors";
 
 interface UploadOutput {
@@ -6,6 +6,8 @@ interface UploadOutput {
     name: string;
     folderId: string;
     count: number;
+    from: string;
+    to: string;
   };
   binary: {
     file: {
@@ -16,10 +18,30 @@ interface UploadOutput {
   };
 }
 
-function setup(executions: unknown[]) {
+const RANGE = {
+  from: "2026-05-08T18:00:00.000Z",
+  to: "2026-05-09T18:00:00.000Z",
+  file_date: "2026-05-10",
+};
+
+function setupSinglePage(executions: unknown[], range: typeof RANGE = RANGE) {
   vi.stubGlobal("$input", {
+    all: () => [{ json: { data: executions } }],
     first: () => ({ json: { data: executions } }),
   });
+  vi.stubGlobal("$", (name: string) => ({
+    first: () => ({ json: name === "PrepRange" ? range : {} }),
+  }));
+}
+
+function setupMultiPage(pages: unknown[][], range: typeof RANGE = RANGE) {
+  vi.stubGlobal("$input", {
+    all: () => pages.map((p) => ({ json: { data: p } })),
+    first: () => ({ json: { data: pages[0] || [] } }),
+  });
+  vi.stubGlobal("$", (name: string) => ({
+    first: () => ({ json: name === "PrepRange" ? range : {} }),
+  }));
 }
 
 function run(): UploadOutput {
@@ -29,18 +51,54 @@ function run(): UploadOutput {
 }
 
 describe("PrepUploadErrors", () => {
-  it("空入力なら count=0、binary は空", () => {
-    setup([]);
-    const out = run();
-    expect(out.json.count).toBe(0);
-    expect(out.binary.file.data).toBe("");
+  beforeEach(() => {
+    vi.unstubAllGlobals();
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
-  it("失敗 execution の data フィールドを保持して JSONL に整形", () => {
+  it("空入力でも _meta ヘッダ 1 行は必ず出る", () => {
+    setupSinglePage([]);
+    const out = run();
+    expect(out.json.count).toBe(0);
+    const decoded = Buffer.from(out.binary.file.data, "base64").toString(
+      "utf-8",
+    );
+    const lines = decoded.split("\n");
+    expect(lines).toHaveLength(1);
+    expect(JSON.parse(lines[0])).toEqual({
+      _meta: { from: RANGE.from, to: RANGE.to },
+    });
+  });
+
+  it("失敗 execution の data フィールドを保持 + ヘッダ _meta", () => {
     const sampleData = { resultData: { runData: { Node1: [{ error: "x" }] } } };
-    setup([
+    setupSinglePage([
       { id: "1", workflowId: "wf1", status: "error", data: sampleData },
       { id: "2", workflowId: "wf2", status: "error", data: { foo: "bar" } },
+    ]);
+    const out = run();
+    expect(out.json.count).toBe(2);
+    expect(out.json.from).toBe(RANGE.from);
+    expect(out.json.to).toBe(RANGE.to);
+    const decoded = Buffer.from(out.binary.file.data, "base64").toString(
+      "utf-8",
+    );
+    const lines = decoded.split("\n");
+    expect(lines).toHaveLength(3);
+    expect(JSON.parse(lines[0])).toEqual({
+      _meta: { from: RANGE.from, to: RANGE.to },
+    });
+    const row1 = JSON.parse(lines[1]);
+    expect(row1.id).toBe("1");
+    expect(row1.data).toEqual(sampleData);
+  });
+
+  it("pagination で複数 page 来ても全 page 集約", () => {
+    setupMultiPage([
+      [{ id: "1", status: "error" }],
+      [{ id: "2", status: "error" }],
     ]);
     const out = run();
     expect(out.json.count).toBe(2);
@@ -48,35 +106,26 @@ describe("PrepUploadErrors", () => {
       "utf-8",
     );
     const lines = decoded.split("\n");
-    expect(lines).toHaveLength(2);
-    const row0 = JSON.parse(lines[0]);
-    expect(row0.id).toBe("1");
-    expect(row0.status).toBe("error");
-    expect(row0.data).toEqual(sampleData);
+    expect(lines).toHaveLength(3); // _meta + 2
   });
 
   it("ファイル名は YYYY-MM-DD-errors.jsonl 形式", () => {
-    setup([{ id: "x" }]);
+    setupSinglePage([{ id: "x" }]);
     const out = run();
-    expect(out.json.name).toMatch(/^\d{4}-\d{2}-\d{2}-errors\.jsonl$/);
-    expect(out.binary.file.fileName).toBe(out.json.name);
+    expect(out.json.name).toBe("2026-05-10-errors.jsonl");
+    expect(out.binary.file.fileName).toBe("2026-05-10-errors.jsonl");
   });
 
-  it("folderId は n8n-logs フォルダの固定値 (PrepUpload と共通)", () => {
-    setup([]);
+  it("folderId / mimeType 固定", () => {
+    setupSinglePage([]);
     const out = run();
     expect(out.json.folderId).toBe("1aOOhc_tKh7ZD3Mnr4LSbj6lSGWze_0Jl");
-  });
-
-  it("mimeType は application/jsonl", () => {
-    setup([{ id: "x", data: { foo: 1 } }]);
-    const out = run();
     expect(out.binary.file.mimeType).toBe("application/jsonl");
   });
 
-  it("ids フィールドは出力に含まない (DELETE は Phase 1 担当)", () => {
-    setup([{ id: "1", status: "error" }]);
+  it("ids フィールドは含めない (DELETE 廃止 / Notion #561)", () => {
+    setupSinglePage([{ id: "1", status: "error" }]);
     const out = run();
-    expect((out.json as IDataObject).ids).toBeUndefined();
+    expect((out.json as unknown as IDataObject).ids).toBeUndefined();
   });
 });
