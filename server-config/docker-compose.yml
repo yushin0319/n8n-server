@@ -22,6 +22,15 @@ services:
       # 再起動時 OOM を引き起こす問題の緩和 (2026-05-03 21,312件 OOM 障害)。
       # 1時間以上かかる WF は存在しないため 3600s を上限にする。
       N8N_EXECUTION_TIMEOUT: "3600"
+      # n8n 内部の execution 自動 prune (Notion #560)。5/2 prune 後 1週間で
+      # SQLite DB 151MB→264MB 再肥大、execution_data が 78%(208MB) を占有し
+      # container memory_limit 512MB に対して page cache 枯渇 → swap → cron skip
+      # 610分の真因の一つ。archive WF は limit=250 取りこぼしで補い切れないため
+      # n8n 側で 7 日超を自動削除させる。SQLite ファイル自体は VACUUM 無しでは
+      # 縮まないので、初回 prune 後の VACUUM は別タスク (A1.Flex 移行後を予定)。
+      EXECUTIONS_DATA_PRUNE: "true"
+      EXECUTIONS_DATA_MAX_AGE: "168"            # 7 日 (時間単位)
+      EXECUTIONS_DATA_PRUNE_MAX_COUNT: "10000"  # 件数キャップ (期間優先、件数は安全網)
       # Prometheus metrics endpoint /metrics を有効化（Q3 観測性強化）
       # localhost:5678/metrics のみアクセス可（nginx は /webhook/ と / のみ proxy）
       # NOTE: env 設定済みだが n8n v2.17.7 で /metrics は 404 を返す状況を確認。
