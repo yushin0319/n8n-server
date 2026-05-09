@@ -1,21 +1,23 @@
 export default function (): CodeNodeReturn {
   // PrepGet (page_id 直渡し) または ExtractPageId (task_id 経由解決) から pageId を取得
   let pageId = "";
+  let lastErr: unknown = null;
   try {
     pageId = $("PrepGet").first().json.pageId as string;
-  } catch (_) {
-    // PrepGet が実行されなかったパス
+  } catch (e) {
+    lastErr = e;
   }
   if (!pageId) {
     try {
       pageId = $("ExtractPageId").first().json.pageId as string;
-    } catch (_) {
-      // ExtractPageId も無い
+    } catch (e) {
+      lastErr = e;
     }
   }
   if (!pageId) {
+    const errMsg = (lastErr as Error)?.message ?? "unknown";
     throw new Error(
-      "FormatGet: pageId が PrepGet / ExtractPageId のどちらからも取得できません",
+      `FormatGet: pageId が PrepGet / ExtractPageId のどちらからも取得できません (${errMsg})`,
     );
   }
   const blocks = $input
