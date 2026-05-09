@@ -92,7 +92,18 @@
         "limit": 1,
         "simple": false,
         "filterType": "none",
-        "options": {}
+        "options": {
+          "sort": {
+            "sortValue": [
+              {
+                "property": "日付",
+                "direction": "descending",
+                "key": "日付",
+                "timestamp": false
+              }
+            ]
+          }
+        }
       },
       "type": "n8n-nodes-base.notion",
       "typeVersion": 2.2,
