@@ -16,13 +16,28 @@ function run(): Output {
 }
 
 describe("PrepRequest", () => {
-  it("action を base URL の後ろに連結する", () => {
+  it("action を base URL の後ろに連結する (旧仕様)", () => {
     setup({ action: "workflows?limit=200" });
     const out = run();
     expect(out.json.url).toBe(
       "http://localhost:5678/api/v1/workflows?limit=200",
     );
     expect(out.json.endpoint).toBe("workflows?limit=200");
+  });
+
+  it("path を base URL の後ろに連結する (推奨形式)", () => {
+    setup({ path: "executions?status=error&limit=50" });
+    const out = run();
+    expect(out.json.url).toBe(
+      "http://localhost:5678/api/v1/executions?status=error&limit=50",
+    );
+    expect(out.json.endpoint).toBe("executions?status=error&limit=50");
+  });
+
+  it("path と action 両方あれば path を優先", () => {
+    setup({ path: "workflows", action: "executions" });
+    const out = run();
+    expect(out.json.endpoint).toBe("workflows");
   });
 
   it("先頭スラッシュは除去される", () => {
@@ -48,16 +63,21 @@ describe("PrepRequest", () => {
 
   it("action が空なら例外", () => {
     setup({ action: "" });
-    expect(() => run()).toThrow("'action' は必須");
+    expect(() => run()).toThrow("必須");
   });
 
   it("action 未指定でも例外", () => {
     setup({});
-    expect(() => run()).toThrow("'action' は必須");
+    expect(() => run()).toThrow("必須");
   });
 
   it("action が空白だけなら trim して例外", () => {
     setup({ action: "   " });
-    expect(() => run()).toThrow("'action' は必須");
+    expect(() => run()).toThrow("必須");
+  });
+
+  it("path が空白だけなら trim して例外 (action フォールバック無し)", () => {
+    setup({ path: "   " });
+    expect(() => run()).toThrow("必須");
   });
 });
