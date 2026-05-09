@@ -50,11 +50,38 @@ export default function (): CodeNodeReturn {
 ## 記事
 ${itemsText}
 
-## 出力形式（JSON配列）
-[{"article_index":1,"tags":["AI"],"title_ja":"日本語タイトル","summary":"100〜150字の要約","comment":"ギャル解説テキスト"}]
-JSONのみ出力してください。`;
+## 出力形式
+{"summaries":[{"article_index":1,"tags":["AI"],"title_ja":"日本語タイトル","summary":"100〜150字の要約","comment":"ギャル解説テキスト"}]}
+JSONのみ出力してください。記事 ${items.length} 件すべてに対応する要素を summaries 配列に入れてください。`;
 
-  const geminiBody = buildGeminiRequest({ prompt, temperature: 0.7 });
+  // Gemini 3 の responseJsonSchema で構造を保証 (required で欠落防止)。
+  // 文字数制御はプロンプト側 (schema では不可)。
+  const responseJsonSchema = {
+    type: "object",
+    properties: {
+      summaries: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            article_index: { type: "integer" },
+            tags: { type: "array", items: { type: "string" } },
+            title_ja: { type: "string" },
+            summary: { type: "string" },
+            comment: { type: "string" },
+          },
+          required: ["article_index", "tags", "title_ja", "summary", "comment"],
+        },
+      },
+    },
+    required: ["summaries"],
+  };
+
+  const geminiBody = buildGeminiRequest({
+    prompt,
+    temperature: 0.7,
+    responseJsonSchema,
+  });
 
   return [{ json: { geminiBody, items } }];
 }

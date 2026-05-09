@@ -160,6 +160,49 @@ describe("FormatArticles", () => {
     expect(body[0].publishedAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
   });
 
+  it("responseJsonSchema 形式 ({summaries: [...]}) のレスポンスを処理する", () => {
+    const wrapped = {
+      summaries: [
+        {
+          article_index: 1,
+          tags: ["AI"],
+          title_ja: "新形式",
+          summary: "要約",
+          comment: "コメント",
+        },
+      ],
+    };
+    vi.stubGlobal("$input", {
+      first: () => ({ json: geminiResponse(wrapped) }),
+    });
+    vi.stubGlobal("$", (nodeName: string) => {
+      if (nodeName === "PrepareSummaryPrompt") {
+        return {
+          first: () => ({
+            json: {
+              items: [
+                {
+                  url: "https://example.com",
+                  title: "Original",
+                  source: "hackernews",
+                  impact: 7,
+                  isPaper: 0,
+                },
+              ],
+            },
+          }),
+        };
+      }
+      throw new Error(`Unknown node: ${nodeName}`);
+    });
+
+    const items = callAndGetItems();
+    const body = JSON.parse(items[0].json.requestBody as string);
+    expect(body).toHaveLength(1);
+    expect(body[0].title).toBe("新形式");
+    expect(body[0].summary).toBe("要約");
+  });
+
   it("title_ja がある場合は翻訳タイトルを使用する", () => {
     const summaries = [
       {

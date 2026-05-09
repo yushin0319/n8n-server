@@ -6,13 +6,19 @@ interface GeminiResponseShape {
   candidates?: { content?: { parts?: { text?: string }[] } }[];
 }
 
-/** Gemini APIリクエストボディを生成する */
+/** Gemini APIリクエストボディを生成する。
+ *
+ * responseJsonSchema は Gemini 3 系のみ対応 (gemini-3-flash-preview / gemini-3.1-pro-preview)。
+ * 2.5-flash 等で指定すると 400 になるため呼び出し側で model を確認して渡すこと。
+ * required 配列で必須フィールドを明示すると Gemini がフィールド欠落を防いで返す。
+ */
 export function buildGeminiRequest(params: {
   prompt: string;
   temperature?: number;
   responseMimeType?: string;
   maxOutputTokens?: number;
   thinkingBudget?: number;
+  responseJsonSchema?: Record<string, unknown>;
 }): string {
   const config: Record<string, unknown> = {
     temperature: params.temperature ?? 0.3,
@@ -23,6 +29,9 @@ export function buildGeminiRequest(params: {
   }
   if (params.thinkingBudget !== undefined) {
     config.thinkingConfig = { thinkingBudget: params.thinkingBudget };
+  }
+  if (params.responseJsonSchema) {
+    config.responseJsonSchema = params.responseJsonSchema;
   }
 
   return JSON.stringify({

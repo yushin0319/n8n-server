@@ -52,6 +52,31 @@ describe("PrepareSummaryPrompt", () => {
     expect(body).toHaveProperty("generationConfig");
   });
 
+  it("responseJsonSchema が generationConfig に含まれる (Gemini 3)", () => {
+    vi.stubGlobal("$input", {
+      first: () => ({
+        json: { items: [{ title: "Article", fulltext: "...", impact: 5 }] },
+      }),
+    });
+
+    const items = callAndGetItems();
+    const body = JSON.parse(items[0].json.geminiBody as string);
+
+    expect(body.generationConfig.responseMimeType).toBe("application/json");
+    const schema = body.generationConfig.responseJsonSchema;
+    expect(schema).toBeDefined();
+    expect(schema.type).toBe("object");
+    expect(schema.required).toEqual(["summaries"]);
+    expect(schema.properties.summaries.type).toBe("array");
+    expect(schema.properties.summaries.items.required).toEqual([
+      "article_index",
+      "tags",
+      "title_ja",
+      "summary",
+      "comment",
+    ]);
+  });
+
   it("items をパススルーする", () => {
     const inputItems = [
       { title: "Article A", fulltext: "Text A", impact: 7 },

@@ -24,7 +24,14 @@ export default function (): CodeNodeReturn {
   const originalItems = $("PrepareSummaryPrompt").first().json
     .items as OriginalItem[];
 
-  const summaries = parseGeminiJson<SummaryEntry[]>(geminiResponse);
+  // responseJsonSchema 対応: トップレベルが {summaries: [...]} の object に変更。
+  // 旧形式 (配列直返し) との後方互換も維持 (Gemini が schema を完全には守らない場合の保険)。
+  const parsed = parseGeminiJson<
+    SummaryEntry[] | { summaries: SummaryEntry[] }
+  >(geminiResponse);
+  const summaries: SummaryEntry[] = Array.isArray(parsed)
+    ? parsed
+    : (parsed?.summaries ?? []);
 
   // pubDateがない場合のフォールバック（WF実行時刻、ISO形式）
   const fallbackDate = new Date().toISOString();
