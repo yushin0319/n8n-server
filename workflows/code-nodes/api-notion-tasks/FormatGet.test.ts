@@ -146,4 +146,15 @@ describe("FormatGet", () => {
     const result = formatGet() as INodeExecutionData[];
     expect(result[0].json.page_id).toBe("page-from-extract");
   });
+
+  it("両方のノードから pageId が取得できない場合エラーをスロー", () => {
+    vi.stubGlobal("$", (_name: string) => {
+      throw new Error("node not executed");
+    });
+    vi.stubGlobal("$input", { all: () => [] });
+
+    expect(() => formatGet()).toThrow(
+      "FormatGet: pageId が PrepGet / ExtractPageId のどちらからも取得できません",
+    );
+  });
 });

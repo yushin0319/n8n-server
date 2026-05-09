@@ -4,11 +4,19 @@ export default function (): CodeNodeReturn {
   try {
     pageId = $("PrepGet").first().json.pageId as string;
   } catch (_) {
+    // PrepGet が実行されなかったパス
+  }
+  if (!pageId) {
     try {
       pageId = $("ExtractPageId").first().json.pageId as string;
     } catch (_) {
-      pageId = "";
+      // ExtractPageId も無い
     }
+  }
+  if (!pageId) {
+    throw new Error(
+      "FormatGet: pageId が PrepGet / ExtractPageId のどちらからも取得できません",
+    );
   }
   const blocks = $input
     .all()
