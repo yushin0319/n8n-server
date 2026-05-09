@@ -1,6 +1,6 @@
 [Unit]
-Description=OCI host memory watch (peak/swap → obs-notify on level change)
-Documentation=https://github.com/yushin0319/n8n-server (#567 Phase 4)
+Description=OCI host memory watch (peak/swap obs-notify on level change, #567 Phase 4)
+Documentation=https://github.com/yushin0319/n8n-server
 After=docker.service
 Wants=docker.service
 
