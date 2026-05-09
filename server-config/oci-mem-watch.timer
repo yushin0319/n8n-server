@@ -1,0 +1,16 @@
+[Unit]
+Description=Run OCI host memory watch every 10 minutes
+
+[Timer]
+# 起動 2 分後に初回発火 (boot 直後の高負荷タイミングを避ける)
+OnBootSec=2min
+# 以降は前回完了から 10 分間隔
+OnUnitActiveSec=10min
+# n8n cron の :00 / :05 / :10 集中を避けるため最大 60 秒のランダムオフセット
+RandomizedDelaySec=60
+# サスペンド復帰後の取りこぼしを補完 (常時稼働 server なので実質ノーオプ)
+Persistent=true
+Unit=oci-mem-watch.service
+
+[Install]
+WantedBy=timers.target

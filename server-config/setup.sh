@@ -228,4 +228,59 @@ if command -v netdata >/dev/null 2>&1 && [ -f "$NETDATA_SRC" ]; then
   fi
 fi
 
+# ==========================================================================
+# 11. OCI host memory watch (#567 Phase 4): systemd timer で 10 分間隔に
+#     check-host-mem.sh を実行し、container.memory.peak / host swap が閾値を
+#     超え、かつ level 変化があれば obs-notify webhook に POST する。
+#     n8n container 内から host cgroup を読めないため、host 側の systemd で実装。
+#     負荷見積: 1 回 100-300ms / transient ~10-20MB。既存 cron より軽い。
+# ==========================================================================
+OCI_MEM_SH_SRC="$SCRIPT_DIR/check-host-mem.sh"
+OCI_MEM_SH_DST=/usr/local/bin/check-host-mem.sh
+OCI_MEM_SVC_SRC="$SCRIPT_DIR/oci-mem-watch.service"
+OCI_MEM_SVC_DST=/etc/systemd/system/oci-mem-watch.service
+OCI_MEM_TMR_SRC="$SCRIPT_DIR/oci-mem-watch.timer"
+OCI_MEM_TMR_DST=/etc/systemd/system/oci-mem-watch.timer
+
+if [ -f "$OCI_MEM_SH_SRC" ] && [ -f "$OCI_MEM_SVC_SRC" ] && [ -f "$OCI_MEM_TMR_SRC" ]; then
+  # state ディレクトリを ubuntu 所有で確保 (Type=oneshot User=ubuntu が書ける)
+  if [ ! -d /var/lib/oci-mem-watch ]; then
+    log "Creating /var/lib/oci-mem-watch (owner ubuntu)"
+    sudo install -d -o ubuntu -g ubuntu -m 755 /var/lib/oci-mem-watch
+  fi
+
+  # スクリプト本体は実行ビット必須
+  if ! sudo diff -q "$OCI_MEM_SH_SRC" "$OCI_MEM_SH_DST" >/dev/null 2>&1; then
+    log "Installing $OCI_MEM_SH_DST"
+    sudo install -m 755 "$OCI_MEM_SH_SRC" "$OCI_MEM_SH_DST"
+  else
+    log "$OCI_MEM_SH_DST already in sync"
+  fi
+
+  # service / timer は差分があれば cp + daemon-reload
+  RELOAD_SYSTEMD=0
+  for pair in "$OCI_MEM_SVC_SRC:$OCI_MEM_SVC_DST" "$OCI_MEM_TMR_SRC:$OCI_MEM_TMR_DST"; do
+    SRC="${pair%%:*}"
+    DST="${pair##*:}"
+    if ! sudo diff -q "$SRC" "$DST" >/dev/null 2>&1; then
+      log "Installing $DST"
+      sudo cp "$SRC" "$DST"
+      RELOAD_SYSTEMD=1
+    fi
+  done
+
+  if [ "$RELOAD_SYSTEMD" = "1" ]; then
+    log "systemctl daemon-reload"
+    sudo systemctl daemon-reload
+  fi
+
+  if ! systemctl is-enabled --quiet oci-mem-watch.timer 2>/dev/null; then
+    log "Enabling oci-mem-watch.timer"
+    sudo systemctl enable --now oci-mem-watch.timer
+  elif ! systemctl is-active --quiet oci-mem-watch.timer; then
+    log "Starting oci-mem-watch.timer (was inactive)"
+    sudo systemctl start oci-mem-watch.timer
+  fi
+fi
+
 log "setup.sh complete"
