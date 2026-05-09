@@ -1,5 +1,15 @@
 export default function (): CodeNodeReturn {
-  const pageId = $("PrepGet").first().json.pageId as string;
+  // PrepGet (page_id 直渡し) または ExtractPageId (task_id 経由解決) から pageId を取得
+  let pageId = "";
+  try {
+    pageId = $("PrepGet").first().json.pageId as string;
+  } catch (_) {
+    try {
+      pageId = $("ExtractPageId").first().json.pageId as string;
+    } catch (_) {
+      pageId = "";
+    }
+  }
   const blocks = $input
     .all()
     .map((item) => {

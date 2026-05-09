@@ -132,6 +132,27 @@
               },
               "renameOutput": true,
               "outputKey": "get"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": ""
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.action }}",
+                    "rightValue": "get_by_task_id",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "get_by_task_id"
             }
           ]
         },
@@ -609,7 +630,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ error: 'Unknown action', message: 'Supported actions: list, create, update, search, get', received: $json.body?.action || 'none' }) }}",
+        "responseBody": "={{ JSON.stringify({ error: 'Unknown action', message: 'Supported actions: list, create, update, search, get, get_by_task_id', received: $json.body?.action || 'none' }) }}",
         "options": {
           "responseCode": 400
         }
@@ -618,10 +639,73 @@
       "typeVersion": 1.5,
       "position": [
         500,
-        1100
+        1500
       ],
       "id": "fallback-respond-001",
       "name": "RespondFallback"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// @external api-notion-tasks/PrepGetByTaskId.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        500,
+        1100
+      ],
+      "id": "get-by-tid-prep-001",
+      "name": "PrepGetByTaskId"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.url }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2022-06-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.requestBody }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        750,
+        1100
+      ],
+      "id": "get-by-tid-query-001",
+      "name": "QueryByTaskId",
+      "credentials": {
+        "notionApi": {
+          "id": "StdChbKZz3co4jDO",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// @external api-notion-tasks/ExtractPageId.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1000,
+        1100
+      ],
+      "id": "get-by-tid-extract-001",
+      "name": "ExtractPageId"
     }
   ],
   "connections": {
@@ -675,7 +759,47 @@
         ],
         [
           {
+            "node": "PrepGetByTaskId",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
             "node": "RespondFallback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepGetByTaskId": {
+      "main": [
+        [
+          {
+            "node": "QueryByTaskId",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "QueryByTaskId": {
+      "main": [
+        [
+          {
+            "node": "ExtractPageId",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ExtractPageId": {
+      "main": [
+        [
+          {
+            "node": "GetBlocks",
             "type": "main",
             "index": 0
           }
