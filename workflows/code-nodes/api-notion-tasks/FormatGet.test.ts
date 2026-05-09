@@ -113,9 +113,11 @@ describe("FormatGet", () => {
   });
 
   it("PrepGet ノードから pageId を取得する", () => {
-    vi.stubGlobal("$", (_name: string) => {
-      expect(_name).toBe("PrepGet");
-      return { first: () => ({ json: { pageId: "page-from-prep" } }) };
+    vi.stubGlobal("$", (name: string) => {
+      if (name === "PrepGet") {
+        return { first: () => ({ json: { pageId: "page-from-prep" } }) };
+      }
+      throw new Error(`node ${name} not executed`);
     });
     vi.stubGlobal("$input", {
       all: () => [],
@@ -123,5 +125,36 @@ describe("FormatGet", () => {
 
     const result = formatGet() as INodeExecutionData[];
     expect(result[0].json.page_id).toBe("page-from-prep");
+  });
+
+  it("ExtractPageId ノードから pageId を取得する (task_id 経由)", () => {
+    vi.stubGlobal("$", (name: string) => {
+      if (name === "PrepGet") {
+        throw new Error("PrepGet not executed");
+      }
+      if (name === "ExtractPageId") {
+        return {
+          first: () => ({ json: { pageId: "page-from-extract" } }),
+        };
+      }
+      throw new Error(`unexpected node ${name}`);
+    });
+    vi.stubGlobal("$input", {
+      all: () => [],
+    });
+
+    const result = formatGet() as INodeExecutionData[];
+    expect(result[0].json.page_id).toBe("page-from-extract");
+  });
+
+  it("両方のノードから pageId が取得できない場合エラーをスロー", () => {
+    vi.stubGlobal("$", (_name: string) => {
+      throw new Error("node not executed");
+    });
+    vi.stubGlobal("$input", { all: () => [] });
+
+    expect(() => formatGet()).toThrow(
+      "FormatGet: pageId が PrepGet / ExtractPageId のどちらからも取得できません",
+    );
   });
 });
