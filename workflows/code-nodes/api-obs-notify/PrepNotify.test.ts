@@ -70,6 +70,40 @@ describe("PrepNotify", () => {
     expect(discord.content).toBe("@here");
   });
 
+  it("$env が設定されていれば discordUrl を返す (Notion #558)", () => {
+    vi.stubGlobal("$env", {
+      OBS_WEBHOOK_CRITICAL_URL: "https://discord.example/webhooks/X/Y",
+    });
+    vi.stubGlobal("$input", {
+      first: () => ({
+        json: { body: { ...minimalBody, severity: "critical" } },
+      }),
+    });
+    const items = callAndGetItems();
+    expect(items[0].json.discordUrl).toBe(
+      "https://discord.example/webhooks/X/Y",
+    );
+  });
+
+  it("$env 該当キーが無いとき discordUrl は空文字 (neverError 任せ)", () => {
+    vi.stubGlobal("$env", {});
+    vi.stubGlobal("$input", {
+      first: () => ({ json: { body: minimalBody } }),
+    });
+    const items = callAndGetItems();
+    expect(items[0].json.discordUrl).toBe("");
+  });
+
+  it("$env 自体が undefined でも throw せず空文字 (Code Node テスト環境)", () => {
+    // $env を stub せず、ts d.ts で declare されているだけの状態を再現
+    vi.unstubAllGlobals();
+    vi.stubGlobal("$input", {
+      first: () => ({ json: { body: minimalBody } }),
+    });
+    const items = callAndGetItems();
+    expect(items[0].json.discordUrl).toBe("");
+  });
+
   it("repo / summary / url / raw_payload は任意", () => {
     vi.stubGlobal("$input", {
       first: () => ({
