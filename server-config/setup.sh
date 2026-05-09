@@ -243,6 +243,13 @@ OCI_MEM_TMR_SRC="$SCRIPT_DIR/oci-mem-watch.timer"
 OCI_MEM_TMR_DST=/etc/systemd/system/oci-mem-watch.timer
 
 if [ -f "$OCI_MEM_SH_SRC" ] && [ -f "$OCI_MEM_SVC_SRC" ] && [ -f "$OCI_MEM_TMR_SRC" ]; then
+  # check-host-mem.sh は jq に依存。未インストールなら apt install jq
+  if ! command -v jq >/dev/null 2>&1; then
+    log "Installing jq (required by check-host-mem.sh)"
+    sudo DEBIAN_FRONTEND=noninteractive apt-get update -qq
+    sudo DEBIAN_FRONTEND=noninteractive apt-get install -qqy jq
+  fi
+
   # state ディレクトリを ubuntu 所有で確保 (Type=oneshot User=ubuntu が書ける)
   if [ ! -d /var/lib/oci-mem-watch ]; then
     log "Creating /var/lib/oci-mem-watch (owner ubuntu)"
