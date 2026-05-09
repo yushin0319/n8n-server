@@ -57,6 +57,13 @@ export default function (): CodeNodeReturn {
 
   const channel = `obs-${severity}`;
   const envKey = `OBS_WEBHOOK_${severity.toUpperCase()}_URL`;
+  // Notion #558: SendDiscord (HTTP Request) の URL expression で $env が読めず
+  // "URL parameter must be a string, got undefined" が 5/9 で 10 件発火していた。
+  // Code Node 経由なら N8N_BLOCK_ENV_ACCESS_IN_NODE=false で確実に読めるため、
+  // ここで discordUrl を組み立てて下流に渡す (URL expression は $json.discordUrl で参照)。
+  // env 未設定時は空文字。SendDiscord 側 neverError=true で WF は続行する。
+  const discordUrl =
+    typeof $env !== "undefined" && $env[envKey] ? String($env[envKey]) : "";
 
   const summary = (body.summary as string) || "";
   const rawUrl = (body.url as string) || "";
@@ -120,6 +127,7 @@ export default function (): CodeNodeReturn {
         service,
         channel,
         envKey,
+        discordUrl,
         discordBody: JSON.stringify(discordBody),
         notionBody: JSON.stringify(notionBody),
       },
