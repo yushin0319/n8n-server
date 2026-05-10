@@ -75,8 +75,20 @@ describe("PrepUploadErrors", () => {
   it("失敗 execution の data フィールドを保持 + ヘッダ _meta", () => {
     const sampleData = { resultData: { runData: { Node1: [{ error: "x" }] } } };
     setupSinglePage([
-      { id: "1", workflowId: "wf1", status: "error", data: sampleData },
-      { id: "2", workflowId: "wf2", status: "error", data: { foo: "bar" } },
+      {
+        id: "1",
+        workflowId: "wf1",
+        status: "error",
+        startedAt: "2026-05-09T00:00:00.000Z",
+        data: sampleData,
+      },
+      {
+        id: "2",
+        workflowId: "wf2",
+        status: "error",
+        startedAt: "2026-05-09T12:00:00.000Z",
+        data: { foo: "bar" },
+      },
     ]);
     const out = run();
     expect(out.json.count).toBe(2);
@@ -97,8 +109,20 @@ describe("PrepUploadErrors", () => {
 
   it("pagination で複数 page 来ても全 page 集約", () => {
     setupMultiPage([
-      [{ id: "1", status: "error" }],
-      [{ id: "2", status: "error" }],
+      [
+        {
+          id: "1",
+          status: "error",
+          startedAt: "2026-05-09T00:00:00.000Z",
+        },
+      ],
+      [
+        {
+          id: "2",
+          status: "error",
+          startedAt: "2026-05-09T01:00:00.000Z",
+        },
+      ],
     ]);
     const out = run();
     expect(out.json.count).toBe(2);
@@ -109,8 +133,34 @@ describe("PrepUploadErrors", () => {
     expect(lines).toHaveLength(3); // _meta + 2
   });
 
+  it("startedAt < from の error execution は除外される (range filter)", () => {
+    setupSinglePage([
+      // RANGE.from = 2026-05-08T18:00:00Z
+      {
+        id: "old",
+        status: "error",
+        startedAt: "2026-05-08T17:59:59.000Z",
+      },
+      {
+        id: "in",
+        status: "error",
+        startedAt: "2026-05-09T00:00:00.000Z",
+      },
+    ]);
+    const out = run();
+    expect(out.json.count).toBe(1);
+    const decoded = Buffer.from(out.binary.file.data, "base64").toString(
+      "utf-8",
+    );
+    const ids = decoded
+      .split("\n")
+      .slice(1)
+      .map((l) => JSON.parse(l).id);
+    expect(ids).toEqual(["in"]);
+  });
+
   it("ファイル名は YYYY-MM-DD-errors.jsonl 形式", () => {
-    setupSinglePage([{ id: "x" }]);
+    setupSinglePage([{ id: "x", startedAt: "2026-05-09T00:00:00.000Z" }]);
     const out = run();
     expect(out.json.name).toBe("2026-05-10-errors.jsonl");
     expect(out.binary.file.fileName).toBe("2026-05-10-errors.jsonl");
@@ -124,7 +174,13 @@ describe("PrepUploadErrors", () => {
   });
 
   it("ids フィールドは含めない (DELETE 廃止 / Notion #561)", () => {
-    setupSinglePage([{ id: "1", status: "error" }]);
+    setupSinglePage([
+      {
+        id: "1",
+        status: "error",
+        startedAt: "2026-05-09T00:00:00.000Z",
+      },
+    ]);
     const out = run();
     expect((out.json as unknown as IDataObject).ids).toBeUndefined();
   });

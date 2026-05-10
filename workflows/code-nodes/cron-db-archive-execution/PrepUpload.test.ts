@@ -74,8 +74,18 @@ describe("PrepUpload", () => {
 
   it("複数 execution を 1 行 1 件 + ヘッダ _meta で出力", () => {
     setupSinglePage([
-      { id: "1", workflowId: "wf1", status: "success" },
-      { id: "2", workflowId: "wf2", status: "error" },
+      {
+        id: "1",
+        workflowId: "wf1",
+        status: "success",
+        startedAt: "2026-05-09T00:00:00.000Z",
+      },
+      {
+        id: "2",
+        workflowId: "wf2",
+        status: "error",
+        startedAt: "2026-05-09T12:00:00.000Z",
+      },
     ]);
     const out = run();
     expect(out.json.count).toBe(2);
@@ -95,9 +105,15 @@ describe("PrepUpload", () => {
 
   it("pagination で 複数 page 来ても全 page を集約する", () => {
     setupMultiPage([
-      [{ id: "1" }, { id: "2" }],
-      [{ id: "3" }, { id: "4" }],
-      [{ id: "5" }],
+      [
+        { id: "1", startedAt: "2026-05-09T00:00:00.000Z" },
+        { id: "2", startedAt: "2026-05-09T01:00:00.000Z" },
+      ],
+      [
+        { id: "3", startedAt: "2026-05-09T02:00:00.000Z" },
+        { id: "4", startedAt: "2026-05-09T03:00:00.000Z" },
+      ],
+      [{ id: "5", startedAt: "2026-05-09T04:00:00.000Z" }],
     ]);
     const out = run();
     expect(out.json.count).toBe(5);
@@ -109,15 +125,46 @@ describe("PrepUpload", () => {
     expect(JSON.parse(lines[5]).id).toBe("5");
   });
 
+  it("startedAt < from の execution は除外される (range filter)", () => {
+    setupSinglePage([
+      // RANGE.from = 2026-05-08T18:00:00Z
+      { id: "old", startedAt: "2026-05-08T17:59:59.000Z" }, // out
+      { id: "boundary", startedAt: "2026-05-08T18:00:00.000Z" }, // in (>=)
+      { id: "in", startedAt: "2026-05-09T00:00:00.000Z" }, // in
+    ]);
+    const out = run();
+    expect(out.json.count).toBe(2);
+    const decoded = Buffer.from(out.binary.file.data, "base64").toString(
+      "utf-8",
+    );
+    const ids = decoded
+      .split("\n")
+      .slice(1)
+      .map((l) => JSON.parse(l).id);
+    expect(ids).toEqual(["boundary", "in"]);
+  });
+
+  it("startedAt 欠落の execution は除外される (range filter)", () => {
+    setupSinglePage([
+      { id: "no-ts" }, // out
+      { id: "in", startedAt: "2026-05-09T00:00:00.000Z" }, // in
+    ]);
+    const out = run();
+    expect(out.json.count).toBe(1);
+  });
+
   it("ファイル名に PrepRange.file_date を使う", () => {
-    setupSinglePage([{ id: "x" }]);
+    setupSinglePage([{ id: "x", startedAt: "2026-05-09T00:00:00.000Z" }]);
     const out = run();
     expect(out.json.name).toBe("2026-05-10-executions.jsonl");
     expect(out.binary.file.fileName).toBe("2026-05-10-executions.jsonl");
   });
 
   it("PrepRange.file_date 欠落時は JST 当日にフォールバック", () => {
-    setupSinglePage([{ id: "x" }], { ...RANGE, file_date: "" });
+    setupSinglePage([{ id: "x", startedAt: "2026-05-09T00:00:00.000Z" }], {
+      ...RANGE,
+      file_date: "",
+    });
     const out = run();
     expect(out.json.name).toMatch(/^\d{4}-\d{2}-\d{2}-executions\.jsonl$/);
   });

@@ -6,6 +6,10 @@
  * pagination 対応: HTTP Request node の pagination 機能で複数 page 来るとき、
  * 各 page が個別 item として渡るため $input.all() で全 page を集約する。
  *
+ * range filter: n8n REST API の /executions は startedAfter クエリを未対応のため
+ * (v2.6.3 で "Unknown query parameter" エラー)、API 側は startedBefore のみで取得し、
+ * Code Node 側で startedAt >= from の execution のみ残す。
+ *
  * 1 行目に {"_meta":{"from":..., "to":...}} を入れて対象範囲を明示 (Notion #561)。
  */
 interface ExecutionRow {
@@ -38,10 +42,15 @@ export default function (): CodeNodeReturn {
     fileDate = jst.toISOString().slice(0, 10);
   }
 
+  const fromMs = from ? Date.parse(from) : 0;
+  const filtered = executions.filter((ex) => {
+    if (!ex.startedAt) return false;
+    const startedMs = Date.parse(ex.startedAt);
+    return Number.isFinite(startedMs) && startedMs >= fromMs;
+  });
+
   const meta = JSON.stringify({ _meta: { from, to } });
-  const jsonl = [meta, ...executions.map((ex) => JSON.stringify(ex))].join(
-    "\n",
-  );
+  const jsonl = [meta, ...filtered.map((ex) => JSON.stringify(ex))].join("\n");
 
   const fileName = `${fileDate}-errors.jsonl`;
   const base64 = Buffer.from(jsonl, "utf-8").toString("base64");
@@ -51,7 +60,7 @@ export default function (): CodeNodeReturn {
       json: {
         name: fileName,
         folderId: N8N_LOGS_FOLDER_ID,
-        count: executions.length,
+        count: filtered.length,
         from,
         to,
       },
