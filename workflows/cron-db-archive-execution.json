@@ -10,7 +10,7 @@
             {
               "field": "days",
               "triggerAtHour": 14,
-              "triggerAtMinute": 20
+              "triggerAtMinute": 35
             }
           ]
         }
@@ -102,10 +102,6 @@
             {
               "name": "includeData",
               "value": "false"
-            },
-            {
-              "name": "startedBefore",
-              "value": "={{ $('PrepRange').first().json.to }}"
             }
           ]
         },
@@ -248,10 +244,6 @@
             {
               "name": "includeData",
               "value": "true"
-            },
-            {
-              "name": "startedBefore",
-              "value": "={{ $('PrepRange').first().json.to }}"
             }
           ]
         },
