@@ -9,8 +9,8 @@
           "interval": [
             {
               "field": "days",
-              "triggerAtHour": 3,
-              "triggerAtMinute": 0
+              "triggerAtHour": 14,
+              "triggerAtMinute": 20
             }
           ]
         }
@@ -104,10 +104,6 @@
               "value": "false"
             },
             {
-              "name": "startedAfter",
-              "value": "={{ $('PrepRange').first().json.from }}"
-            },
-            {
               "name": "startedBefore",
               "value": "={{ $('PrepRange').first().json.to }}"
             }
@@ -126,7 +122,7 @@
                 ]
               },
               "paginationCompleteWhen": "other",
-              "completeExpression": "={{ !$response.body.nextCursor }}",
+              "completeExpression": "={{ !$response.body.nextCursor || ($response.body.data && $response.body.data.length > 0 && new Date($response.body.data[$response.body.data.length - 1].startedAt) < new Date($('PrepRange').first().json.from)) }}",
               "limitPagesFetched": false
             }
           }
@@ -254,10 +250,6 @@
               "value": "true"
             },
             {
-              "name": "startedAfter",
-              "value": "={{ $('PrepRange').first().json.from }}"
-            },
-            {
               "name": "startedBefore",
               "value": "={{ $('PrepRange').first().json.to }}"
             }
@@ -276,7 +268,7 @@
                 ]
               },
               "paginationCompleteWhen": "other",
-              "completeExpression": "={{ !$response.body.nextCursor }}",
+              "completeExpression": "={{ !$response.body.nextCursor || ($response.body.data && $response.body.data.length > 0 && new Date($response.body.data[$response.body.data.length - 1].startedAt) < new Date($('PrepRange').first().json.from)) }}",
               "limitPagesFetched": false
             }
           }
