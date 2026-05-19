@@ -1,0 +1,16 @@
+[Unit]
+Description=Run n8n healthz watchdog every 5 minutes
+
+[Timer]
+# 起動 3 分後に初回発火。boot grace（15分）はスクリプト側で管理するため早期発火可
+OnBootSec=3min
+# 以降は前回完了から 5 分間隔（連続失敗 4 回 = 約20分でゾンビ判定）
+OnUnitActiveSec=5min
+# n8n cron の :00 / :05 / :10 集中を避けるため最大 30 秒のランダムオフセット
+RandomizedDelaySec=30
+# サスペンド復帰後の取りこぼしを補完（常時稼働 server なので実質ノーオプ）
+Persistent=true
+Unit=n8n-watchdog.service
+
+[Install]
+WantedBy=timers.target

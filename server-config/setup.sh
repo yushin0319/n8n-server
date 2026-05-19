@@ -290,4 +290,69 @@ if [ -f "$OCI_MEM_SH_SRC" ] && [ -f "$OCI_MEM_SVC_SRC" ] && [ -f "$OCI_MEM_TMR_S
   fi
 fi
 
+# ==========================================================================
+# 12. n8n healthz watchdog (2026-05-19 障害対策): systemd timer で 5 分間隔に
+#     check-n8n-health.sh を実行し、localhost:5678/healthz が連続 4 回失敗
+#     (= 約20分の継続ダウン) したら docker restart で復旧、復旧後に obs-notify へ
+#     POST する。コンテナは Up のままイベントループ閉塞する「ゾンビ化」は docker の
+#     restart: unless-stopped では復旧しないため、healthz ベースの監視で補う。
+#     起動時 VACUUM 窓を誤検知しないよう grace 20分を state file
+#     (/var/lib/n8n-watchdog/state.json) で管理する。
+# ==========================================================================
+N8N_WD_SH_SRC="$SCRIPT_DIR/check-n8n-health.sh"
+N8N_WD_SH_DST=/usr/local/bin/check-n8n-health.sh
+N8N_WD_SVC_SRC="$SCRIPT_DIR/n8n-watchdog.service"
+N8N_WD_SVC_DST=/etc/systemd/system/n8n-watchdog.service
+N8N_WD_TMR_SRC="$SCRIPT_DIR/n8n-watchdog.timer"
+N8N_WD_TMR_DST=/etc/systemd/system/n8n-watchdog.timer
+
+if [ -f "$N8N_WD_SH_SRC" ] && [ -f "$N8N_WD_SVC_SRC" ] && [ -f "$N8N_WD_TMR_SRC" ]; then
+  # check-n8n-health.sh は jq に依存。セクション 11 で導入済みのはずだが、
+  # 11 がスキップされた環境向けの二重保険として未インストールなら入れる。
+  if ! command -v jq >/dev/null 2>&1; then
+    log "Installing jq (required by check-n8n-health.sh)"
+    sudo DEBIAN_FRONTEND=noninteractive apt-get update -qq
+    sudo DEBIAN_FRONTEND=noninteractive apt-get install -qqy jq
+  fi
+
+  # state ディレクトリを ubuntu 所有で確保 (Type=oneshot User=ubuntu が書ける)
+  if [ ! -d /var/lib/n8n-watchdog ]; then
+    log "Creating /var/lib/n8n-watchdog (owner ubuntu)"
+    sudo install -d -o ubuntu -g ubuntu -m 755 /var/lib/n8n-watchdog
+  fi
+
+  # スクリプト本体は実行ビット必須
+  if ! sudo diff -q "$N8N_WD_SH_SRC" "$N8N_WD_SH_DST" >/dev/null 2>&1; then
+    log "Installing $N8N_WD_SH_DST"
+    sudo install -m 755 "$N8N_WD_SH_SRC" "$N8N_WD_SH_DST"
+  else
+    log "$N8N_WD_SH_DST already in sync"
+  fi
+
+  # service / timer は差分があれば cp + daemon-reload
+  RELOAD_SYSTEMD=0
+  for pair in "$N8N_WD_SVC_SRC:$N8N_WD_SVC_DST" "$N8N_WD_TMR_SRC:$N8N_WD_TMR_DST"; do
+    SRC="${pair%%:*}"
+    DST="${pair##*:}"
+    if ! sudo diff -q "$SRC" "$DST" >/dev/null 2>&1; then
+      log "Installing $DST"
+      sudo cp "$SRC" "$DST"
+      RELOAD_SYSTEMD=1
+    fi
+  done
+
+  if [ "$RELOAD_SYSTEMD" = "1" ]; then
+    log "systemctl daemon-reload"
+    sudo systemctl daemon-reload
+  fi
+
+  if ! systemctl is-enabled --quiet n8n-watchdog.timer 2>/dev/null; then
+    log "Enabling n8n-watchdog.timer"
+    sudo systemctl enable --now n8n-watchdog.timer
+  elif ! systemctl is-active --quiet n8n-watchdog.timer; then
+    log "Starting n8n-watchdog.timer (was inactive)"
+    sudo systemctl start n8n-watchdog.timer
+  fi
+fi
+
 log "setup.sh complete"
