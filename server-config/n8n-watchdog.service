@@ -1,0 +1,17 @@
+[Unit]
+Description=n8n healthz watchdog (zombie detect + auto-restart, 2026-05-19 incident)
+Documentation=https://github.com/yushin0319/n8n-server
+After=docker.service
+Wants=docker.service
+
+[Service]
+Type=oneshot
+User=ubuntu
+Group=ubuntu
+ExecStart=/usr/local/bin/check-n8n-health.sh
+StandardOutput=journal
+StandardError=journal
+# healthz curl (max 10s) + docker restart を見込む。docker restart はコンテナ
+# プロセスの停止+起動のみで完了し（n8n の起動時 VACUUM はその後に走るため
+# ブロックしない）通常 ~30s だが、swap 逼迫時の余裕を見て 180s に設定する。
+TimeoutStartSec=180s

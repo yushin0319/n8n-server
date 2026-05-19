@@ -55,6 +55,13 @@ services:
       # 値は packages/@n8n/config/src/configs/sentry.config.ts の eventLoopBlockThreshold
       # に対応 (z.number().int().positive())。A1-flex 移行後は 500ms に戻す検討。
       N8N_SENTRY_EVENT_LOOP_BLOCK_THRESHOLD: "2000"
+      # JS Task Runner の grant token TTL (秒、デフォルト 30s)。OCI Always Free の
+      # 低速ディスクでは起動時 VACUUM (DB_SQLITE_VACUUM_ON_STARTUP) でブートが
+      # 3〜11 分遅延し、その間に Task Runner 接続が grant token 失効で失敗する
+      # (n8n 起動ログ "increase N8N_RUNNERS_GRANT_TOKEN_TTL" / 2026-05-19 障害復旧時に確認)。
+      # 120s に延長して遅い起動でも JS runner が確実に接続できるようにする。
+      # n8n v2.20.0+ で有効な env (それ以前は無視され fail-safe)。A1-flex 移行後は既定に戻す検討。
+      N8N_RUNNERS_GRANT_TOKEN_TTL: "120"
       # Healthchecks.io Slug ping key (A7 cron 実行欠落リアルタイム検知)。各 cron WF
       # 末尾の PingHealthchecks ノードが {{ $env.HC_PING_KEY }} で参照する。
       # 未設定時は ping URL が hc-ping.com//slug となり 404 → ping 不達 → 通知発火。
