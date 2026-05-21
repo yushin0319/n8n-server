@@ -40,11 +40,7 @@ function convertOne(alert: Alert, rootStatus: string): IDataObject {
   }
 
   const emoji =
-    status === "resolved"
-      ? "✅"
-      : severity === "critical"
-        ? "🚨"
-        : "🔥";
+    status === "resolved" ? "✅" : severity === "critical" ? "🚨" : "🔥";
   const subjectParts = [`${emoji} ${alertname}`];
   if (host) subjectParts.push(`on ${host}`);
   subjectParts.push(`(${status})`);
@@ -52,7 +48,10 @@ function convertOne(alert: Alert, rootStatus: string): IDataObject {
 
   const summaryParts: string[] = [];
   if (annotations.summary) summaryParts.push(annotations.summary);
-  if (annotations.description && annotations.description !== annotations.summary) {
+  if (
+    annotations.description &&
+    annotations.description !== annotations.summary
+  ) {
     summaryParts.push(annotations.description);
   }
   const labelHints = Object.entries(labels)

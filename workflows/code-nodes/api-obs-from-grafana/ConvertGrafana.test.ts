@@ -47,7 +47,7 @@ describe("ConvertGrafana", () => {
     expect(out.subject).toContain("n8n-server");
     expect(out.url).toBe("https://yushinfudo1986.grafana.net/alerting/...");
     expect(out.repo).toBe("n8n-server");
-    expect((out.summary as string)).toContain("Loki ERROR burst on n8n-server");
+    expect(out.summary as string).toContain("Loki ERROR burst on n8n-server");
   });
 
   it("status=resolved → severity=info (labels.severity に関わらず)", () => {
@@ -129,8 +129,22 @@ describe("ConvertGrafana", () => {
           body: {
             status: "firing",
             alerts: [
-              { status: "firing", labels: { alertname: "A", severity: "warning", host: "n8n-server" } },
-              { status: "firing", labels: { alertname: "B", severity: "critical", host: "crypto-ai-trader" } },
+              {
+                status: "firing",
+                labels: {
+                  alertname: "A",
+                  severity: "warning",
+                  host: "n8n-server",
+                },
+              },
+              {
+                status: "firing",
+                labels: {
+                  alertname: "B",
+                  severity: "critical",
+                  host: "crypto-ai-trader",
+                },
+              },
             ],
           },
         },
