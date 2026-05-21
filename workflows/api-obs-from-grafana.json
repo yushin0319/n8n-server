@@ -1,0 +1,145 @@
+{
+  "id": "7iyS1QEB6ZdnA1xz",
+  "name": "api/obs-from-grafana",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "obs-from-grafana",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "name": "Webhook",
+      "id": "ofg-0001-4000-8000-000000000001",
+      "webhookId": "ofg-0001-4000-8000-000000000001"
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external api-obs-from-grafana/ConvertGrafana.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "name": "ConvertGrafana",
+      "id": "ofg-0002-4000-8000-000000000002"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:5678/webhook/obs-notify",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        0
+      ],
+      "name": "ForwardToObsNotify",
+      "id": "ofg-0003-4000-8000-000000000003"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        880,
+        0
+      ],
+      "name": "Respond",
+      "id": "ofg-0004-4000-8000-000000000004"
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external api-obs-from-grafana/FormatResponse.ts"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        0
+      ],
+      "name": "FormatResponse",
+      "id": "ofg-0005-4000-8000-000000000005"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "ConvertGrafana",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ConvertGrafana": {
+      "main": [
+        [
+          {
+            "node": "ForwardToObsNotify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ForwardToObsNotify": {
+      "main": [
+        [
+          {
+            "node": "FormatResponse",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FormatResponse": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "aHM9O6mSwMNPTwdI"
+  }
+}

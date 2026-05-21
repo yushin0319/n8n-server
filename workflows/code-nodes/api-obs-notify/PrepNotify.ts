@@ -20,6 +20,7 @@ const ALLOWED_SERVICE = [
   "healthchecks",
   "uptime-kuma",
   "netdata",
+  "grafana",
   "github-actions",
 ];
 
