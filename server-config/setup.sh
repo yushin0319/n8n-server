@@ -241,8 +241,11 @@ if command -v netdata >/dev/null 2>&1 && [ -f "$HEALTH_NOTIFY_SRC" ]; then
     sudo cp "$HEALTH_NOTIFY_SRC" "$HEALTH_NOTIFY_DST"
     sudo chown root:netdata "$HEALTH_NOTIFY_DST"
     sudo chmod 0640 "$HEALTH_NOTIFY_DST"
-    # health 設定のみの変更は reload-health で反映可能 (restart 不要)
-    sudo netdatacli reload-health >/dev/null 2>&1 || true
+    # health 設定のみの変更は reload-health で反映可能 (restart 不要)。
+    # 失敗時はログに残す (sync 自体は成功しているので setup.sh 全体は止めない)。
+    if ! sudo netdatacli reload-health >/dev/null 2>&1; then
+      log "WARNING: netdatacli reload-health failed — check 'systemctl status netdata'"
+    fi
   else
     log "health_alarm_notify.conf already in sync"
   fi
