@@ -228,6 +228,26 @@ if command -v netdata >/dev/null 2>&1 && [ -f "$NETDATA_SRC" ]; then
   fi
 fi
 
+# health_alarm_notify.conf の同期 (#586): agent custom_sender → obs-from-netdata
+# 重要 alarm (memory/swap/OOM/disk/reboot 系) のみ allowlist で adapter WF に POST。
+# netdata は user override (/etc/netdata/) を template (/usr/lib/netdata/conf.d/) の
+# 後に source するため、差分のみで上書き可能 (テンプレ全体コピー不要)。
+HEALTH_NOTIFY_SRC="$SCRIPT_DIR/health_alarm_notify.conf"
+HEALTH_NOTIFY_DST=/etc/netdata/health_alarm_notify.conf
+
+if command -v netdata >/dev/null 2>&1 && [ -f "$HEALTH_NOTIFY_SRC" ]; then
+  if ! sudo diff -q "$HEALTH_NOTIFY_SRC" "$HEALTH_NOTIFY_DST" >/dev/null 2>&1; then
+    log "Syncing health_alarm_notify.conf → $HEALTH_NOTIFY_DST"
+    sudo cp "$HEALTH_NOTIFY_SRC" "$HEALTH_NOTIFY_DST"
+    sudo chown root:netdata "$HEALTH_NOTIFY_DST"
+    sudo chmod 0640 "$HEALTH_NOTIFY_DST"
+    # health 設定のみの変更は reload-health で反映可能 (restart 不要)
+    sudo netdatacli reload-health >/dev/null 2>&1 || true
+  else
+    log "health_alarm_notify.conf already in sync"
+  fi
+fi
+
 # ==========================================================================
 # 11. OCI host memory watch (#567 Phase 4): systemd timer で 10 分間隔に
 #     check-host-mem.sh を実行し、container.memory.peak / host swap が閾値を
