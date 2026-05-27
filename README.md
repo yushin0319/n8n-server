@@ -1,6 +1,6 @@
 # n8n-server
 
-[Oracle Cloud Always Free](https://www.oracle.com/cloud/free/) 上で動かす [n8n](https://n8n.io) v2.6.3 のワークフロー管理リポジトリ。22 個のワークフローを Git で管理し、GitHub Actions の CI/CD で n8n API 経由デプロイする。
+[Oracle Cloud Always Free](https://www.oracle.com/cloud/free/) 上で動かす [n8n](https://n8n.io) v2.6.3 のワークフロー管理リポジトリ。26 個のワークフローを Git で管理し、GitHub Actions の CI/CD で n8n API 経由デプロイする。
 
 - **本番**: https://yushin-n8n.duckdns.org/
 - **監視**: https://yushin-kuma.duckdns.org/ (Uptime Kuma)
@@ -18,7 +18,11 @@
   - `smoke_test.py` — デプロイ後の疎通確認
   - `kuma_bootstrap_monitors.py` — Uptime Kuma の monitor 一括登録
 - `tests/validate_workflows.py` — 孤立ノード検出・命名規則・credential 参照などの静的解析
-- `server-config/` — `docker-compose.yml` / `nginx-n8n.conf` / `setup.sh`（後述）
+- `server-config/`
+  - `docker-compose.yml` / `nginx-n8n.conf` / `setup.sh`（後述）
+  - `n8n-watchdog.{service,timer}` / `oci-mem-watch.{service,timer}` — systemd timer 監視
+  - `check-host-mem.sh` / `check-n8n-health.sh` / `health_alarm_notify.conf` — health-check スクリプト
+  - `promtail-config.yaml` / `netdata.conf` — 観測エージェント設定
 
 監視・観測:
 - Sentry（`N8N_SENTRY_DSN` / EventLoopBlocked 自動捕捉）
@@ -37,7 +41,7 @@ python tests/validate_workflows.py
 python scripts/lint_execute_once.py
 ```
 
-CI（`.github/workflows/`）では typecheck + vitest + Biome + Ruff + validate_workflows + lint_execute_once が走り、main マージで `deploy.yml` が差分デプロイ → smoke test を実行する。
+CI（`.github/workflows/`）では typecheck + vitest + Biome + Ruff + validate_workflows + lint_execute_once が走り、main マージで `deploy.yml` が差分デプロイ → smoke test を実行する。`codeql.yml` でセキュリティスキャン、`dependabot-automerge.yml` で patch/minor 自動マージ。
 
 ## デプロイ
 
