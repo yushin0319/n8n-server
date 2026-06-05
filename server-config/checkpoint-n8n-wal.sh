@@ -29,11 +29,12 @@ size_before=$(stat -c %s "$WAL_PATH" 2>/dev/null || echo 0)
 
 # checkpoint TRUNCATE 実行。出力は "busy|log_pages|checkpointed_pages" 形式 (busy=0 で成功)。
 # busy=1 のとき sqlite3 自身は exit 0 を返すため、出力を見て成否判定する。
+# 注意: PRAGMA busy_timeout=5000; は現在値 (5000) を 1 行目に echo する。checkpoint 結果は
+# 最終行に来るため tail -1 で抽出する (2026-06-06 初回実行で "unexpected output" 判定された)。
 result_rc=0
 result=$(sqlite3 \
-  -cmd "PRAGMA busy_timeout=5000;" \
   "$DB_PATH" \
-  "PRAGMA wal_checkpoint(TRUNCATE);" 2>&1) || result_rc=$?
+  "PRAGMA busy_timeout=5000; PRAGMA wal_checkpoint(TRUNCATE);" 2>&1 | tail -1) || result_rc=$?
 
 size_after=$(stat -c %s "$WAL_PATH" 2>/dev/null || echo 0)
 
