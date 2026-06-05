@@ -174,6 +174,19 @@ fi
 COMPOSE_FILE="$SCRIPT_DIR/docker-compose.yml"
 PROJECT_ROOT=$(cd "$SCRIPT_DIR/.." && pwd)
 if [ -f "$COMPOSE_FILE" ]; then
+  # deploy マーカー (#567 C-lite): docker compose up の直前に、まだ旧 n8n が生きている
+  # うちに obs-notify へ info を 1 本投げる。image 更新で n8n が recreate されると起動時
+  # migration がイベントループを数分ブロックし、その窓で cron/adapter/HC が一過性に失敗
+  # してクラスタに見える (2026-06-06 実例)。deploy との相関を obs DB / Discord(info) に
+  # 残すことで「誤報ではなく deploy 由来」と一目で分かるようにする。
+  # jq の install は後続 section 11 なので printf で JSON 組立 (jq 非依存)。
+  # n8n 未起動時 / webhook 不達でも非致命 (|| true、--max-time 10)。
+  marker_summary="docker compose up -d --pull always 実行。image 更新時は起動時 migration で約10分間 cron/adapter が一過性失敗しうる相関マーカー。host=$(hostname)"
+  marker_payload=$(printf '{"severity":"info","service":"n8n","subject":"n8n-server redeploy 開始 (setup.sh)","summary":"%s","repo":"n8n-server"}' "$marker_summary")
+  curl -sS --max-time 10 -X POST -H "Content-Type: application/json" \
+    -d "$marker_payload" "http://localhost:5678/webhook/obs-notify" >/dev/null 2>&1 \
+    && log "deploy marker posted to obs-notify (info)" \
+    || log "deploy marker POST failed (non-fatal, n8n may be down)"
   log "docker compose up -d --pull always (project: $PROJECT_ROOT, file: $COMPOSE_FILE)"
   # set -e で失敗時に即 exit するが、ログで明示的に失敗を示すため明示チェック。
   if ! sudo docker compose --project-directory "$PROJECT_ROOT" -f "$COMPOSE_FILE" up -d --pull always; then
