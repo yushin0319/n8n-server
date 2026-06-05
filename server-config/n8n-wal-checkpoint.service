@@ -1,0 +1,11 @@
+[Unit]
+Description=n8n SQLite WAL checkpoint (TRUNCATE) — daily WAL file reset
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+User=root
+ExecStart=/usr/local/bin/checkpoint-n8n-wal.sh
+StandardOutput=journal
+StandardError=journal

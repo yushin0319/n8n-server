@@ -378,4 +378,61 @@ if [ -f "$N8N_WD_SH_SRC" ] && [ -f "$N8N_WD_SVC_SRC" ] && [ -f "$N8N_WD_TMR_SRC"
   fi
 fi
 
+# ==========================================================================
+# 13. n8n SQLite WAL checkpoint: systemd timer で日次 03:00 JST に
+#     PRAGMA wal_checkpoint(TRUNCATE) を実行し WAL ファイルを 0 bytes に reset する。
+#     n8n は起動時のみ DB_SQLITE_VACUUM_ON_STARTUP=true で checkpoint+VACUUM するが、
+#     運用中の WAL は autocheckpoint で末尾まで commit されるだけで file 自体は
+#     truncate されない (SQLite 仕様)。2026-05-19 ゾンビ障害時 WAL 77MB、2026-06-05
+#     起動 25h で WAL 63MB を再確認。container memory_limit 512MB を圧迫し
+#     EventLoopBlocked / cron skip の素地になるため日次で reset する。busy 時は
+#     非エラー扱いで次回 timer 再試行 (n8n の書き込みと干渉しない)。
+# ==========================================================================
+WAL_CK_SH_SRC="$SCRIPT_DIR/checkpoint-n8n-wal.sh"
+WAL_CK_SH_DST=/usr/local/bin/checkpoint-n8n-wal.sh
+WAL_CK_SVC_SRC="$SCRIPT_DIR/n8n-wal-checkpoint.service"
+WAL_CK_SVC_DST=/etc/systemd/system/n8n-wal-checkpoint.service
+WAL_CK_TMR_SRC="$SCRIPT_DIR/n8n-wal-checkpoint.timer"
+WAL_CK_TMR_DST=/etc/systemd/system/n8n-wal-checkpoint.timer
+
+if [ -f "$WAL_CK_SH_SRC" ] && [ -f "$WAL_CK_SVC_SRC" ] && [ -f "$WAL_CK_TMR_SRC" ]; then
+  # sqlite3 が無ければ install (Ubuntu には base にあるはずだが念のため)
+  if ! command -v sqlite3 >/dev/null 2>&1; then
+    log "Installing sqlite3 (required by checkpoint-n8n-wal.sh)"
+    sudo DEBIAN_FRONTEND=noninteractive apt-get update -qq
+    sudo DEBIAN_FRONTEND=noninteractive apt-get install -qqy sqlite3
+  fi
+
+  if ! sudo diff -q "$WAL_CK_SH_SRC" "$WAL_CK_SH_DST" >/dev/null 2>&1; then
+    log "Installing $WAL_CK_SH_DST"
+    sudo install -m 755 "$WAL_CK_SH_SRC" "$WAL_CK_SH_DST"
+  else
+    log "$WAL_CK_SH_DST already in sync"
+  fi
+
+  RELOAD_SYSTEMD=0
+  for pair in "$WAL_CK_SVC_SRC:$WAL_CK_SVC_DST" "$WAL_CK_TMR_SRC:$WAL_CK_TMR_DST"; do
+    SRC="${pair%%:*}"
+    DST="${pair##*:}"
+    if ! sudo diff -q "$SRC" "$DST" >/dev/null 2>&1; then
+      log "Installing $DST"
+      sudo cp "$SRC" "$DST"
+      RELOAD_SYSTEMD=1
+    fi
+  done
+
+  if [ "$RELOAD_SYSTEMD" = "1" ]; then
+    log "systemctl daemon-reload"
+    sudo systemctl daemon-reload
+  fi
+
+  if ! systemctl is-enabled --quiet n8n-wal-checkpoint.timer 2>/dev/null; then
+    log "Enabling n8n-wal-checkpoint.timer"
+    sudo systemctl enable --now n8n-wal-checkpoint.timer
+  elif ! systemctl is-active --quiet n8n-wal-checkpoint.timer; then
+    log "Starting n8n-wal-checkpoint.timer (was inactive)"
+    sudo systemctl start n8n-wal-checkpoint.timer
+  fi
+fi
+
 log "setup.sh complete"
