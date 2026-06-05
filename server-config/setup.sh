@@ -253,8 +253,9 @@ fi
 
 # ==========================================================================
 # 11. OCI host memory watch (#567 Phase 4): systemd timer で 10 分間隔に
-#     check-host-mem.sh を実行し、container.memory.peak / host swap が閾値を
-#     超え、かつ level 変化があれば obs-notify webhook に POST する。
+#     check-host-mem.sh を実行し、container.memory.current (ライブ値) / host swap が
+#     閾値を連続 2 サンプル (約20分) 超え、かつ level 変化があれば obs-notify に POST。
+#     peak (累計値) は boot スパイク誤発火するため判定に使わない (#567 改修 2026-06-06)。
 #     n8n container 内から host cgroup を読めないため、host 側の systemd で実装。
 #     負荷見積: 1 回 100-300ms / transient ~10-20MB。既存 cron より軽い。
 # ==========================================================================
