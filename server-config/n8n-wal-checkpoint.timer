@@ -1,0 +1,12 @@
+[Unit]
+Description=Run n8n SQLite WAL checkpoint daily at 03:00 JST (pre-reboot window)
+Requires=n8n-wal-checkpoint.service
+
+[Timer]
+# 03:00 JST = Automatic-Reboot 04:00 JST の直前、cron 系の谷間
+OnCalendar=*-*-* 03:00:00
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target
