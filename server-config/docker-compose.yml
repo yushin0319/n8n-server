@@ -5,7 +5,11 @@ name: n8n-docker
 
 services:
   n8n:
-    image: n8nio/n8n:latest
+    # バージョン固定（タスク#614）: :latest だと setup.sh の `--pull always` で
+    # 無管理アップグレードが走り、recreate 時の migration バーストで container
+    # memory.peak が 89.4% まで跳ねる（実害は出ていないが 90%+ で swap 突入リスク）。
+    # 現行稼働版に pin し、アップグレードは意図的な tag bump PR でのみ行う。
+    image: n8nio/n8n:2.23.4
     restart: unless-stopped
     ports:
       - "127.0.0.1:5678:5678"
