@@ -138,7 +138,8 @@ describe("ConvertSentry", () => {
           body: {
             data: {
               issue: {
-                title: "EventLoopBlocked: Event Loop Blocked for at least 2000 ms",
+                title:
+                  "EventLoopBlocked: Event Loop Blocked for at least 2000 ms",
                 level: "error",
                 permalink: "https://sentry.io/elb",
                 project: { slug: "n8n-server" },
