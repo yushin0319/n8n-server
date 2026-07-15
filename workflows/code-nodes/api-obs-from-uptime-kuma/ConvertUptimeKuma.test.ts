@@ -65,4 +65,52 @@ describe("ConvertUptimeKuma", () => {
     expect(out.severity).toBe("warning");
     expect(out.subject).toContain("Uptime Kuma unknown payload");
   });
+
+  it("n8n heartbeat DOWN → severity=info に格下げ (flap 抑制) / subject は ⚠ DOWN のまま", () => {
+    vi.stubGlobal("$input", {
+      first: () => ({
+        json: {
+          body: {
+            heartbeat: { status: 0, msg: "timeout" },
+            monitor: { name: "n8n heartbeat", type: "push" },
+          },
+        },
+      }),
+    });
+    const out = callAndGetItems()[0].json;
+    expect(out.severity).toBe("info");
+    expect(out.subject).toBe("⚠ n8n heartbeat DOWN");
+  });
+
+  it("n8n heartbeat UP は従来通り info / ✅ UP", () => {
+    vi.stubGlobal("$input", {
+      first: () => ({
+        json: {
+          body: {
+            heartbeat: { status: 1, msg: "OK" },
+            monitor: { name: "n8n heartbeat" },
+          },
+        },
+      }),
+    });
+    const out = callAndGetItems()[0].json;
+    expect(out.severity).toBe("info");
+    expect(out.subject).toBe("✅ n8n heartbeat UP");
+  });
+
+  it("n8n heartbeat 以外 (n8n HTTP) の DOWN は従来通り warning のまま", () => {
+    vi.stubGlobal("$input", {
+      first: () => ({
+        json: {
+          body: {
+            heartbeat: { status: 0, msg: "timeout" },
+            monitor: { name: "n8n HTTP", type: "http" },
+          },
+        },
+      }),
+    });
+    const out = callAndGetItems()[0].json;
+    expect(out.severity).toBe("warning");
+    expect(out.subject).toBe("⚠ n8n HTTP DOWN");
+  });
 });

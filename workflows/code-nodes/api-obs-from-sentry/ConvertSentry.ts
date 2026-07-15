@@ -77,7 +77,12 @@ export default function (): CodeNodeReturn {
     return [{ json: out }];
   }
 
-  const severity = LEVEL_TO_SEVERITY[level] ?? "warning";
+  const baseSeverity = LEVEL_TO_SEVERITY[level] ?? "warning";
+  // 慢性ベースライン: 1GB OCI Micro の EventLoopBlocked は体力不足由来の非アクショナブル
+  // 症状 (恒久策は A1-flex 移行 = Notion task #477)。#obs-warning の ping を止めるため
+  // info に格下げする。#obs-info に記録は残るので追跡は可能。
+  const isEventLoopBlocked = /event\s*loop\s*blocked/i.test(title);
+  const severity = isEventLoopBlocked ? "info" : baseSeverity;
   const out: IDataObject = {
     severity,
     service: "sentry",
