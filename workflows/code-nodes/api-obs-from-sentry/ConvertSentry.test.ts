@@ -130,4 +130,28 @@ describe("ConvertSentry", () => {
     expect(out.severity).toBe("warning");
     expect(out.subject).toContain("Sentry unknown event payload");
   });
+
+  it("EventLoopBlocked は level=error でも severity=info に格下げ (慢性ノイズ抑制 #614/#477)", () => {
+    vi.stubGlobal("$input", {
+      first: () => ({
+        json: {
+          body: {
+            data: {
+              issue: {
+                title:
+                  "EventLoopBlocked: Event Loop Blocked for at least 2000 ms",
+                level: "error",
+                permalink: "https://sentry.io/elb",
+                project: { slug: "n8n-server" },
+              },
+            },
+          },
+        },
+      }),
+    });
+    const out = callAndGetItems()[0].json;
+    expect(out.severity).toBe("info");
+    expect(out.subject).toContain("EventLoopBlocked");
+    expect(out.repo).toBe("n8n-server");
+  });
 });

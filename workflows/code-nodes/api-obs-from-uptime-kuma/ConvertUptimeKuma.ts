@@ -23,8 +23,14 @@ export default function (): CodeNodeReturn {
 
   const status = heartbeat.status as number | undefined;
   // 0 DOWN, 1 UP, 2 PENDING, 3 MAINTENANCE
+  // n8n heartbeat の push monitor は EventLoopBlocked 由来の tick 遅着で一瞬 DOWN 判定 →
+  // 自己回復する flap が多い (非アクショナブル)。実 hard-down は n8n-watchdog + Healthchecks
+  // が別途 warning で捕捉するため、この monitor の DOWN/PENDING は info に格下げして
+  // #obs-warning の ping を止める。他 monitor (n8n HTTP / crypto-ai-trader 等) は従来通り。
+  const isDownish = status !== 1 && status !== 3;
+  const isFlappyN8nHeartbeat = isDownish && /n8n heartbeat/i.test(name);
   const severity: "critical" | "warning" | "info" =
-    status === 1 ? "info" : status === 3 ? "info" : "warning";
+    status === 1 || status === 3 || isFlappyN8nHeartbeat ? "info" : "warning";
   const stateLabel =
     status === 1
       ? "UP"
@@ -34,10 +40,9 @@ export default function (): CodeNodeReturn {
           ? "PENDING"
           : "DOWN";
 
-  const subject =
-    severity === "info"
-      ? `✅ ${name} ${stateLabel}`
-      : `⚠ ${name} ${stateLabel}`;
+  // emoji は severity ではなく実状態ベース: info 格下げされた DOWN も「⚠ ... DOWN」と表示する
+  const emoji = status === 1 || status === 3 ? "✅" : "⚠";
+  const subject = `${emoji} ${name} ${stateLabel}`;
 
   const out: IDataObject = {
     severity,
