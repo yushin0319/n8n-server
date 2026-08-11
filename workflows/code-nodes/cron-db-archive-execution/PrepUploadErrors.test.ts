@@ -6,6 +6,7 @@ interface UploadOutput {
     name: string;
     folderId: string;
     count: number;
+    dropped: number;
     from: string;
     to: string;
   };
@@ -68,7 +69,13 @@ describe("PrepUploadErrors", () => {
     const lines = decoded.split("\n");
     expect(lines).toHaveLength(1);
     expect(JSON.parse(lines[0])).toEqual({
-      _meta: { from: RANGE.from, to: RANGE.to },
+      _meta: {
+        from: RANGE.from,
+        to: RANGE.to,
+        truncated: false,
+        dropped: 0,
+        max_rows: 200,
+      },
     });
   });
 
@@ -100,11 +107,43 @@ describe("PrepUploadErrors", () => {
     const lines = decoded.split("\n");
     expect(lines).toHaveLength(3);
     expect(JSON.parse(lines[0])).toEqual({
-      _meta: { from: RANGE.from, to: RANGE.to },
+      _meta: {
+        from: RANGE.from,
+        to: RANGE.to,
+        truncated: false,
+        dropped: 0,
+        max_rows: 200,
+      },
     });
     const row1 = JSON.parse(lines[1]);
     expect(row1.id).toBe("1");
     expect(row1.data).toEqual(sampleData);
+  });
+
+  it("MAX_ERROR_ROWS (200) を超えたら打ち切り、_meta に truncated/dropped を残す", () => {
+    const many = Array.from({ length: 250 }, (_, i) => ({
+      id: String(i),
+      status: "error",
+      startedAt: "2026-05-09T00:00:00.000Z",
+    }));
+    setupSinglePage(many);
+    const out = run();
+    expect(out.json.count).toBe(200);
+    expect(out.json.dropped).toBe(50);
+    const decoded = Buffer.from(out.binary.file.data, "base64").toString(
+      "utf-8",
+    );
+    const lines = decoded.split("\n");
+    expect(lines).toHaveLength(201); // _meta + 200
+    expect(JSON.parse(lines[0])._meta).toEqual({
+      from: RANGE.from,
+      to: RANGE.to,
+      truncated: true,
+      dropped: 50,
+      max_rows: 200,
+    });
+    // 先頭 (API 返却順 = 新しい順) から採用されている
+    expect(JSON.parse(lines[1]).id).toBe("0");
   });
 
   it("pagination で複数 page 来ても全 page 集約", () => {
