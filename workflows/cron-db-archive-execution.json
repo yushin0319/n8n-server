@@ -118,7 +118,7 @@
                 ]
               },
               "paginationCompleteWhen": "other",
-              "completeExpression": "={{ !$response.body.nextCursor || ($response.body.data && $response.body.data.length > 0 && new Date($response.body.data[$response.body.data.length - 1].startedAt) < new Date($('PrepRange').first().json.from)) }}",
+              "completeExpression": "={{ $pageCount >= 8 || !$response.body.nextCursor || ($response.body.data && $response.body.data.length > 0 && new Date($response.body.data[$response.body.data.length - 1].startedAt) < new Date($('PrepRange').first().json.from)) }}",
               "limitPagesFetched": false
             }
           }
@@ -260,7 +260,7 @@
                 ]
               },
               "paginationCompleteWhen": "other",
-              "completeExpression": "={{ !$response.body.nextCursor || ($response.body.data && $response.body.data.length > 0 && new Date($response.body.data[$response.body.data.length - 1].startedAt) < new Date($('PrepRange').first().json.from)) }}",
+              "completeExpression": "={{ $pageCount >= 4 || !$response.body.nextCursor || ($response.body.data && $response.body.data.length > 0 && new Date($response.body.data[$response.body.data.length - 1].startedAt) < new Date($('PrepRange').first().json.from)) }}",
               "limitPagesFetched": false
             }
           }

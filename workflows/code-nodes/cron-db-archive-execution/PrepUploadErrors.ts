@@ -11,6 +11,13 @@
  * Code Node 側で startedAt >= from の execution のみ残す。
  *
  * 1 行目に {"_meta":{"from":..., "to":...}} を入れて対象範囲を明示 (Notion #561)。
+ *
+ * 2026-08-11 追記 (件数上限):
+ * includeData=true の 1 件は実測 34-38KB (data 28-30KB + workflowData 6-8KB) ある。
+ * JSONL 文字列と base64 (1.33 倍) を同時に heap 上へ載せるため、件数が伸びると
+ * 512MB コンテナの V8 heap limit (256MB) を押し切る。主対策は PrepRange の
+ * 窓クランプだが、窓内に error が集中した日でも落ちないよう件数上限を設ける。
+ * 打ち切った場合は _meta.truncated / dropped に残して隠さない。
  */
 interface ExecutionRow {
   id?: string;
@@ -22,6 +29,7 @@ interface ExecutionRow {
 }
 
 const N8N_LOGS_FOLDER_ID = "1aOOhc_tKh7ZD3Mnr4LSbj6lSGWze_0Jl";
+const MAX_ERROR_ROWS = 200;
 
 export default function (): CodeNodeReturn {
   const items = $input.all();
@@ -49,8 +57,22 @@ export default function (): CodeNodeReturn {
     return Number.isFinite(startedMs) && startedMs >= fromMs;
   });
 
-  const meta = JSON.stringify({ _meta: { from, to } });
-  const jsonl = [meta, ...filtered.map((ex) => JSON.stringify(ex))].join("\n");
+  // 上限超過時は先頭から採用する。n8n の GET /executions は id 降順 (新しい順) で
+  // 返すため、これは「直近の error を優先して残す」と同義になる (2026-08-11 実測)。
+  // ここで並べ替えないのは、正常時の行順を API の返却順のまま保つため。
+  const kept = filtered.slice(0, MAX_ERROR_ROWS);
+  const dropped = filtered.length - kept.length;
+
+  const meta = JSON.stringify({
+    _meta: {
+      from,
+      to,
+      truncated: dropped > 0,
+      dropped,
+      max_rows: MAX_ERROR_ROWS,
+    },
+  });
+  const jsonl = [meta, ...kept.map((ex) => JSON.stringify(ex))].join("\n");
 
   const fileName = `${fileDate}-errors.jsonl`;
   const base64 = Buffer.from(jsonl, "utf-8").toString("base64");
@@ -60,7 +82,8 @@ export default function (): CodeNodeReturn {
       json: {
         name: fileName,
         folderId: N8N_LOGS_FOLDER_ID,
-        count: filtered.length,
+        count: kept.length,
+        dropped,
         from,
         to,
       },
