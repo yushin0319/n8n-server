@@ -449,4 +449,23 @@ if [ -f "$WAL_CK_SH_SRC" ] && [ -f "$WAL_CK_SVC_SRC" ] && [ -f "$WAL_CK_TMR_SRC"
   fi
 fi
 
+# ==========================================================================
+# 14. pipx oci-cli の撤去 (Notion #477 の置き土産)
+#     2026-04-19 に「OCI 操作は n8n WF ではなくローカルの oci CLI + シェル
+#     スクリプトで行う」方針へ切り替えた際、その前に別タブでサーバー側へ
+#     pipx install していた oci-cli が残置されていた。サーバー側からは
+#     OCI API を叩かないため不要。PATH にも露出しておらず実害は無いが、
+#     管理外の実行環境を残さないために撤去する。
+# ==========================================================================
+if command -v pipx >/dev/null 2>&1 && pipx list 2>/dev/null | grep -q 'package oci-cli'; then
+  log "Uninstalling pipx oci-cli (unused since #477 moved OCI ops to local)"
+  # set -e で失敗時に即 exit するが、ログで明示的に失敗を示すため明示チェック。
+  if ! pipx uninstall oci-cli; then
+    log "ERROR: pipx uninstall oci-cli failed"
+    exit 1
+  fi
+else
+  log "pipx oci-cli already absent"
+fi
+
 log "setup.sh complete"
