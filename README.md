@@ -1,6 +1,6 @@
 # n8n-server
 
-[Oracle Cloud Always Free](https://www.oracle.com/cloud/free/) 上で動かす [n8n](https://n8n.io) v2.6.3 のワークフロー管理リポジトリ。26 個のワークフローを Git で管理し、GitHub Actions の CI/CD で n8n API 経由デプロイする。
+[Oracle Cloud Always Free](https://www.oracle.com/cloud/free/) 上で動かす [n8n](https://n8n.io) のワークフロー管理リポジトリ。26 個のワークフローを Git で管理し、GitHub Actions の CI/CD で n8n API 経由デプロイする。image は `server-config/docker-compose.yml` で **`n8nio/n8n:2.23.4` に pin**（`:latest` は #614 で廃止）。
 
 - **本番**: https://yushin-n8n.duckdns.org/
 - **監視**: https://yushin-kuma.duckdns.org/ (Uptime Kuma)
@@ -20,8 +20,8 @@
 - `tests/validate_workflows.py` — 孤立ノード検出・命名規則・credential 参照などの静的解析
 - `server-config/`
   - `docker-compose.yml` / `nginx-n8n.conf` / `setup.sh`（後述）
-  - `n8n-watchdog.{service,timer}` / `oci-mem-watch.{service,timer}` — systemd timer 監視
-  - `check-host-mem.sh` / `check-n8n-health.sh` / `health_alarm_notify.conf` — health-check スクリプト
+  - `n8n-watchdog.{service,timer}` / `oci-mem-watch.{service,timer}` / `n8n-wal-checkpoint.{service,timer}` — systemd timer（監視 + 日次メンテ）
+  - `check-host-mem.sh` / `check-n8n-health.sh` / `checkpoint-n8n-wal.sh` / `health_alarm_notify.conf` — health-check・メンテスクリプト
   - `promtail-config.yaml` / `netdata.conf` — 観測エージェント設定
 
 監視・観測:
@@ -30,6 +30,11 @@
 - Uptime Kuma（push 5分間隔の heartbeat、別サブドメインで公開）
 - Healthchecks.io（fail ping）
 - Netdata Agent（host メトリクス）
+
+定期メンテ・自己防衛（systemd timer）:
+- `n8n-wal-checkpoint.timer` — 毎日 03:00 JST（自動 reboot の直前窓）に n8n SQLite の WAL を `TRUNCATE` して肥大を防ぐ
+- `oci-mem-watch.timer` → `check-host-mem.sh` — 10 分間隔。severity 判定は container の `memory.current`（ライブ値）で行う。`memory.peak` は累計値で起動直後の migration スパイクに引っ張られるため summary の参考表示のみ。**閾値は warning 上限（`CURRENT_WARN=85`）で critical は撤廃**（停止系は別監視が捕捉するので、pressure 段階で夜中に起こさない）
+- `n8n-watchdog.timer` — healthz を叩いてゾンビ検知したら再起動
 
 ## 開発
 
@@ -51,7 +56,7 @@ CI（`.github/workflows/`）では typecheck + vitest + Biome + Ruff + validate_
 gh workflow run deploy.yml --repo yushin0319/n8n-server --field deploy_all=true
 ```
 
-`server-config/setup.sh` は OCI 上の OS 構成（`rpcbind` 削除 / fail2ban / sshd ハードニング / unattended-upgrades + 04:00 JST 自動 reboot / TZ=JST / iptables / nginx 同期 / `docker compose up -d --pull always` / Netdata Agent）を冪等に適用するスクリプト。OS 変更を伴う PR をマージしたら OCI に SSH してから:
+`server-config/setup.sh` は OCI 上の OS 構成（`rpcbind` 削除 / fail2ban / sshd ハードニング / unattended-upgrades + 04:00 JST 自動 reboot / TZ=JST / iptables / nginx 同期 / `docker compose up -d --pull always` / Netdata Agent）を冪等に適用するスクリプト。`docker compose up` の直前に obs-notify へ **deploy マーカー（severity=info）** を 1 本投げるので、image 更新後 10 分ほど cron/adapter が一過性失敗しても「誤報ではなく deploy 由来」と観測性 DB / Discord から判別できる。OS 変更を伴う PR をマージしたら OCI に SSH してから:
 
 ```bash
 bash server-config/setup.sh
