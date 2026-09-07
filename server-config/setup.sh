@@ -459,7 +459,11 @@ fi
 # ==========================================================================
 if command -v pipx >/dev/null 2>&1 && pipx list 2>/dev/null | grep -q 'package oci-cli'; then
   log "Uninstalling pipx oci-cli (unused since #477 moved OCI ops to local)"
-  pipx uninstall oci-cli
+  # set -e で失敗時に即 exit するが、ログで明示的に失敗を示すため明示チェック。
+  if ! pipx uninstall oci-cli; then
+    log "ERROR: pipx uninstall oci-cli failed"
+    exit 1
+  fi
 else
   log "pipx oci-cli already absent"
 fi
