@@ -30,9 +30,13 @@ MONITORS: list[dict] = [
     {
         "name": "crypto-ai-trader heartbeat",
         "type": MonitorType.PUSH,
-        "interval": 300,
+        # runner は sleep(300s) + 1サイクル処理で beat するため実周期は 300s を必ず超える。
+        # 2026-09-16 実測 (n=122, 直近11h): min 304s / p50 322s / p90 338s / max 368s。
+        # 旧 interval=300 だと猶予 = 300 + 60×1 = 360s でマージンが 20〜30s しかなく、
+        # 368s のサイクルがそのまま DOWN 通知になっていた (72h で 6 件)。
+        # interval を実周期側に合わせ、猶予 420s に広げる。真の hang 検知は 420s。
+        "interval": 360,
         # maxretries=1: push 遅延（数秒〜十数秒）での即 DOWN flap を防ぐ。
-        # 実質 600s 猶予となり、5分 cron + jitter を吸収。
         "maxretries": 1,
     },
     {
