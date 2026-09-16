@@ -112,6 +112,62 @@ describe("FormatGet", () => {
     expect(result[0].json.text_content).toBe("");
   });
 
+  it("ブロックの id と has_children を返す（子ページを get で辿れるように）", () => {
+    vi.stubGlobal("$", (_name: string) => ({
+      first: () => ({ json: { pageId: "page-5" } }),
+    }));
+    vi.stubGlobal("$input", {
+      all: () => [
+        {
+          json: {
+            id: "child-page-1",
+            type: "child_page",
+            has_children: true,
+            content: "2025漫才台本",
+          },
+        },
+        {
+          json: {
+            id: "para-1",
+            type: "paragraph",
+            has_children: false,
+            content: "本文",
+          },
+        },
+      ],
+    });
+
+    const result = formatGet() as INodeExecutionData[];
+    const blocks = result[0].json.blocks as {
+      id: string;
+      type: string;
+      text: string;
+      has_children: boolean;
+    }[];
+    expect(blocks).toEqual([
+      {
+        id: "child-page-1",
+        type: "child_page",
+        text: "2025漫才台本",
+        has_children: true,
+      },
+      { id: "para-1", type: "paragraph", text: "本文", has_children: false },
+    ]);
+    expect(result[0].json.text_content).toBe("2025漫才台本\n本文");
+  });
+
+  it("本文が空のページ（GetBlocks の alwaysOutputData による空アイテム）は blocks が空になる", () => {
+    vi.stubGlobal("$", (_name: string) => ({
+      first: () => ({ json: { pageId: "page-empty" } }),
+    }));
+    vi.stubGlobal("$input", { all: () => [{ json: {} }] });
+
+    const result = formatGet() as INodeExecutionData[];
+    expect(result[0].json.page_id).toBe("page-empty");
+    expect(result[0].json.blocks).toEqual([]);
+    expect(result[0].json.text_content).toBe("");
+  });
+
   it("PrepGet ノードから pageId を取得する", () => {
     vi.stubGlobal("$", (name: string) => {
       if (name === "PrepGet") {
