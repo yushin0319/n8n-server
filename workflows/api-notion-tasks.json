@@ -591,6 +591,7 @@
       ],
       "id": "get-blocks-001",
       "name": "GetBlocks",
+      "alwaysOutputData": true,
       "credentials": {
         "notionApi": {
           "id": "StdChbKZz3co4jDO",

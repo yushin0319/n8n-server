@@ -44,7 +44,13 @@ export default function (): CodeNodeReturn {
       } else if (bType === "divider") {
         text = "---";
       }
-      return { type: bType, text };
+      // id / has_children も返す: child_page の id を get に渡せば子ページ本文も読める
+      return {
+        id: block.id as string,
+        type: bType,
+        text,
+        has_children: block.has_children as boolean,
+      };
     })
     .filter((b: { type: string; text: string }) => b.text);
   const textLines = blocks
