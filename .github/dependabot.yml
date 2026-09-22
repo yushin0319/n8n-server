@@ -11,6 +11,13 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+    groups:
+      # vitest 本体と @vitest/* は peer をバージョン厳密指定するため 1 PR にまとめる
+      # (別 PR に分かれると 1 本ずつではマージできない)。
+      vitest:
+        patterns:
+          - "vitest"
+          - "@vitest/*"
 
   - package-ecosystem: "pip"
     directory: "/scripts"
