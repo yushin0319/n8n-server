@@ -201,6 +201,28 @@ describe("FormatGet", () => {
     ]);
   });
 
+  it("生出力の child_page はタイトルを text にする", () => {
+    vi.stubGlobal("$", (_name: string) => ({
+      first: () => ({ json: { pageId: "page-raw-child" } }),
+    }));
+    vi.stubGlobal("$input", {
+      all: () => [
+        {
+          json: {
+            id: "cp-1",
+            type: "child_page",
+            has_children: true,
+            child_page: { title: "2025漫才台本" },
+          },
+        },
+      ],
+    });
+
+    const result = formatGet() as INodeExecutionData[];
+    const blocks = result[0].json.blocks as { text: string }[];
+    expect(blocks[0].text).toBe("2025漫才台本");
+  });
+
   it("入れ子の子ブロックは parent_id 付きで返す", () => {
     vi.stubGlobal("$", (_name: string) => ({
       first: () => ({ json: { pageId: "page-nested" } }),

@@ -38,6 +38,9 @@ export default function (): CodeNodeReturn {
       } else if (bType === "table_row" && body?.cells) {
         // 表の行: セルごとに rich_text 配列を持つ
         text = (body.cells as IDataObject[][]).map(plain).join(" | ");
+      } else if (bType === "child_page") {
+        // 通常は Notion ノードの簡略化で content にタイトルが入るが、生出力でもタイトルを残す
+        text = String(body?.title || "[child_page]");
       } else if (bType === "child_database") {
         text = `[child_database: ${body?.title || ""}]`;
       } else if (bType === "divider") {
