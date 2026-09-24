@@ -112,6 +112,129 @@ describe("FormatGet", () => {
     expect(result[0].json.text_content).toBe("");
   });
 
+  it("table は [table] として残し、table_row のセルを | 区切りで読む", () => {
+    vi.stubGlobal("$", (_name: string) => ({
+      first: () => ({ json: { pageId: "page-table" } }),
+    }));
+    vi.stubGlobal("$input", {
+      all: () => [
+        {
+          json: {
+            id: "tbl-1",
+            type: "table",
+            has_children: true,
+            table: { table_width: 2 },
+          },
+        },
+        {
+          json: {
+            id: "row-1",
+            type: "table_row",
+            parent_id: "tbl-1",
+            has_children: false,
+            table_row: {
+              cells: [
+                [{ plain_text: "方法" }],
+                [{ plain_text: "費" }, { plain_text: "用" }],
+              ],
+            },
+          },
+        },
+        {
+          json: {
+            id: "row-2",
+            type: "table_row",
+            parent_id: "tbl-1",
+            has_children: false,
+            table_row: { cells: [[{ plain_text: "VRoid" }], []] },
+          },
+        },
+      ],
+    });
+
+    const result = formatGet() as INodeExecutionData[];
+    expect(result[0].json.blocks).toEqual([
+      { id: "tbl-1", type: "table", text: "[table]", has_children: true },
+      {
+        id: "row-1",
+        type: "table_row",
+        text: "方法 | 費用",
+        has_children: false,
+        parent_id: "tbl-1",
+      },
+      {
+        id: "row-2",
+        type: "table_row",
+        text: "VRoid | ",
+        has_children: false,
+        parent_id: "tbl-1",
+      },
+    ]);
+    expect(result[0].json.text_content).toBe("[table]\n方法 | 費用\nVRoid | ");
+  });
+
+  it("テキストを持たない未知の種類は捨てずに [type] として残す", () => {
+    vi.stubGlobal("$", (_name: string) => ({
+      first: () => ({ json: { pageId: "page-unknown" } }),
+    }));
+    vi.stubGlobal("$input", {
+      all: () => [
+        {
+          json: {
+            id: "col-1",
+            type: "column_list",
+            has_children: true,
+            column_list: {},
+          },
+        },
+      ],
+    });
+
+    const result = formatGet() as INodeExecutionData[];
+    expect(result[0].json.blocks).toEqual([
+      {
+        id: "col-1",
+        type: "column_list",
+        text: "[column_list]",
+        has_children: true,
+      },
+    ]);
+  });
+
+  it("入れ子の子ブロックは parent_id 付きで返す", () => {
+    vi.stubGlobal("$", (_name: string) => ({
+      first: () => ({ json: { pageId: "page-nested" } }),
+    }));
+    vi.stubGlobal("$input", {
+      all: () => [
+        {
+          json: {
+            id: "b-1",
+            type: "bulleted_list_item",
+            parent_id: "page-nested",
+            has_children: true,
+            bulleted_list_item: { rich_text: [{ plain_text: "親" }] },
+          },
+        },
+        {
+          json: {
+            id: "b-2",
+            type: "bulleted_list_item",
+            parent_id: "b-1",
+            has_children: false,
+            bulleted_list_item: { rich_text: [{ plain_text: "子" }] },
+          },
+        },
+      ],
+    });
+
+    const result = formatGet() as INodeExecutionData[];
+    const blocks = result[0].json.blocks as { parent_id?: string }[];
+    expect(blocks[0].parent_id).toBeUndefined();
+    expect(blocks[1].parent_id).toBe("b-1");
+    expect(result[0].json.text_content).toBe("親\n子");
+  });
+
   it("ブロックの id と has_children を返す（子ページを get で辿れるように）", () => {
     vi.stubGlobal("$", (_name: string) => ({
       first: () => ({ json: { pageId: "page-5" } }),

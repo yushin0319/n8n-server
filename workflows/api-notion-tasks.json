@@ -581,7 +581,8 @@
           "mode": "id",
           "value": "={{ $json.pageId }}"
         },
-        "returnAll": true
+        "returnAll": true,
+        "fetchNestedBlocks": true
       },
       "type": "n8n-nodes-base.notion",
       "typeVersion": 2.2,
