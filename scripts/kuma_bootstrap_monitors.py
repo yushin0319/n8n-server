@@ -46,7 +46,14 @@ MONITORS: list[dict] = [
     {
         "name": "n8n heartbeat",
         "type": MonitorType.PUSH,
-        "interval": 300,
+        # cron/system-heartbeat は 5 分 (300s) ごとに push する。interval=300 だと Kuma の
+        # 次回チェックが「最終 push + 301s」に予約され、push の到着 (約 301s 後) と同時刻に
+        # なる。チェックが古い push を読んで PENDING を書き、その直前に push が保存されると
+        # 最新行が PENDING になり、60s 後の再チェックが「前回 PENDING → 失敗」で DOWN を出す
+        # (monitor.js L661)。2026-09-22〜30 の DOWN 23 件中 22 件がこの競合で、push 間隔は
+        # 正常 (p99 308s)。interval を 360 にしてチェックを push の約 60s 後にずらす。
+        # 真の停止検知は 360 + 60 = 420s 後。
+        "interval": 360,
         "maxretries": 1,
     },
     {

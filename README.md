@@ -29,7 +29,7 @@
 監視・観測:
 - Sentry（`N8N_SENTRY_DSN` / EventLoopBlocked 自動捕捉）
 - Promtail → Grafana Cloud Loki（ログ集約）
-- Uptime Kuma（別サブドメインで公開）: push monitor 2 本（n8n heartbeat 300s / crypto-ai-trader heartbeat 360s）+ HTTP monitor 5 本（300s）。定義は `scripts/kuma_bootstrap_monitors.py`
+- Uptime Kuma（別サブドメインで公開）: push monitor 2 本（n8n heartbeat / crypto-ai-trader heartbeat とも 360s）+ HTTP monitor 5 本（300s）。定義は `scripts/kuma_bootstrap_monitors.py`
 - Healthchecks.io（fail ping）
 - Netdata Agent（host メトリクス）
 
