@@ -35,6 +35,37 @@
     },
     {
       "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "obs-cond-send-discord-now",
+              "leftValue": "={{ $json.sendDiscordNow }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        0
+      ],
+      "name": "IfSendDiscordNow",
+      "id": "obs-0007-4000-8000-000000000007"
+    },
+    {
+      "parameters": {
         "method": "POST",
         "url": "={{ $json.discordUrl }}",
         "sendHeaders": true,
@@ -63,8 +94,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        440,
-        0
+        660,
+        -120
       ],
       "name": "SendDiscord",
       "id": "obs-0003-4000-8000-000000000003"
@@ -104,7 +135,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        660,
+        880,
         0
       ],
       "name": "CreateNotionPage",
@@ -123,7 +154,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        880,
+        1100,
         0
       ],
       "name": "FormatResponse",
@@ -138,7 +169,7 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        1100,
+        1320,
         0
       ],
       "name": "Respond",
@@ -161,7 +192,25 @@
       "main": [
         [
           {
+            "node": "IfSendDiscordNow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IfSendDiscordNow": {
+      "main": [
+        [
+          {
             "node": "SendDiscord",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CreateNotionPage",
             "type": "main",
             "index": 0
           }

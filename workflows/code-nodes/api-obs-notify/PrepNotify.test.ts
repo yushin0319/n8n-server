@@ -38,7 +38,8 @@ describe("PrepNotify", () => {
     );
     expect(notion.properties.severity.select.name).toBe("info");
     expect(notion.properties.service.select.name).toBe("n8n");
-    expect(notion.properties.discord_channel.select.name).toBe("obs-info");
+    // Discord に送っていないので送信先は記録しない
+    expect(notion.properties.discord_channel).toBeUndefined();
     expect(notion.properties.subject.title[0].text.content).toBe("test");
   });
 
@@ -236,5 +237,50 @@ describe("PrepNotify", () => {
       }),
     });
     expect(() => prepNotify()).toThrow("repo must be one of");
+  });
+
+  // 即時 Discord 送信は critical のみ。warning は cron/obs-daily-digest の日次まとめ、
+  // info は Notion 記録のみ（Discord 通知過多の是正）
+  describe("sendDiscordNow", () => {
+    const allUrls = {
+      OBS_WEBHOOK_CRITICAL_URL: "https://discord.example/webhooks/C/C",
+      OBS_WEBHOOK_WARNING_URL: "https://discord.example/webhooks/W/W",
+      OBS_WEBHOOK_INFO_URL: "https://discord.example/webhooks/I/I",
+    };
+
+    function stubSeverity(severity: string) {
+      vi.stubGlobal("$input", {
+        first: () => ({ json: { body: { ...minimalBody, severity } } }),
+      });
+    }
+
+    it("critical + URL 設定あり → true / Notion に送信先を記録", () => {
+      vi.stubGlobal("$env", allUrls);
+      stubSeverity("critical");
+      const items = callAndGetItems();
+      expect(items[0].json.sendDiscordNow).toBe(true);
+      const notion = JSON.parse(items[0].json.notionBody as string);
+      expect(notion.properties.discord_channel.select.name).toBe(
+        "obs-critical",
+      );
+    });
+
+    it("warning は URL 設定があっても false（日次まとめに回す）", () => {
+      vi.stubGlobal("$env", allUrls);
+      stubSeverity("warning");
+      expect(callAndGetItems()[0].json.sendDiscordNow).toBe(false);
+    });
+
+    it("info は URL 設定があっても false（Notion 記録のみ）", () => {
+      vi.stubGlobal("$env", allUrls);
+      stubSeverity("info");
+      expect(callAndGetItems()[0].json.sendDiscordNow).toBe(false);
+    });
+
+    it("critical でも URL 未設定なら false（空 URL で HTTP ノードを叩かない）", () => {
+      vi.stubGlobal("$env", {});
+      stubSeverity("critical");
+      expect(callAndGetItems()[0].json.sendDiscordNow).toBe(false);
+    });
   });
 });
