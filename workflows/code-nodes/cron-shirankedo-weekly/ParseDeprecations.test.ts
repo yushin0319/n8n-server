@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import anthropicMd from "./__fixtures__/deprecations/anthropic.md.txt?raw";
 import deepseekHtml from "./__fixtures__/deprecations/deepseek.html.txt?raw";
-import googleMd from "./__fixtures__/deprecations/google.md.txt?raw";
+import googleMd from "./__fixtures__/deprecations/google-models.md.txt?raw";
 import kimiMd from "./__fixtures__/deprecations/kimi.md.txt?raw";
 import openaiMd from "./__fixtures__/deprecations/openai.md.txt?raw";
 import xaiGuide from "./__fixtures__/deprecations/xai-llms-full.excerpt.txt?raw";
@@ -119,7 +119,7 @@ describe("collectDeprecations", () => {
     const r = collectDeprecations(pages);
     expect(r.deprecations.some((e) => e.vendor === "kimi")).toBe(false);
     expect(r.deprecationWarnings).toEqual([
-      "kimi: 日付付きの廃止エントリが 0 件です",
+      "kimi: 日付付き・停止済みの廃止エントリが 0 件です",
     ]);
   });
 

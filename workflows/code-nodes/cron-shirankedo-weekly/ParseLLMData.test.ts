@@ -176,6 +176,33 @@ describe("ParseLLMData", () => {
       expect(names).toEqual(["Grok 4.7"]);
     });
 
+    it("単一スナップショットは AA の release_date が ±7 日以内のときだけ除外する", () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date("2026-09-30T12:00:00Z"));
+      const snap = [
+        {
+          vendor: "openai",
+          id: "gpt-4o-2024-05-13",
+          retireAt: "2026-01-01T00:00:00.000Z",
+        },
+      ];
+      const model = (release_date?: string) => ({
+        ...makeModel({ name: "GPT-4o", creator: "OpenAI", score: 30 }),
+        ...(release_date ? { release_date } : {}),
+      });
+      for (const [rel, n] of [
+        ["2024-08-06", 1],
+        ["2024-11-20", 1],
+        [undefined, 1],
+        ["2024-05-13", 0],
+      ] as const) {
+        stubMergedInput([model(rel)], { JPY: 150 }, snap);
+        expect(
+          JSON.parse(callAndGetItems()[0].json.requestBody as string),
+        ).toHaveLength(n);
+      }
+    });
+
     it("廃止一覧が壊れていても LLM 一覧と為替は出力する（除外なし）", () => {
       stubMergedInput(aa, { JPY: 150 }, [
         { vendor: "openai", id: null, retireAt: "2026-01-01T00:00:00.000Z" },

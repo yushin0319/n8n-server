@@ -20,7 +20,7 @@ describe("PrepareDeprecationWarning", () => {
   it("警告があれば warning で obs-notify に送る", () => {
     const out = run([
       "openai: HTTP 503 (u)",
-      "kimi: 日付付きの廃止エントリが 0 件です",
+      "kimi: 日付付き・停止済みの廃止エントリが 0 件です",
     ]);
     expect(out).toHaveLength(1);
     expect(out[0].json.severity).toBe("warning");

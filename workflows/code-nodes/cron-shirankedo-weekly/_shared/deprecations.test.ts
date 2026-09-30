@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 // フィクスチャは 2026-09-30 に各社の公式ページを取得したもの（xAI は llms-full.txt の移行ガイド部分の抜粋）
 import anthropicMd from "../__fixtures__/deprecations/anthropic.md.txt?raw";
 import deepseekHtml from "../__fixtures__/deprecations/deepseek.html.txt?raw";
-import googleMd from "../__fixtures__/deprecations/google.md.txt?raw";
+import googleModelsMd from "../__fixtures__/deprecations/google-models.md.txt?raw";
 import kimiMd from "../__fixtures__/deprecations/kimi.md.txt?raw";
 import openaiMd from "../__fixtures__/deprecations/openai.md.txt?raw";
 import xaiGuide from "../__fixtures__/deprecations/xai-llms-full.excerpt.txt?raw";
@@ -15,12 +15,14 @@ import {
   isRetired,
   modelKey,
   parseDeepseek,
+  parseGoogleModels,
   parseKimi,
   parseMarkdownTables,
   parseMonthDate,
   parseXaiGuide,
   parseXaiIndex,
   parseXiaomi,
+  snapshotNearRelease,
 } from "./deprecations";
 
 /** id → retireAt の対応表 */
@@ -125,14 +127,33 @@ describe("parseMarkdownTables（Anthropic）", () => {
   });
 });
 
-describe("parseMarkdownTables（Google）", () => {
-  const ids = byId(parseMarkdownTables(googleMd, "google").entries);
+describe("parseGoogleModels", () => {
+  const r = parseGoogleModels(googleModelsMd);
+  const ids = r.entries.map((e) => e.id).sort();
 
-  it("停止日のある行は日付付き、未発表の行は null", () => {
-    expect(ids["gemini-3-pro-preview"]).toBe("2026-03-10T12:00:00.000Z");
-    expect(ids["gemini-3.1-flash-lite"]).toBe("2027-05-08T12:00:00.000Z");
-    expect(ids["gemini-3.8-flash"]).toBeNull();
-    expect(ids["gemini-3.1-pro-preview"]).toBeNull();
+  it("models ページで (Shut down) の行だけを停止済みとする", () => {
+    expect(r.markerFound).toBe(true);
+    expect(ids).toEqual([
+      "gemini-2.0-flash",
+      "gemini-2.0-flash-lite",
+      "gemini-3-pro-preview",
+      "gemini-3.1-flash-lite-preview",
+      "imagen-4.0-generate",
+    ]);
+    expect(r.entries.every((e) => e.stopped && e.retireAt === null)).toBe(true);
+  });
+
+  it("現行・最短停止日だけのモデルは含まない（deprecations の Shutdown date は使わない）", () => {
+    // gemini-3.1-flash-lite は deprecations ページで「最短 2027-05-07」だが現行
+    expect(ids).not.toContain("gemini-3.1-flash-lite");
+    expect(ids).not.toContain("gemini-3.8-flash");
+    expect(ids).not.toContain("gemini-2.5-flash");
+  });
+
+  it("Endpoint 列のある表が無ければ markerFound=false", () => {
+    expect(
+      parseGoogleModels("| Model | Shutdown date |\n|---|---|\n").markerFound,
+    ).toBe(false);
   });
 });
 
@@ -205,6 +226,49 @@ describe("parseDeepseek", () => {
   });
 });
 
+describe("parseDeepseek（文の形）", () => {
+  const page = (body: string) => `<p>Date: 2026-09-10</p><p>${body}</p>`;
+
+  it("版番号の '.' で切らない（V4.1 / V3.2）", () => {
+    expect(
+      byId(
+        parseDeepseek(
+          page("The models V4.1 Flash Preview and V3.2 have been retired."),
+        ).entries,
+      ),
+    ).toEqual({
+      "DeepSeek V4.1 Flash Preview": "2026-09-11T12:00:00.000Z",
+      "DeepSeek V3.2": "2026-09-11T12:00:00.000Z",
+    });
+  });
+
+  it("'X, Y, and Z' の Oxford カンマで区切る", () => {
+    expect(
+      Object.keys(
+        byId(
+          parseDeepseek(
+            page("The models V3, V3.1, and V3.2 Exp have been retired."),
+          ).entries,
+        ),
+      ),
+    ).toEqual(["DeepSeek V3", "DeepSeek V3.1", "DeepSeek V3.2 Exp"]);
+  });
+
+  it("'model aliases X and Y' の前置きを外す", () => {
+    expect(
+      Object.keys(
+        byId(
+          parseDeepseek(
+            page(
+              "The model aliases deepseek-chat and deepseek-reasoner have been retired.",
+            ),
+          ).entries,
+        ),
+      ),
+    ).toEqual(["deepseek-chat", "deepseek-reasoner"]);
+  });
+});
+
 describe("dedupe（同じ ID が複数の表にある場合）", () => {
   const md = (rows: string[]) =>
     ["| Shutdown date | Model |", "| --- | --- |", ...rows, ""].join("\n");
@@ -231,6 +295,21 @@ describe("dedupe（同じ ID が複数の表にある場合）", () => {
       "openai",
     );
     expect(byId(r.entries)).toEqual({ m1: null });
+  });
+
+  it("確定した停止日は、古い 'at earliest' の注記より優先する", () => {
+    // OpenAI の gpt-4-0314: 古い表 "at earliest 2024-06-13" と、後の表の確定停止日 2026-03-26
+    const r = parseMarkdownTables(
+      md(["| at earliest 2024-06-13 | `m1` |", "| 2026-03-26 | `m1` |"]),
+      "openai",
+    );
+    expect(byId(r.entries)).toEqual({ m1: "2026-03-27T12:00:00.000Z" });
+  });
+
+  it("OpenAI のフィクスチャでも gpt-4-0314 は確定停止日になる", () => {
+    expect(
+      byId(parseMarkdownTables(openaiMd, "openai").entries)["gpt-4-0314"],
+    ).toBe("2026-03-27T12:00:00.000Z");
   });
 });
 
@@ -315,6 +394,14 @@ describe("modelKey", () => {
     expect(modelKey("o3-2025-04-16").dated).toBe(true);
     expect(modelKey("claude-3-haiku-20240307").dated).toBe(true);
     expect(modelKey("grok-4-0709").dated).toBe(true);
+    expect(modelKey("gemini-2.5-pro-preview-03-25")).toEqual({
+      key: modelKey("gemini-2.5-pro-preview").key,
+      dated: true,
+    });
+    expect(modelKey("gemini-2.5-flash-lite-preview-09-2025")).toEqual({
+      key: modelKey("gemini-2.5-flash-lite-preview").key,
+      dated: true,
+    });
     expect(modelKey("o3").dated).toBe(false);
     // 2507 は月日として不正（25 月）なので日付扱いしない
     expect(modelKey("Qwen3 235B A22B 2507").dated).toBe(false);
@@ -363,9 +450,21 @@ describe("findRetirement", () => {
       e("openai", "o3-2025-04-16", "2026-12-12T12:00:00.000Z"),
     ]);
     const after = new Date("2026-12-12T12:00:00Z");
-    expect(findRetirement("o3", "OpenAI", index, after)?.id).toBe(
+    expect(findRetirement("o3", "OpenAI", index, after, "2025-04-16")?.id).toBe(
       "o3-2025-04-16",
     );
+    expect(findRetirement("o3", "OpenAI", index, now, "2025-04-16")).toBeNull();
+  });
+
+  it("スナップショットの日付が AA の公開日から ±7 日を超える・公開日が無い場合は一致しない", () => {
+    const index = buildIndex([
+      e("openai", "o3-2025-04-16", "2026-01-01T00:00:00.000Z"),
+    ]);
+    expect(findRetirement("o3", "OpenAI", index, now, "2025-04-23")?.id).toBe(
+      "o3-2025-04-16",
+    );
+    expect(findRetirement("o3", "OpenAI", index, now, "2025-04-24")).toBeNull();
+    expect(findRetirement("o3", "OpenAI", index, now, null)).toBeNull();
     expect(findRetirement("o3", "OpenAI", index, now)).toBeNull();
   });
 
@@ -396,17 +495,25 @@ describe("findRetirement", () => {
     const index = buildIndex([
       e("openai", "gpt-4o-2024-05-13", "2026-01-01T00:00:00.000Z"),
     ]);
-    // 注記なしはユーザー決定のルール通り同一とみなす
-    expect(findRetirement("GPT-4o", "OpenAI", index, now)?.id).toBe(
-      "gpt-4o-2024-05-13",
-    );
+    // 注記なしでも、公開日がスナップショット（2024-05-13）と離れていれば別物
+    expect(
+      findRetirement("GPT-4o", "OpenAI", index, now, "2024-08-06"),
+    ).toBeNull();
+    expect(
+      findRetirement("GPT-4o", "OpenAI", index, now, "2024-11-20"),
+    ).toBeNull();
+    expect(
+      findRetirement("GPT-4o", "OpenAI", index, now, "2024-05-13")?.id,
+    ).toBe("gpt-4o-2024-05-13");
     for (const name of [
       "GPT-4o (Aug '24)",
       "GPT-4o (May '24)",
       "GPT-4o (Nov '24)",
       "GPT-4o (ChatGPT)",
     ]) {
-      expect(findRetirement(name, "OpenAI", index, now)).toBeNull();
+      expect(
+        findRetirement(name, "OpenAI", index, now, "2024-05-13"),
+      ).toBeNull();
     }
   });
 
@@ -414,9 +521,9 @@ describe("findRetirement", () => {
     const index = buildIndex([
       e("openai", "o3-2025-04-16", "2026-01-01T00:00:00.000Z"),
     ]);
-    expect(findRetirement("o3 (high)", "OpenAI", index, now)?.id).toBe(
-      "o3-2025-04-16",
-    );
+    expect(
+      findRetirement("o3 (high)", "OpenAI", index, now, "2025-04-16")?.id,
+    ).toBe("o3-2025-04-16");
   });
 
   it("Google の *-exp は別モデル（Gemini 2.0 Flash を引退扱いにしない）", () => {
@@ -441,5 +548,25 @@ describe("findRetirement", () => {
     ]);
     expect(findRetirement("o4-mini", "Microsoft", index, now)).toBeNull();
     expect(findRetirement("o4-mini", "Alibaba", index, now)).toBeNull();
+  });
+});
+
+describe("snapshotNearRelease", () => {
+  it.each([
+    ["o3-2025-04-16", "2025-04-16", true],
+    ["o3-2025-04-16", "2025-04-09", true],
+    ["o3-2025-04-16", "2025-04-08", false],
+    ["claude-3-haiku-20240307", "2024-03-13", true],
+    // 年の無い MMDD は公開日の前後の年で最も近いものと比べる
+    ["grok-4-0709", "2025-07-09", true],
+    ["grok-4-0709", "2025-08-01", false],
+    // MM-DD（Google 形式）
+    ["gemini-2.5-pro-preview-03-25", "2025-03-25", true],
+    // 日の無い MM-YYYY は比較できない
+    ["gemini-2.5-flash-lite-preview-09-2025", "2025-09-25", false],
+    ["o3", "2025-04-16", false],
+    ["o3-2025-04-16", "", false],
+  ])("%s / 公開日 %s → %s", (id, rel, expected) => {
+    expect(snapshotNearRelease(id, rel)).toBe(expected);
   });
 });

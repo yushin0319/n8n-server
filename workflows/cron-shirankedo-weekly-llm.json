@@ -723,7 +723,8 @@
       "position": [
         1440,
         1900
-      ]
+      ],
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {

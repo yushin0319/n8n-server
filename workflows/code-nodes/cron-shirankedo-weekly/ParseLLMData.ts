@@ -207,7 +207,13 @@ export default function (): CodeNodeReturn {
     // ベンダー公式の一覧で停止日を過ぎたモデルは送らない
     let retired: DeprecationEntry | null = null;
     try {
-      retired = findRetirement(name, provider, deprecationIndex, now);
+      retired = findRetirement(
+        name,
+        provider,
+        deprecationIndex,
+        now,
+        (m.release_date as string | undefined) ?? null,
+      );
     } catch (e) {
       retiredExcluded.push(
         `${name}: 照合で例外、除外なし: ${String(e).substring(0, 100)}`,

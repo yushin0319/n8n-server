@@ -55,8 +55,8 @@ function collectVendor(
     warnings.push(`${vendor}: 廃止一覧の表・見出しが見つかりません`);
     return [];
   }
-  if (!entries.some((e) => e.retireAt)) {
-    warnings.push(`${vendor}: 日付付きの廃止エントリが 0 件です`);
+  if (!entries.some((e) => e.retireAt || e.stopped)) {
+    warnings.push(`${vendor}: 日付付き・停止済みの廃止エントリが 0 件です`);
     return [];
   }
   return entries;
@@ -66,7 +66,7 @@ function collectVendor(
  * 取得した廃止一覧ページを解析する（純粋関数）。
  * 社ごとに fail-open: 取得失敗 / 構造が見つからない / 日付付きエントリ 0 件 / 解析中の例外なら、
  * その社のエントリは使わず（除外 0 件）警告だけ出す。例外で WF 全体（LLM 一覧・為替の投稿）を止めない。
- * 「0 件」は前回との比較ではなく常に異常とみなす。各社の一覧は過去の廃止も載せ続けるため、
+ * 「0 件」は前回との比較ではなく常に異常とみなす。各社の一覧は過去の廃止（Google は停止済みの旧モデル）も載せ続けるため、
  * 正常なら 1 件以上あるはずで、状態を持たなくても同じ判定になる
  */
 export function collectDeprecations(pages: IDataObject[]): DeprecationResult {
