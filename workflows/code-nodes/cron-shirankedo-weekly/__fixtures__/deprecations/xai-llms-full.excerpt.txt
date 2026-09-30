@@ -1,0 +1,372 @@
+# Using Management API
+
+Some enterprise users may prefer to manage their account details programmatically rather than manually through the xAI Console. For this reason, we have developed a Management API to enable enterprise users to efficiently manage their team details.
+
+You can read the endpoint specifications and descriptions at [Management API Reference](/developers/rest-api-reference/management).
+
+You need to get a management key, which is separate from your API key, to use the management API. The management key can be obtained at [xAI Console](https://console.x.ai?utm_source=docs\&utm_medium=referral\&utm_campaign=developers-management-api-guide\&utm_content=console-home) -> Settings -> Management Keys.
+
+The base URL is at `https://management-api.x.ai`, which is also different from the inference API.
+
+## Operations related to API Keys
+
+You can create, list, update, and delete API keys via the management API.
+
+You can also manage the access control lists (ACLs) associated with the API keys.
+
+The available ACL types are:
+
+* `api-key:model`
+* `api-key:endpoint`
+
+To enable all models and endpoints available to your team, use:
+
+* `api-key:model:*`
+* `api-key:endpoint:*`
+
+Or if you need to specify the particular endpoint available to the API:
+
+* `api-key:endpoint:chat` for chat and vision models
+* `api-key:endpoint:image` for image generation models
+
+And to specify models the API key has access to:
+
+* `api-key:model:<model name such as grok-4.7>`
+
+### Create an API key
+
+An example to create an API key with all models and endpoints enabled, limiting requests to 5 queries per second and 100 queries per minute, without token number restrictions.
+
+```bash
+curl https://management-api.x.ai/auth/teams/{teamId}/api-keys \\
+    -X POST \\
+    -H "Authorization: Bearer <Your Management API Key>" \\
+    -d '{
+            "name": "My API key",
+            "acls": ["api-key:model:*", "api-key:endpoint:*"],
+            "qps": 5,
+            "qpm": 100,
+            "tpm": null
+        }'
+```
+
+Specify `tpm` to any integer string to limit the number of tokens produced/consumed per minute. When the token rate limit is triggered, new requests will be rejected and in-flight requests will continue processing.
+
+The newly created API key will be returned in the `"apiKey"` field of the response object. The API Key ID is returned as `"apiKeyId"` in the response body as well, which is useful for updating and deleting operations.
+
+### List API keys
+
+To retrieve a list of API keys from a team, you can run the following:
+
+```bash
+curl https://management-api.x.ai/auth/teams/{teamId}/api-keys?pageSize=10&paginationToken= \\
+    -H "Authorization: Bearer <Your Management API Key>"
+```
+
+You can customize the query parameters such as `pageSize` and `paginationToken`.
+
+### Update an API key
+
+You can update an API key after it has been created. For example, to update the `qpm` of an API key:
+
+```bash
+curl https://management-api.x.ai/auth/api-keys/{apiKeyId} \\
+    -X PUT \\
+    -H "Authorization: Bearer <Your Management API Key>" \\
+    -d '{
+            "apiKey": {
+                "qpm": 200
+            },
+            "fieldMask": "qpm"
+        }'
+```
+
+Or to update the `name` of an API key:
+
+```bash
+curl https://management-api.x.ai/auth/api-keys/{apiKeyId} \\
+    -X PUT \\
+    -H "Authorization: Bearer <Your Management API Key>" \\
+    -d '{
+            "apiKey": {
+                "name": "Updated API key"
+            },
+            "fieldMask": "name"
+        }'
+```
+
+### Delete an API key
+
+You can also delete an API key with the following:
+
+```bash
+curl https://management-api.x.ai/auth/api-keys/{apiKeyId} \\
+    -X DELETE \\
+    -H "Authorization: Bearer <Your Management API Key>"
+```
+
+### Check propagation status of API key across clusters
+
+There could be a slight delay between creating an API key, and the API key being available for use across all clusters.
+
+You can check the propagation status of the API key via API.
+
+```bash
+curl https://management-api.x.ai/auth/api-keys/{apiKeyId}/propagation \\
+    -H "Authorization: Bearer <Your Management API Key>"
+```
+
+### List all models available for the team
+
+You can list all the available models for a team with our management API as well.
+
+The model names in the output can be used with setting ACL string on an API key as `api-key:model:<model-name>`
+
+```bash
+curl https://management-api.x.ai/auth/teams/{teamId}/models \\
+    -H "Authorization: Bearer <Your Management API Key>"
+```
+
+## Access Control List (ACL) management
+
+We also offer endpoint to list possible ACLs for a team. You can then apply the endpoint ACL strings to your API keys.
+
+To view possible endpoint ACLs for a team's API keys:
+
+```bash
+curl https://management-api.x.ai/auth/teams/{teamId}/endpoints \\
+    -H "Authorization: Bearer <Your Management API Key>"
+```
+
+## Validate a management key
+
+You can check if your key is a valid management key. If validation succeeds, the endpoint returns meta information about the management key.
+This endpoint does not require any Access Control List (ACL) permissions.
+
+```bash
+curl https://management-api.x.ai/auth/management-keys/validation \\
+    -H "Authorization: Bearer <Your Management API Key>"
+```
+
+## Audit Logs
+
+You can retrieve audit logs for your team. Audit events track changes to team settings, API keys, team membership, and other administrative actions.
+
+### List audit events
+
+To retrieve audit events for a team:
+
+```bash
+curl "https://management-api.x.ai/audit/teams/{teamId}/events?pageSize=10" \\
+    -H "Authorization: Bearer <Your Management API Key>"
+```
+
+You can customize the query parameters:
+
+* `pageSize` - Number of events per page
+* `pageToken` - Token for fetching the next page of results
+* `eventFilter.userId` - Filter events to a specific user
+* `eventFilter.query` - Full-text search in event descriptions
+* `eventTimeFrom` - Filter events from a specific time (ISO 8601 format)
+* `eventTimeTo` - Filter events up to a specific time (ISO 8601 format)
+
+To fetch the next page of results, use the `nextPageToken` from the response:
+
+```bash
+curl "https://management-api.x.ai/audit/teams/{teamId}/events?pageSize=10&pageToken={nextPageToken}" \\
+    -H "Authorization: Bearer <Your Management API Key>"
+```
+
+Example with time filter:
+
+```bash
+curl "https://management-api.x.ai/audit/teams/{teamId}/events?pageSize=50&eventTimeFrom=2025-01-01T00:00:00Z" \\
+    -H "Authorization: Bearer <Your Management API Key>"
+```
+
+
+===/developers/migration/imagine-image-quality-nov-2===
+#### Migration Guides
+
+# grok-imagine-image-quality Retirement on November 2, 2026
+
+`grok-imagine-image-2.0` now covers everything `grok-imagine-image-quality` was used for, at a lower price. **Effective November 2, 2026**, the `grok-imagine-image-quality` model slug is retired from the xAI API. Its 60-day notice period began on September 2, 2026.
+
+> [!CAUTION]
+>
+> After **November 2, 2026**, requests to `grok-imagine-image-quality` are served by `grok-imagine-image-2.0` with `quality` set to `low`. The slug continues to resolve, so you do not need to change your code to avoid breakage. `grok-imagine-image-2.0` is [priced differently](#pricing-impact) than the model it replaces.
+
+`grok-imagine-image` (1.0) is not affected by this change.
+
+### How the redirect works
+
+Starting **November 2, 2026**:
+
+* Requests to `grok-imagine-image-quality` on `/v1/images/generations` and `/v1/images/edits` are served by **`grok-imagine-image-2.0` with `quality: "low"`**.
+* The request and response shapes are unchanged. Every parameter accepted today is accepted after the switch, and `grok-imagine-image-2.0` additionally accepts `quality`, up to five source images for editing, and the `21:9` and `5:2` aspect ratios.
+* The `model` field on responses reports the model that served the request, so you can confirm the switch from your logs.
+* Requests to `grok-imagine-image-pro`, which [already redirect](/developers/migration/may-15-retirement) to `grok-imagine-image-quality`, follow it to `grok-imagine-image-2.0` at `low`.
+
+## Pricing impact
+
+`grok-imagine-image-2.0` at `low` quality is $0.01 per image cheaper than `grok-imagine-image-quality` at every resolution. If you keep sending requests to the retired slug after November 2, you are billed at the `grok-imagine-image-2.0` `low` rate. See [Pricing](/developers/pricing) for current per-image rates.
+
+## Recommended replacement
+
+We recommend switching to `grok-imagine-image-2.0` explicitly before November 2. Doing so lets you choose the quality you pay for, rather than accepting the `low` default applied by the redirect.
+
+| Model being retired | Redirect target after November 2 |
+|---|---|
+| `grok-imagine-image-quality` | `grok-imagine-image-2.0` with `quality: "low"` |
+
+Migrating is a one-line change to the `model` field. `grok-imagine-image-2.0` also accepts an optional [`quality`](/developers/model-capabilities/images/generation#quality) parameter:
+
+* `low` is what the redirect uses. It ranks #2 on the [Arena](https://arena.ai) Image Edit leaderboard and #3 on Text-to-Image, and is the closest match in cost to `grok-imagine-image-quality`.
+* `medium` spends more compute on each image for finer detail; choose it where output quality matters more than cost.
+* `auto` (the default when `quality` is omitted) currently serves `low` for generation and `medium` for editing, and you are billed at the quality served.
+
+```python customLanguage="pythonXAI"
+import xai_sdk
+
+client = xai_sdk.Client()
+
+response = client.image.sample(
+    prompt="A watercolor painting of a lighthouse at dawn",
+    model="grok-imagine-image-2.0",
+    quality="low",
+)
+
+print(response.url)
+```
+
+```python customLanguage="pythonOpenAISDK"
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="https://api.x.ai/v1",
+    api_key="YOUR_API_KEY",
+)
+
+response = client.images.generate(
+    model="grok-imagine-image-2.0",
+    prompt="A watercolor painting of a lighthouse at dawn",
+    extra_body={"quality": "low"},
+)
+
+print(response.data[0].url)
+```
+
+```javascript customLanguage="javascriptOpenAISDK"
+import OpenAI from "openai";
+
+const client = new OpenAI({
+    apiKey: process.env.XAI_API_KEY,
+    baseURL: "https://api.x.ai/v1",
+});
+
+const response = await client.images.generate({
+    model: "grok-imagine-image-2.0",
+    prompt: "A watercolor painting of a lighthouse at dawn",
+    quality: "low",
+});
+
+console.log(response.data[0].url);
+```
+
+```bash
+curl -X POST https://api.x.ai/v1/images/generations \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $XAI_API_KEY" \
+  -d '{
+    "model": "grok-imagine-image-2.0",
+    "prompt": "A watercolor painting of a lighthouse at dawn",
+    "quality": "low"
+  }'
+```
+
+The same `model` change applies to [image editing](/developers/model-capabilities/images/editing) requests on `/v1/images/edits`.
+
+## Need help?
+
+If you have questions or need assistance with this migration, reach out to [support@x.ai](mailto:support@x.ai).
+
+
+===/developers/migration/may-15-retirement===
+#### Migration Guides
+
+# Grok Model Retirement on May 15, 2026
+
+As we continue advancing Grok, we are retiring several earlier models to focus fully on our newest generation. **Effective May 15, 2026 at 12:00 PM PT**, the following models will be retired from the xAI API:
+
+* `grok-4-1-fast-reasoning`
+* `grok-4-1-fast-non-reasoning`
+* `grok-4-fast-reasoning`
+* `grok-4-fast-non-reasoning`
+* `grok-4-0709`
+* `grok-code-fast-1`
+* `grok-3`
+* `grok-imagine-image-pro`
+
+> [!CAUTION]
+>
+> After **May 15, 2026 at 12:00 PM PT**, requests to the retired model slugs above will automatically redirect to `grok-4.3`. The slugs themselves continue to resolve, so you do not need to change your code to avoid breakage. Grok 4.3 is [priced differently](#pricing-impact) than the various models it replaces.
+
+### How the redirects work
+
+Starting **May 15, 2026 at 12:00 PM PT**:
+
+* Requests to any **reasoning** model in the list above will be served by **`grok-4.3` with `low` reasoning effort**.
+* Requests to any **non-reasoning** model in the list above will be served by **`grok-4.3` with `none` reasoning effort**.
+* `grok-imagine-image-pro` will be redirected to `grok-imagine-image-quality`. On November 2, 2026, `grok-imagine-image-quality` is itself retired in favor of `grok-imagine-image-2.0`; see the [November 2 migration guide](/developers/migration/imagine-image-quality-nov-2).
+
+## Pricing impact
+
+If you continue sending requests to a deprecated slug after May 15, please be aware that you will be billed at `grok-4.3` pricing of **$1.25 per 1M input tokens and $2.50 per 1M output tokens** rather than the rates of the original model.
+
+To avoid unexpected cost increases, we recommend explicitly choosing the right replacement model for each workload before May 15. See the [recommended replacements](#recommended-replacements) below.
+
+## Recommended Replacements
+
+We have newer, more capable models ready for every workload. In most cases, migrating is as simple as changing the `"model"` field in your API request. Doing so explicitly lets you control which reasoning effort you pay for, rather than accepting the default applied by the redirect.
+
+| Model being retired | Redirect target after May 15 |
+|---|---|
+| `grok-4-1-fast-reasoning` | `grok-4.3` with `low` reasoning effort |
+| `grok-4-1-fast-non-reasoning` | `grok-4.3` with `none` reasoning effort |
+| `grok-4-fast-reasoning` | `grok-4.3` with `low` reasoning effort |
+| `grok-4-fast-non-reasoning` | `grok-4.3` with `none` reasoning effort |
+| `grok-4-0709` | `grok-4.3` with `low` reasoning effort |
+| `grok-code-fast-1` | `grok-build-0.1` |
+| `grok-3` | `grok-4.3` with `none` reasoning effort |
+| `grok-imagine-image-pro` | `grok-imagine-image-quality` |
+
+### Reasoning workloads
+
+If you are using `grok-4-1-fast-reasoning`, `grok-4-fast-reasoning`, or `grok-4-0709`, we recommend migrating to `grok-4.3`.
+
+Grok 4.3 is the fastest, most intelligent model we have ever built. It tops the leaderboards in agentic tool calling and instruction following, and includes:
+
+* 1 million token context window
+* 4 [reasoning effort](/developers/model-capabilities/text/reasoning#the-reasoning_effort-parameter) levels (none, low, medium, and high)
+* Priced at $1.25 / 1M input and $2.50 / 1M output
+
+After May 15, requests to these slugs are routed to `grok-4.3` with `low` [reasoning effort](/developers/model-capabilities/text/reasoning#the-reasoning_effort-parameter). If your workload benefits from deeper reasoning, set `medium` or `high` reasoning effort explicitly on your requests.
+
+### Non-reasoning workloads
+
+If you are using `grok-4-1-fast-non-reasoning` or `grok-4-fast-non-reasoning`, we recommend migrating to `grok-4.3` with `none` reasoning effort, which is also where these slugs are redirected after May 15.
+
+For less latency-sensitive workloads, consider using `grok-4.3` with `low` [reasoning effort](/developers/model-capabilities/text/reasoning#the-reasoning_effort-parameter).
+
+### Code workloads
+
+If you are using `grok-code-fast-1`, we recommend migrating to `grok-build-0.1`, which delivers significantly improved agentic coding and web dev capabilities. After May 15, requests to `grok-code-fast-1` are routed to `grok-build-0.1`.
+
+## Need Help?
+
+We are here to support you through this migration. If you have any questions or need assistance, please reach out to [support@x.ai](mailto:support@x.ai).
+
+
+===/developers/model-capabilities/audio/custom-voices===
+#### Model Capabilities
+

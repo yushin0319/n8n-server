@@ -1,3 +1,9 @@
+import {
+  buildIndex,
+  type DeprecationEntry,
+  findRetirement,
+} from "./deprecations";
+
 /** フィルタ済みモデル */
 interface FilteredModel {
   name: string;
@@ -151,6 +157,12 @@ export default function (): CodeNodeReturn {
   const rates = (rateResp?.rates || {}) as IDataObject;
   const jpyRate = (rates.JPY as number) || 150;
   const eurRate = (rates.EUR as number) || 1;
+  // ベンダー公式の廃止一覧（ParseDeprecations の出力。テストモードでは空）
+  const deprecationIndex = buildIndex(
+    (aaResp.deprecations || []) as DeprecationEntry[],
+  );
+  const now = new Date();
+  const retiredExcluded: string[] = [];
 
   // Provider mapping
   const PROVIDERS: Record<string, string> = {
@@ -184,6 +196,12 @@ export default function (): CodeNodeReturn {
       }
     }
     if (!provider) continue;
+    // ベンダー公式の一覧で停止日を過ぎたモデルは送らない
+    const retired = findRetirement(name, provider, deprecationIndex, now);
+    if (retired) {
+      retiredExcluded.push(`${name} (${retired.id}, ${retired.retireAt})`);
+      continue;
+    }
     const pricing = (m.pricing || {}) as IDataObject;
     const inp = pricing.price_1m_input_tokens as number | undefined;
     const out = pricing.price_1m_output_tokens as number | undefined;
@@ -235,6 +253,8 @@ export default function (): CodeNodeReturn {
       json: {
         requestBody: JSON.stringify(models),
         count: models.length,
+        // 実行データで確認できるように、廃止で除外した AA モデルを残す
+        retiredExcluded,
         type: "llm-models",
       },
     },
