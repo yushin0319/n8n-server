@@ -178,12 +178,19 @@ function backticked(text: string): string[] {
 
 const MODEL_ID = /^[a-z0-9][a-z0-9.\-_]*$/i;
 
+/**
+ * 同じ ID が複数の表に載る場合の統合。早い日付では消さないよう、
+ * 日付未定（null: 延期・未発表）を最優先し、次に遅い日付を採用する
+ */
 function dedupe(entries: DeprecationEntry[]): DeprecationEntry[] {
   const seen = new Map<string, DeprecationEntry>();
   for (const e of entries) {
     const prev = seen.get(e.id);
-    // 同じ ID が複数の表に載る場合は日付があるほうを採用
-    if (!prev || (!prev.retireAt && e.retireAt)) seen.set(e.id, e);
+    if (!prev) {
+      seen.set(e.id, e);
+    } else if (prev.retireAt !== null) {
+      if (e.retireAt === null || e.retireAt > prev.retireAt) seen.set(e.id, e);
+    }
   }
   return [...seen.values()];
 }
@@ -233,6 +240,9 @@ export function parseMarkdownTables(md: string, vendor: Vendor): ParseResult {
   }
   return { entries: dedupe(entries), markerFound };
 }
+
+/** xAI の移行ガイドを取りに行く上限（llms.txt が想定外に長くなっても取得を増やしすぎない） */
+export const XAI_GUIDE_LIMIT = 20;
 
 /** xAI の llms.txt から移行ガイド（.md）の URL を拾う */
 export function parseXaiIndex(txt: string): string[] {
@@ -320,26 +330,53 @@ export function parseKimi(md: string): ParseResult {
   return { entries: dedupe(entries), markerFound: true };
 }
 
-/** Xiaomi MiMo の廃止ページ（HTML 表）。"mimo-v2.5 Beijing Time 2026.10.21 10:00" の最初の時刻を廃止時刻とする */
+/** "Beijing Time 2026.10.21 10:00" → UTC ISO。読めなければ null */
+function parseBeijingTime(text: string): string | null {
+  const m =
+    /^Beijing Time\s+(\d{4})\.(\d{1,2})\.(\d{1,2})\s+(\d{1,2}):(\d{2})$/.exec(
+      text.trim(),
+    );
+  if (!m) return null;
+  return localToUtc(
+    Number(m[1]),
+    Number(m[2]),
+    Number(m[3]),
+    Number(m[4]),
+    Number(m[5]),
+    8,
+  );
+}
+
+/**
+ * Xiaomi MiMo の廃止ページ（HTML 表）。見出しで列を決める:
+ * モデル列 = "Model" を含み "Replacement" でない列、日付列 = "Deprecated Time"
+ */
 export function parseXiaomi(html: string): ParseResult {
-  const text = htmlToText(html);
-  const markerFound = text.includes("Deprecated Time");
   const entries: DeprecationEntry[] = [];
-  for (const m of text.matchAll(
-    /\b(mimo-[a-z0-9.-]+)\s+Beijing Time\s+(\d{4})\.(\d{1,2})\.(\d{1,2})\s+(\d{1,2}):(\d{2})/gi,
-  )) {
-    entries.push({
-      vendor: "xiaomi",
-      id: m[1].toLowerCase(),
-      retireAt: localToUtc(
-        Number(m[2]),
-        Number(m[3]),
-        Number(m[4]),
-        Number(m[5]),
-        Number(m[6]),
-        8,
+  let markerFound = false;
+  for (const table of html.match(/<table[\s\S]*?<\/table>/gi) ?? []) {
+    const rows = (table.match(/<tr[\s\S]*?<\/tr>/gi) ?? []).map((r) =>
+      [...r.matchAll(/<t[hd]\b[^>]*>([\s\S]*?)<\/t[hd]>/gi)].map((c) =>
+        htmlToText(c[1]).trim(),
       ),
-    });
+    );
+    if (rows.length === 0) continue;
+    const heads = rows[0].map((h) => h.toLowerCase());
+    const modelCol = heads.findIndex(
+      (h) => h.includes("model") && !h.includes("replacement"),
+    );
+    const dateCol = heads.indexOf("deprecated time");
+    if (modelCol < 0 || dateCol < 0) continue;
+    markerFound = true;
+    for (const cells of rows.slice(1)) {
+      const id = (cells[modelCol] ?? "").toLowerCase();
+      if (!MODEL_ID.test(id)) continue;
+      entries.push({
+        vendor: "xiaomi",
+        id,
+        retireAt: parseBeijingTime(cells[dateCol] ?? ""),
+      });
+    }
   }
   return { entries: dedupe(entries), markerFound };
 }
@@ -402,31 +439,64 @@ function stripDateSuffix(s: string): { base: string; dated: boolean } {
   return { base: s.slice(0, m.index), dated: true };
 }
 
+/** AA の括弧書きのうち、推論モード・推論強度だけを表すもの（モデルの版ではない） */
+const SETTING_PART =
+  /^(?:adaptive )?(?:non-)?reasoning$|^(?:minimal|low|medium|high|xhigh|max)(?: effort)?$|fallback$|^thinking$/;
+
+/**
+ * 括弧書きが日付・スナップショットか（"Aug '24" / "Feb 2026" / "0902" / "2025-10-22"）。
+ * 正規表現内の引用符は \x27 で書く（validate_workflows.py が正規表現内の引用符を文字列の開始と誤認するため）
+ */
+const DATE_PAREN =
+  /^(?:[a-z]{3,9}\.?\s*\x27?\s*\d{2}(?:\d{2})?|\d{4}|\d{4}-\d{2}(?:-\d{2})?)$/;
+
 /**
  * 照合キー。AA の表示名とベンダーの ID を同じ形にする。
- * - 括弧書き、末尾の -reasoning / -non-reasoning、末尾の日付を外す
- * - 英字と数字の境目で分け（"o3" → o 3, "k2.6" → k 2 6）、"." "-" 空白で区切る
+ * - 推論モード・推論強度の括弧書き（"(Reasoning)" "(high)" 等）と、末尾の -reasoning / -non-reasoning は外す
+ * - 日付・スナップショットの括弧書き（"(Aug '24)" "(0902)"）と末尾の日付は外し、dated=true にする
+ * - それ以外の括弧書き（"(ChatGPT)" "(Preview)" 等）は語としてキーに残し、dated=true にする
+ * - 英字と数字の境目で分け（"o3" → o 3, "k2.6" → k 2 6）、"." "-" "'" 空白で区切る
  * - 語は並べ替え（"Claude 4.5 Haiku" と "claude-haiku-4-5"）、数字は順序を保つ
- * - "exp"（実験版の印）は無視する（"DeepSeek V4 Flash Vision" と "... Vision Exp"）
+ * - ignoreExp（DeepSeek のみ）: "exp" を無視する（"DeepSeek V4 Flash Vision" と "... Vision Exp"）
+ *
+ * dated はベンダー ID では「日付付きスナップショット」、AA 名では「版・日付の注記付き」を表す
  */
-export function modelKey(name: string): { key: string; dated: boolean } {
-  let s = name
-    .toLowerCase()
-    .replace(/\s*\(.*?\)/g, "")
-    .trim();
-  s = s.replace(/[-\s](?:non-)?reasoning$/, "");
+export function modelKey(
+  name: string,
+  opts: { ignoreExp?: boolean } = {},
+): { key: string; dated: boolean } {
+  let qualified = false;
+  const kept: string[] = [];
+  let s = name.toLowerCase().replace(/\s*\(([^)]*)\)/g, (_m, inner: string) => {
+    const parts = inner
+      .split(",")
+      .map((p) => p.trim())
+      .filter(Boolean);
+    if (parts.length > 0 && parts.every((p) => SETTING_PART.test(p))) return "";
+    qualified = true;
+    if (!DATE_PAREN.test(inner.trim())) kept.push(inner);
+    return "";
+  });
+  s = s.trim().replace(/[-\s](?:non-)?reasoning$/, "");
   const { base, dated } = stripDateSuffix(s);
-  const tokens = base
+  const tokens = [base, ...kept]
+    .join(" ")
     .replace(/([a-z])(\d)/g, "$1 $2")
     .replace(/(\d)([a-z])/g, "$1 $2")
-    .split(/[\s._-]+/)
-    .filter((t) => t && t !== "exp");
+    .split(/[\s._\x27-]+/)
+    .filter((t) => t && !(opts.ignoreExp && t === "exp"));
   const words = tokens.filter((t) => !/^\d+$/.test(t)).sort();
   const nums = tokens
     .filter((t) => /^\d+$/.test(t))
     .map((n) => String(Number(n)));
-  return { key: `${words.join(" ")}|${nums.join(".")}`, dated };
+  return {
+    key: `${words.join(" ")}|${nums.join(".")}`,
+    dated: dated || qualified,
+  };
 }
+
+/** "exp" を同一視するのは DeepSeek だけ（Gemini の *-exp などは別モデルとして扱う） */
+const keyOpts = (vendor: Vendor) => ({ ignoreExp: vendor === "deepseek" });
 
 interface KeyGroup {
   aliases: DeprecationEntry[];
@@ -438,7 +508,7 @@ export type DeprecationIndex = Map<Vendor, Map<string, KeyGroup>>;
 export function buildIndex(entries: DeprecationEntry[]): DeprecationIndex {
   const index: DeprecationIndex = new Map();
   for (const e of entries) {
-    const { key, dated } = modelKey(e.id);
+    const { key, dated } = modelKey(e.id, keyOpts(e.vendor));
     let byKey = index.get(e.vendor);
     if (!byKey) {
       byKey = new Map();
@@ -457,7 +527,8 @@ export function buildIndex(entries: DeprecationEntry[]): DeprecationIndex {
 /**
  * AA のモデルが、ベンダー公式の一覧で停止日を過ぎているか。
  * - 日付なしの ID（エイリアス）が一覧にあれば、それらが全て停止済みのときだけ一致
- * - エイリアスが無く、日付付きスナップショットが 1 つだけなら同じモデルとみなす（o3 ↔ o3-2025-04-16）
+ * - エイリアスが無く、日付付きスナップショットが 1 つだけなら同じモデルとみなす（o3 ↔ o3-2025-04-16）。
+ *   ただし AA 名に版・日付の注記（"GPT-4o (Aug '24)" 等）がある場合は、どのスナップショットか分からないので一致させない
  * - スナップショットが 2 つ以上でエイリアスが無い場合は一致させない
  */
 export function findRetirement(
@@ -468,12 +539,13 @@ export function findRetirement(
 ): DeprecationEntry | null {
   const vendor = PROVIDER_VENDOR[provider];
   if (!vendor) return null;
-  const g = index.get(vendor)?.get(modelKey(aaName).key);
+  const aa = modelKey(aaName, keyOpts(vendor));
+  const g = index.get(vendor)?.get(aa.key);
   if (!g) return null;
   if (g.aliases.length > 0) {
     return g.aliases.every((e) => isRetired(e, now)) ? g.aliases[0] : null;
   }
-  if (g.snapshots.length === 1 && isRetired(g.snapshots[0], now)) {
+  if (!aa.dated && g.snapshots.length === 1 && isRetired(g.snapshots[0], now)) {
     return g.snapshots[0];
   }
   return null;

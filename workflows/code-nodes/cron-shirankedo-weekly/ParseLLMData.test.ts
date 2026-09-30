@@ -176,6 +176,18 @@ describe("ParseLLMData", () => {
       expect(names).toEqual(["Grok 4.7"]);
     });
 
+    it("廃止一覧が壊れていても LLM 一覧と為替は出力する（除外なし）", () => {
+      stubMergedInput(aa, { JPY: 150 }, [
+        { vendor: "openai", id: null, retireAt: "2026-01-01T00:00:00.000Z" },
+      ]);
+      const items = callAndGetItems();
+      expect(items).toHaveLength(2);
+      expect(JSON.parse(items[0].json.requestBody as string)).toHaveLength(3);
+      expect(String((items[0].json.retiredExcluded as string[])[0])).toContain(
+        "廃止一覧を使えず除外なし",
+      );
+    });
+
     it("廃止一覧が無い（テストモード・取得失敗）場合は何も除外しない", () => {
       stubMergedInput(aa);
       const items = callAndGetItems();

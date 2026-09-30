@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import anthropicMd from "./__fixtures__/deprecations/anthropic.md.txt?raw";
 import deepseekHtml from "./__fixtures__/deprecations/deepseek.html.txt?raw";
 import googleMd from "./__fixtures__/deprecations/google.md.txt?raw";
@@ -8,9 +8,20 @@ import xaiGuide from "./__fixtures__/deprecations/xai-llms-full.excerpt.txt?raw"
 import xiaomiHtml from "./__fixtures__/deprecations/xiaomi.html.txt?raw";
 import parseDeprecations, { collectDeprecations } from "./ParseDeprecations";
 
-/** FetchDeprecationPages（fullResponse）と取得元をマージした 1 件 */
+/**
+ * MergeDeprecationPages の出力 1 件 = 取得元 { vendor, url } と、
+ * n8n 2.23.4 HttpRequestV3（fullResponse + responseFormat: text + outputPropertyName: "body"）の出力
+ * { body, headers, statusCode, statusMessage } を位置で結合したもの
+ */
 function page(vendor: string, body: string, statusCode = 200): IDataObject {
-  return { vendor, url: `https://example.test/${vendor}`, statusCode, body };
+  return {
+    vendor,
+    url: `https://example.test/${vendor}`,
+    body,
+    headers: { "content-type": "text/markdown" },
+    statusCode,
+    statusMessage: "OK",
+  };
 }
 
 const allOk = (): IDataObject[] => [
@@ -52,14 +63,41 @@ describe("collectDeprecations", () => {
     ]);
   });
 
-  it("通信エラー（statusCode なし）も警告する", () => {
+  it("outputPropertyName が既定値（data）のままの出力でも本文を読む", () => {
+    // n8n 2.23.4 の既定: 本文は data キー（HttpRequestV3.node.ts の responseFormat === 'text' 分岐）
+    const pages = allOk().map((p) => {
+      const { body, ...rest } = p;
+      return { ...rest, data: body };
+    });
+    const r = collectDeprecations(pages);
+    expect(r.deprecationWarnings).toEqual([]);
+    expect(r.deprecations.some((e) => e.vendor === "openai")).toBe(true);
+  });
+
+  it("本文が無い出力は取得失敗として警告する", () => {
+    const pages = allOk().map((p) => {
+      if (p.vendor !== "google") return p;
+      const { body: _body, ...rest } = p;
+      return rest;
+    });
+    expect(collectDeprecations(pages).deprecationWarnings).toEqual([
+      "google: 本文がありません (https://example.test/google)",
+    ]);
+  });
+
+  it("リトライ後も失敗した項目（continueRegularOutput の { error }）を警告する", () => {
+    // HttpRequestV3: continueOnFail 時は { error: responseData.reason } だけを出す
     const pages = allOk().map((p) =>
       p.vendor === "kimi"
-        ? { vendor: "kimi", url: "u", error: { message: "x" } }
+        ? {
+            vendor: "kimi",
+            url: "u",
+            error: { message: "Service unavailable", httpCode: "503" },
+          }
         : p,
     );
     expect(collectDeprecations(pages).deprecationWarnings).toEqual([
-      "kimi: HTTP error (u)",
+      "kimi: HTTP 503 Service unavailable (u)",
     ]);
   });
 
@@ -99,6 +137,35 @@ describe("collectDeprecations", () => {
     expect(collectDeprecations(pages).deprecationWarnings).toEqual([
       "deepseek: 取得結果がありません",
     ]);
+  });
+});
+
+describe("collectDeprecations（解析中の例外）", () => {
+  afterEach(() => {
+    vi.doUnmock("./_shared/deprecations");
+    vi.resetModules();
+  });
+
+  it("1 社の解析で例外が出ても他社は続行し、警告を出す", async () => {
+    vi.resetModules();
+    vi.doMock("./_shared/deprecations", async (importOriginal) => {
+      const mod =
+        await importOriginal<typeof import("./_shared/deprecations")>();
+      return {
+        ...mod,
+        parseVendorPage: (vendor: string, body: string) => {
+          if (vendor === "openai") throw new Error("boom");
+          return mod.parseVendorPage(vendor as never, body);
+        },
+      };
+    });
+    const { collectDeprecations: collect } = await import(
+      "./ParseDeprecations"
+    );
+    const r = collect(allOk());
+    expect(r.deprecations.some((e) => e.vendor === "openai")).toBe(false);
+    expect(r.deprecations.some((e) => e.vendor === "anthropic")).toBe(true);
+    expect(r.deprecationWarnings).toEqual(["openai: 解析で例外: Error: boom"]);
   });
 });
 

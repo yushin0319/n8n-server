@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 // フィクスチャは 2026-09-30 に各社の公式ページを取得したもの（xAI は llms-full.txt の移行ガイド部分の抜粋）
-import anthropicMd from "./__fixtures__/deprecations/anthropic.md.txt?raw";
-import deepseekHtml from "./__fixtures__/deprecations/deepseek.html.txt?raw";
-import googleMd from "./__fixtures__/deprecations/google.md.txt?raw";
-import kimiMd from "./__fixtures__/deprecations/kimi.md.txt?raw";
-import openaiMd from "./__fixtures__/deprecations/openai.md.txt?raw";
-import xaiGuide from "./__fixtures__/deprecations/xai-llms-full.excerpt.txt?raw";
-import xiaomiHtml from "./__fixtures__/deprecations/xiaomi.html.txt?raw";
+import anthropicMd from "../__fixtures__/deprecations/anthropic.md.txt?raw";
+import deepseekHtml from "../__fixtures__/deprecations/deepseek.html.txt?raw";
+import googleMd from "../__fixtures__/deprecations/google.md.txt?raw";
+import kimiMd from "../__fixtures__/deprecations/kimi.md.txt?raw";
+import openaiMd from "../__fixtures__/deprecations/openai.md.txt?raw";
+import xaiGuide from "../__fixtures__/deprecations/xai-llms-full.excerpt.txt?raw";
+import xiaomiHtml from "../__fixtures__/deprecations/xiaomi.html.txt?raw";
 import {
   buildIndex,
   type DeprecationEntry,
@@ -205,6 +205,54 @@ describe("parseDeepseek", () => {
   });
 });
 
+describe("dedupe（同じ ID が複数の表にある場合）", () => {
+  const md = (rows: string[]) =>
+    ["| Shutdown date | Model |", "| --- | --- |", ...rows, ""].join("\n");
+
+  it("遅い日付を採用する（早い日付では消さない）", () => {
+    const r = parseMarkdownTables(
+      md([
+        "| Oct 1, 2026 | `m1` |",
+        "| Dec 1, 2026 | `m1` |",
+        "| Nov 1, 2026 | `m1` |",
+      ]),
+      "openai",
+    );
+    expect(byId(r.entries)).toEqual({ m1: "2026-12-02T12:00:00.000Z" });
+  });
+
+  it("日付未定（延期・未発表）が 1 つでもあれば null を採用する", () => {
+    const r = parseMarkdownTables(
+      md([
+        "| Oct 1, 2026 | `m1` |",
+        "| To be announced | `m1` |",
+        "| Dec 1, 2026 | `m1` |",
+      ]),
+      "openai",
+    );
+    expect(byId(r.entries)).toEqual({ m1: null });
+  });
+});
+
+describe("parseXiaomi（列の順序）", () => {
+  it("見出しで Deprecated Time 列を探す（列の並びが変わっても読める）", () => {
+    const html = `<table><thead><tr><th>Note</th><th>System replacement time</th><th>Deprecated Time</th><th>Deprecated Model</th><th>System Replacement Model</th></tr></thead>
+<tbody><tr><td>x</td><td>Beijing Time 2026.6.1 00:00</td><td>Beijing Time 2026.6.30 00:00</td><td>mimo-v2-pro</td><td>mimo-v2.5-pro</td></tr></tbody></table>`;
+    const r = parseXiaomi(html);
+    expect(r.markerFound).toBe(true);
+    expect(byId(r.entries)).toEqual({
+      "mimo-v2-pro": "2026-06-29T16:00:00.000Z",
+    });
+  });
+
+  it("Deprecated Time 列が無い表は無視する", () => {
+    const r = parseXiaomi(
+      "<table><tr><th>Model</th><th>Price</th></tr><tr><td>mimo-v2.6-pro</td><td>1</td></tr></table>",
+    );
+    expect(r).toEqual({ entries: [], markerFound: false });
+  });
+});
+
 describe("modelKey", () => {
   it.each([
     ["Claude 4.5 Haiku", "claude-haiku-4-5"],
@@ -212,7 +260,6 @@ describe("modelKey", () => {
     ["Grok 4 Fast", "grok-4-fast-non-reasoning"],
     ["o3", "o3-2025-04-16"],
     ["MiMo-V2.5", "mimo-v2.5"],
-    ["DeepSeek V4 Flash Vision", "DeepSeek V4 Flash Vision Exp"],
     ["Kimi K2.5", "kimi-k2.5"],
   ])("'%s' と '%s' は同じキー", (a, b) => {
     expect(modelKey(a).key).toBe(modelKey(b).key);
@@ -226,6 +273,42 @@ describe("modelKey", () => {
     ["Gemini 3.1 Pro Preview", "gemini-3.1-pro"],
   ])("'%s' と '%s' は別のキー", (a, b) => {
     expect(modelKey(a).key).not.toBe(modelKey(b).key);
+  });
+
+  it("推論モード・推論強度の括弧書きは外し、版の注記扱いにしない", () => {
+    const k = modelKey(
+      "Claude Opus 5.5 (Adaptive Reasoning, Max Effort, Default Fallback)",
+    );
+    expect(k).toEqual(modelKey("claude-opus-5-5"));
+    expect(modelKey("o4-mini (high)")).toEqual(modelKey("o4-mini"));
+    expect(modelKey("Grok 4 Fast (Non-reasoning)").dated).toBe(false);
+  });
+
+  it("日付・スナップショットの括弧書きは外すが、版の注記付き（dated）にする", () => {
+    expect(modelKey("GPT-4o (Aug '24)")).toEqual({
+      key: modelKey("gpt-4o").key,
+      dated: true,
+    });
+    expect(modelKey("Qwen3.8 Max (0902)").dated).toBe(true);
+    expect(modelKey("Mistral Large 2 (Nov '24)").dated).toBe(true);
+    expect(modelKey("MiMo-V2-Flash (Feb 2026)").dated).toBe(true);
+  });
+
+  it("それ以外の括弧書き（ChatGPT / Preview 等）は語としてキーに残す", () => {
+    expect(modelKey("GPT-4o (ChatGPT)").key).not.toBe(modelKey("gpt-4o").key);
+    expect(modelKey("GPT-4o (ChatGPT)").dated).toBe(true);
+    expect(modelKey("Gemini 2.0 Flash-Lite (Preview)").key).toBe(
+      modelKey("gemini-2.0-flash-lite-preview").key,
+    );
+  });
+
+  it("exp は ignoreExp（DeepSeek）のときだけ無視する", () => {
+    expect(modelKey("DeepSeek V4 Flash Vision", { ignoreExp: true }).key).toBe(
+      modelKey("DeepSeek V4 Flash Vision Exp", { ignoreExp: true }).key,
+    );
+    expect(modelKey("Gemini 2.0 Flash").key).not.toBe(
+      modelKey("gemini-2.0-flash-exp").key,
+    );
   });
 
   it("日付サフィックスの有無を返す（月日として妥当な 4 桁のみ）", () => {
@@ -307,6 +390,49 @@ describe("findRetirement", () => {
     expect(
       findRetirement("Gemini 3 Pro Preview", "Google", index, now)?.id,
     ).toBe("gemini-3-pro-preview");
+  });
+
+  it("AA 名に版・日付の注記があれば、単一スナップショットの例外を使わない", () => {
+    const index = buildIndex([
+      e("openai", "gpt-4o-2024-05-13", "2026-01-01T00:00:00.000Z"),
+    ]);
+    // 注記なしはユーザー決定のルール通り同一とみなす
+    expect(findRetirement("GPT-4o", "OpenAI", index, now)?.id).toBe(
+      "gpt-4o-2024-05-13",
+    );
+    for (const name of [
+      "GPT-4o (Aug '24)",
+      "GPT-4o (May '24)",
+      "GPT-4o (Nov '24)",
+      "GPT-4o (ChatGPT)",
+    ]) {
+      expect(findRetirement(name, "OpenAI", index, now)).toBeNull();
+    }
+  });
+
+  it("推論強度の括弧書きだけなら単一スナップショットの例外を使う", () => {
+    const index = buildIndex([
+      e("openai", "o3-2025-04-16", "2026-01-01T00:00:00.000Z"),
+    ]);
+    expect(findRetirement("o3 (high)", "OpenAI", index, now)?.id).toBe(
+      "o3-2025-04-16",
+    );
+  });
+
+  it("Google の *-exp は別モデル（Gemini 2.0 Flash を引退扱いにしない）", () => {
+    const index = buildIndex([
+      e("google", "gemini-2.0-flash-exp", "2025-01-01T00:00:00.000Z"),
+    ]);
+    expect(findRetirement("Gemini 2.0 Flash", "Google", index, now)).toBeNull();
+  });
+
+  it("DeepSeek だけは exp を同一視する", () => {
+    const index = buildIndex([
+      e("deepseek", "DeepSeek V4 Flash Vision Exp", "2026-09-11T12:00:00.000Z"),
+    ]);
+    expect(
+      findRetirement("DeepSeek V4 Flash Vision", "DeepSeek", index, now)?.id,
+    ).toBe("DeepSeek V4 Flash Vision Exp");
   });
 
   it("別のベンダーの一覧や、一覧を持たない provider には当てない", () => {

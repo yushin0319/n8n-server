@@ -549,12 +549,12 @@
           ]
         },
         "options": {
-          "timeout": 30000,
+          "timeout": 20000,
           "response": {
             "response": {
               "fullResponse": true,
-              "neverError": true,
-              "responseFormat": "text"
+              "responseFormat": "text",
+              "outputPropertyName": "body"
             }
           }
         }
@@ -564,11 +564,11 @@
       "typeVersion": 4.2,
       "position": [
         600,
-        1900
+        2050
       ],
       "id": "b44fd7f9-56a7-4cfa-8701-82a2056d3d2e",
       "retryOnFail": true,
-      "maxTries": 2,
+      "maxTries": 3,
       "waitBetweenTries": 5000,
       "onError": "continueRegularOutput"
     },
@@ -614,12 +614,12 @@
           ]
         },
         "options": {
-          "timeout": 30000,
+          "timeout": 20000,
           "response": {
             "response": {
               "fullResponse": true,
-              "neverError": true,
-              "responseFormat": "text"
+              "responseFormat": "text",
+              "outputPropertyName": "body"
             }
           }
         }
@@ -629,11 +629,11 @@
       "typeVersion": 4.2,
       "position": [
         960,
-        2000
+        2150
       ],
       "id": "1c3b8821-f432-4dda-b36b-61e193b66d18",
       "retryOnFail": true,
-      "maxTries": 2,
+      "maxTries": 3,
       "waitBetweenTries": 5000,
       "onError": "continueRegularOutput"
     },
@@ -724,6 +724,34 @@
         1440,
         1900
       ]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "name": "LoopDeprecationSources",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        540,
+        1900
+      ],
+      "id": "238375e7-8f8a-4aa2-a00d-5c3f92017829"
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "name": "LoopXaiGuides",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        900,
+        2000
+      ],
+      "id": "995536f2-b626-4929-ab63-13de96945821"
     }
   ],
   "connections": {
@@ -1035,7 +1063,7 @@
       "main": [
         [
           {
-            "node": "FetchDeprecationPages",
+            "node": "LoopDeprecationSources",
             "type": "main",
             "index": 0
           },
@@ -1051,9 +1079,9 @@
       "main": [
         [
           {
-            "node": "MergeDeprecationPages",
+            "node": "LoopDeprecationSources",
             "type": "main",
-            "index": 1
+            "index": 0
           }
         ]
       ]
@@ -1078,7 +1106,7 @@
       "main": [
         [
           {
-            "node": "FetchXaiGuides",
+            "node": "LoopXaiGuides",
             "type": "main",
             "index": 0
           },
@@ -1094,9 +1122,9 @@
       "main": [
         [
           {
-            "node": "MergeXaiGuidePages",
+            "node": "LoopXaiGuides",
             "type": "main",
-            "index": 1
+            "index": 0
           }
         ]
       ]
@@ -1166,6 +1194,42 @@
         [
           {
             "node": "ParseLLMData",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LoopDeprecationSources": {
+      "main": [
+        [
+          {
+            "node": "MergeDeprecationPages",
+            "type": "main",
+            "index": 1
+          }
+        ],
+        [
+          {
+            "node": "FetchDeprecationPages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LoopXaiGuides": {
+      "main": [
+        [
+          {
+            "node": "MergeXaiGuidePages",
+            "type": "main",
+            "index": 1
+          }
+        ],
+        [
+          {
+            "node": "FetchXaiGuides",
             "type": "main",
             "index": 0
           }
