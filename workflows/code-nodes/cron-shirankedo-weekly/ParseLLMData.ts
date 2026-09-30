@@ -35,6 +35,8 @@ function shouldSkip(name: string): boolean {
   if (["Claude 4 Opus", "Claude 4.1 Opus"].some((x) => name.includes(x)))
     return true;
   if (name.includes("Magistral Small")) return true;
+  // コーディング特化モデル（Codex / Coder と同じ扱い）
+  if (/\bCode\b/.test(name)) return true;
   if (
     [
       "Qwen3 VL",
@@ -87,8 +89,57 @@ function familyKey(n: string): string {
   return c.trim();
 }
 
+/**
+ * 世代比較用: モデル名を「シリーズ（版番号を除いた語の集合）」と「版番号」に分解する。
+ * AA は新版が出た後も旧版を評価・掲載し続けるため、これで旧版を見分ける。
+ * - "Claude 4.5 Sonnet" と "Claude Sonnet 5.5" は語順が違っても同じシリーズ（語をソート）
+ * - "Qwen3.8" / "K2.6" / "V2.6" のように英字に続く版番号は分けて読む
+ * - "0731" のような4桁の日付スナップショット、末尾の " v2" 改訂、Preview / Exp / Thinking は無視
+ * - 版番号は小数として比較（"Grok 4.20" は 4.2 で 4.7 より旧）
+ * 版番号を含まない名前（"Muse Glimmer" 等）は null
+ */
+const IGNORED_SERIES_WORDS = new Set(["preview", "exp", "thinking"]);
+
+function seriesOf(name: string): { series: string; version: number } | null {
+  const tokens = name
+    .replace(/\s*\(.*?\)/g, "")
+    .replace(/\s+v\d+$/i, "")
+    .toLowerCase()
+    .replace(/([a-z])(\d)/g, "$1 $2")
+    .split(/[\s-]+/)
+    .filter(Boolean);
+  let version: number | null = null;
+  const words: string[] = [];
+  for (const t of tokens) {
+    if (/^\d{4}$/.test(t)) continue;
+    if (IGNORED_SERIES_WORDS.has(t)) continue;
+    if (version === null && /^\d+(\.\d+)?$/.test(t)) {
+      version = Number.parseFloat(t);
+      continue;
+    }
+    words.push(t);
+  }
+  if (version === null) return null;
+  return { series: words.sort().join(" "), version };
+}
+
+/** 同一シリーズに新しい版があるモデルを除外する（入力順は保持） */
+function dropSuperseded<T extends { name: string }>(models: T[]): T[] {
+  const latest = new Map<string, number>();
+  for (const m of models) {
+    const s = seriesOf(m.name);
+    if (!s) continue;
+    const cur = latest.get(s.series);
+    if (cur === undefined || s.version > cur) latest.set(s.series, s.version);
+  }
+  return models.filter((m) => {
+    const s = seriesOf(m.name);
+    return !s || s.version >= (latest.get(s.series) ?? s.version);
+  });
+}
+
 export type { FilteredModel };
-export { familyKey, shouldSkip };
+export { dropSuperseded, familyKey, seriesOf, shouldSkip };
 
 export default function (): CodeNodeReturn {
   // AA APIデータからモデルをフィルタ・デデュプ
@@ -150,10 +201,12 @@ export default function (): CodeNodeReturn {
     });
   }
 
-  // Step 2 + 3: Skip + family dedup
+  // Step 2: Skip + 旧版除外（同一シリーズに新版があれば送らない）
+  const current = dropSuperseded(filtered.filter((m) => !shouldSkip(m.name)));
+
+  // Step 3: family dedup
   const families: Record<string, FilteredModel> = {};
-  for (const m of filtered) {
-    if (shouldSkip(m.name)) continue;
+  for (const m of current) {
     const fk = familyKey(m.name);
     if (!families[fk] || m.score > families[fk].score) {
       families[fk] = m;
