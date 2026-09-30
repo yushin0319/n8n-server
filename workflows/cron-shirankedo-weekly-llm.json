@@ -92,7 +92,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        960,
+        1080,
         1300
       ]
     },
@@ -476,6 +476,283 @@
       "retryOnFail": true,
       "maxTries": 2,
       "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "sw-cond-skip-fetch-deprecations",
+              "leftValue": "={{ $execution.customData.get('isTest') }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        370,
+        1700
+      ],
+      "name": "IfSkipFetchDeprecations",
+      "id": "eafcfd59-ce87-43e1-a9a9-3ab6ef08bfdc"
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external cron-shirankedo-weekly/MockFetchDeprecations.ts"
+      },
+      "name": "MockFetchDeprecations",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        370,
+        1600
+      ],
+      "id": "14fa5559-72bc-486d-b69d-22f0f624b0c8"
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external cron-shirankedo-weekly/BuildDeprecationSources.ts"
+      },
+      "name": "BuildDeprecationSources",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        1800
+      ],
+      "id": "603f2776-a641-41cf-92ea-93890559051f"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "shirankedo-weekly-llm/1.0 (n8n)"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 20000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "text",
+              "outputPropertyName": "body"
+            }
+          }
+        }
+      },
+      "name": "FetchDeprecationPages",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        600,
+        2050
+      ],
+      "id": "b44fd7f9-56a7-4cfa-8701-82a2056d3d2e",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "name": "MergeDeprecationPages",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        720,
+        1800
+      ],
+      "id": "16d0695d-0ed0-406a-ad22-71949ec128cf"
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external cron-shirankedo-weekly/BuildXaiGuideRequests.ts"
+      },
+      "name": "BuildXaiGuideRequests",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        840,
+        1900
+      ],
+      "id": "ec403e0a-8d7b-48d0-9021-2431ee1a32fb"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "shirankedo-weekly-llm/1.0 (n8n)"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 20000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "text",
+              "outputPropertyName": "body"
+            }
+          }
+        }
+      },
+      "name": "FetchXaiGuides",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        2150
+      ],
+      "id": "1c3b8821-f432-4dda-b36b-61e193b66d18",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "name": "MergeXaiGuidePages",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        1080,
+        1900
+      ],
+      "id": "5ba4ceff-6e9f-463a-896f-dfa696c6eb0e"
+    },
+    {
+      "parameters": {
+        "mode": "append",
+        "options": {}
+      },
+      "name": "AppendDeprecationPages",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        1080,
+        1750
+      ],
+      "id": "765b522b-f49d-4d9f-be34-9e5151f53405"
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external cron-shirankedo-weekly/ParseDeprecations.ts"
+      },
+      "name": "ParseDeprecations",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        1750
+      ],
+      "id": "ca255d6a-c8e0-43b8-817d-ded0aa1eafd2"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "name": "MergeWithDeprecations",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        840,
+        1300
+      ],
+      "id": "593278cd-b420-449b-8644-b2a6baef1030"
+    },
+    {
+      "parameters": {
+        "jsCode": "// @external cron-shirankedo-weekly/PrepareDeprecationWarning.ts"
+      },
+      "name": "PrepareDeprecationWarning",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1320,
+        1900
+      ],
+      "id": "7926bd3a-eeb6-4717-880d-c0d65b315d5e"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:5678/webhook/obs-notify",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "cf8b4b16-1ba7-4968-9374-d593fe578b40",
+      "name": "NotifyDeprecationWarning",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1440,
+        1900
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "name": "LoopDeprecationSources",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        540,
+        1900
+      ],
+      "id": "238375e7-8f8a-4aa2-a00d-5c3f92017829"
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "name": "LoopXaiGuides",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        900,
+        2000
+      ],
+      "id": "995536f2-b626-4929-ab63-13de96945821"
     }
   ],
   "connections": {
@@ -516,7 +793,7 @@
       "main": [
         [
           {
-            "node": "ParseLLMData",
+            "node": "MergeWithDeprecations",
             "type": "main",
             "index": 0
           }
@@ -620,6 +897,11 @@
           },
           {
             "node": "IfSkipFetchExchangeRate",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "IfSkipFetchDeprecations",
             "type": "main",
             "index": 0
           }
@@ -754,6 +1036,201 @@
         [
           {
             "node": "CheckTestMode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IfSkipFetchDeprecations": {
+      "main": [
+        [
+          {
+            "node": "MockFetchDeprecations",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "BuildDeprecationSources",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "BuildDeprecationSources": {
+      "main": [
+        [
+          {
+            "node": "LoopDeprecationSources",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "MergeDeprecationPages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FetchDeprecationPages": {
+      "main": [
+        [
+          {
+            "node": "LoopDeprecationSources",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MergeDeprecationPages": {
+      "main": [
+        [
+          {
+            "node": "BuildXaiGuideRequests",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "AppendDeprecationPages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "BuildXaiGuideRequests": {
+      "main": [
+        [
+          {
+            "node": "LoopXaiGuides",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "MergeXaiGuidePages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FetchXaiGuides": {
+      "main": [
+        [
+          {
+            "node": "LoopXaiGuides",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MergeXaiGuidePages": {
+      "main": [
+        [
+          {
+            "node": "AppendDeprecationPages",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "AppendDeprecationPages": {
+      "main": [
+        [
+          {
+            "node": "ParseDeprecations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ParseDeprecations": {
+      "main": [
+        [
+          {
+            "node": "MergeWithDeprecations",
+            "type": "main",
+            "index": 1
+          },
+          {
+            "node": "PrepareDeprecationWarning",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MockFetchDeprecations": {
+      "main": [
+        [
+          {
+            "node": "MergeWithDeprecations",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "PrepareDeprecationWarning": {
+      "main": [
+        [
+          {
+            "node": "NotifyDeprecationWarning",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MergeWithDeprecations": {
+      "main": [
+        [
+          {
+            "node": "ParseLLMData",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LoopDeprecationSources": {
+      "main": [
+        [
+          {
+            "node": "MergeDeprecationPages",
+            "type": "main",
+            "index": 1
+          }
+        ],
+        [
+          {
+            "node": "FetchDeprecationPages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LoopXaiGuides": {
+      "main": [
+        [
+          {
+            "node": "MergeXaiGuidePages",
+            "type": "main",
+            "index": 1
+          }
+        ],
+        [
+          {
+            "node": "FetchXaiGuides",
             "type": "main",
             "index": 0
           }
