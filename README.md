@@ -17,7 +17,9 @@
   - `lint_execute_once.py` — executeOnce / retryOnFail のリスク検査
   - `smoke_test.py` — デプロイ後の疎通確認
   - `kuma_bootstrap_monitors.py` — Uptime Kuma の monitor 一括登録
+  - `inject_healthchecks_ping.py` — cron WF の Schedule 直後に Healthchecks.io ping ノードを冪等に挿入
 - `tests/validate_workflows.py` — 孤立ノード検出・命名規則・credential 参照などの静的解析
+- `tests/test_*.py` — `embed_code.py` のバンドル・抽出/埋め戻し・TS ビルド、cron-health-check WF の retry 設定の pytest（CI では実行していない）
 - `server-config/`
   - `docker-compose.yml` / `nginx-n8n.conf` / `setup.sh`（後述）
   - `n8n-watchdog.{service,timer}` / `oci-mem-watch.{service,timer}` / `n8n-wal-checkpoint.{service,timer}` — systemd timer（監視 + 日次メンテ）
@@ -27,7 +29,7 @@
 監視・観測:
 - Sentry（`N8N_SENTRY_DSN` / EventLoopBlocked 自動捕捉）
 - Promtail → Grafana Cloud Loki（ログ集約）
-- Uptime Kuma（push 5分間隔の heartbeat、別サブドメインで公開）
+- Uptime Kuma（別サブドメインで公開）: push monitor 2 本（n8n heartbeat 300s / crypto-ai-trader heartbeat 360s）+ HTTP monitor 5 本（300s）。定義は `scripts/kuma_bootstrap_monitors.py`
 - Healthchecks.io（fail ping）
 - Netdata Agent（host メトリクス）
 
@@ -40,10 +42,11 @@
 
 ```bash
 bun install
-bun test           # Code Node の vitest
+bun run test       # Code Node の vitest。`bun test` は Bun 内蔵ランナーになるので使わない
 bun run typecheck
 python tests/validate_workflows.py
 python scripts/lint_execute_once.py
+python -m pytest tests/   # scripts の pytest（CI 対象外）
 ```
 
 CI（`.github/workflows/`）では typecheck + vitest + Biome + Ruff + validate_workflows + lint_execute_once が走り、main マージで `deploy.yml` が差分デプロイ → smoke test を実行する。`codeql.yml` でセキュリティスキャン、`dependabot-automerge.yml` で patch/minor 自動マージ。
