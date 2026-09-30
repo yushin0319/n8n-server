@@ -69,8 +69,8 @@ describe("AggregateAndFormat", () => {
     const out = run();
     expect(out.skip).toBe(false);
     expect(out.warningCount).toBe(3);
-    expect(out.warningGroupCount).toBe(2);
     const desc = embedOf(out).description as string;
+    expect(desc).toContain("warning 3 件 / 2 種類");
     // 最終発生の新しい順
     expect(desc.indexOf("heartbeat DOWN")).toBeLessThan(
       desc.indexOf("n8n エラー"),
@@ -156,11 +156,6 @@ describe("AggregateAndFormat", () => {
     expect(out.skip).toBe(true);
     expect(out.warningCount).toBe(0);
     expect(out.tradeCount).toBe(0);
-  });
-
-  it("対象外の info（crypto-ai-trader 以外）は無視する", () => {
-    stubResponse([page("info", "n8n", "✅ 完了", "2026-09-30T01:00:00.000Z")]);
-    expect(run().skip).toBe(true);
   });
 
   it("warning グループが 15 を超えたら残りを『他 N 種類』にまとめる", () => {

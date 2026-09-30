@@ -6,7 +6,7 @@ const WINDOW_MS = 24 * 60 * 60 * 1000;
 
 /**
  * 観測性 DB から日次まとめの対象を引く Notion query を組み立てる。
- * 対象: 直近 24h の critical / warning と、crypto-ai-trader の約定 (info)。
+ * 対象: 直近 24h の critical / warning と、crypto-ai-trader の info（= 約定）。
  * ネストを 1 段に抑えるため timestamp 条件は各 and 節に入れる。
  */
 export default function (): CodeNodeReturn {
@@ -28,8 +28,8 @@ export default function (): CodeNodeReturn {
           and: [
             since,
             severityIs("info"),
+            // crypto-ai-trader が info で送るのは約定 (notify_fill) だけ
             { property: "service", select: { equals: "crypto-ai-trader" } },
-            { property: "subject", title: { contains: "約定" } },
           ],
         },
       ],

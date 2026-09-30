@@ -1,3 +1,5 @@
+import { notionDate, notionSelect, notionTitle } from "../_shared/notionProps";
+
 const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
 const WINDOW_MS = 24 * 60 * 60 * 1000;
 const DISCORD_DESC_LIMIT = 4096;
@@ -12,32 +14,14 @@ interface ObsRecord {
   severity: string;
   service: string;
   subject: string;
-  timestamp: string;
+  ms: number;
 }
 
 interface AlertGroup {
   service: string;
   subject: string;
   count: number;
-  latest: string;
-}
-
-function propText(prop: IDataObject | undefined): string {
-  if (!prop) return "";
-  const t = prop.type as string;
-  if (t === "title" || t === "rich_text") {
-    const arr = (prop[t] as IDataObject[] | undefined) ?? [];
-    return arr.map((x) => String(x.plain_text ?? "")).join("");
-  }
-  if (t === "select") {
-    const sel = prop.select as IDataObject | null | undefined;
-    return String(sel?.name ?? "");
-  }
-  if (t === "date") {
-    const d = prop.date as IDataObject | null | undefined;
-    return String(d?.start ?? "");
-  }
-  return "";
+  latestMs: number;
 }
 
 // Task Runner では toLocaleString のタイムゾーン指定が効かないため +9h で JST 化する
@@ -46,8 +30,8 @@ function jstIso(ms: number): string {
 }
 
 /** "MM/DD HH:MM"（JST） */
-function jstShort(ts: string): string {
-  const iso = jstIso(new Date(ts).getTime());
+function jstShort(ms: number): string {
+  const iso = jstIso(ms);
   return `${iso.slice(5, 7)}/${iso.slice(8, 10)} ${iso.slice(11, 16)}`;
 }
 
@@ -58,21 +42,17 @@ function groupAlerts(records: ObsRecord[]): AlertGroup[] {
     const g = groups.get(key);
     if (g) {
       g.count += 1;
-      // "…Z" と "…+00:00" が混在するため文字列比較しない
-      if (new Date(r.timestamp).getTime() > new Date(g.latest).getTime())
-        g.latest = r.timestamp;
+      g.latestMs = Math.max(g.latestMs, r.ms);
     } else {
       groups.set(key, {
         service: r.service,
         subject: r.subject,
         count: 1,
-        latest: r.timestamp,
+        latestMs: r.ms,
       });
     }
   }
-  return [...groups.values()].sort(
-    (a, b) => new Date(b.latest).getTime() - new Date(a.latest).getTime(),
-  );
+  return [...groups.values()].sort((a, b) => b.latestMs - a.latestMs);
 }
 
 function alertLines(groups: AlertGroup[]): string[] {
@@ -80,7 +60,7 @@ function alertLines(groups: AlertGroup[]): string[] {
     .slice(0, MAX_ALERT_GROUPS)
     .map(
       (g) =>
-        `• ${g.service}: ${g.subject} ×${g.count}（最終 ${jstShort(g.latest)}）`,
+        `• ${g.service}: ${g.subject} ×${g.count}（最終 ${jstShort(g.latestMs)}）`,
     );
   if (groups.length > MAX_ALERT_GROUPS) {
     lines.push(`…他 ${groups.length - MAX_ALERT_GROUPS} 種類`);
@@ -101,23 +81,23 @@ export default function (): CodeNodeReturn {
     );
   }
 
+  // timestamp は "…Z" と "…+00:00" が混在するので、ここで一度だけ数値化する
   const records: ObsRecord[] = (
     (resp.results as IDataObject[] | undefined) ?? []
   ).map((p) => {
-    const props = (p.properties ?? {}) as Record<string, IDataObject>;
+    const props = (p.properties ?? {}) as IDataObject;
     return {
-      severity: propText(props.severity),
-      service: propText(props.service),
-      subject: propText(props.subject).trim(),
-      timestamp: propText(props.timestamp),
+      severity: notionSelect(props, "severity"),
+      service: notionSelect(props, "service"),
+      subject: notionTitle(props, "subject", "").trim(),
+      ms: new Date(notionDate(props, "timestamp")).getTime(),
     };
   });
 
   const criticals = records.filter((r) => r.severity === "critical");
   const warnings = records.filter((r) => r.severity === "warning");
-  const trades = records.filter(
-    (r) => r.severity === "info" && r.service === "crypto-ai-trader",
-  );
+  // info は BuildQuery で crypto-ai-trader の分だけに絞っている（= 約定）
+  const trades = records.filter((r) => r.severity === "info");
 
   const skip =
     warnings.length === 0 && criticals.length === 0 && trades.length === 0;
@@ -141,19 +121,19 @@ export default function (): CodeNodeReturn {
       ].join("\n"),
     );
   }
-  const warningGroups = groupAlerts(warnings);
   if (warnings.length > 0) {
+    const groups = groupAlerts(warnings);
     sections.push(
       [
-        `**⚠️ warning ${warnings.length} 件 / ${warningGroups.length} 種類**`,
-        ...alertLines(warningGroups),
+        `**⚠️ warning ${warnings.length} 件 / ${groups.length} 種類**`,
+        ...alertLines(groups),
       ].join("\n"),
     );
   }
   if (trades.length > 0) {
     const lines = trades
       .slice(0, MAX_TRADES)
-      .map((t) => `• ${jstShort(t.timestamp)} ${t.subject}`);
+      .map((t) => `• ${jstShort(t.ms)} ${t.subject}`);
     if (trades.length > MAX_TRADES)
       lines.push(`…他 ${trades.length - MAX_TRADES} 件`);
     sections.push([`**💱 売買 ${trades.length} 件**`, ...lines].join("\n"));
@@ -181,7 +161,7 @@ export default function (): CodeNodeReturn {
     description,
     color,
     footer: {
-      text: `対象: ${jstShort(new Date(now - WINDOW_MS).toISOString())}〜${jstShort(new Date(now).toISOString())} JST`,
+      text: `対象: ${jstShort(now - WINDOW_MS)}〜${jstShort(now)} JST`,
     },
   };
 
@@ -191,7 +171,6 @@ export default function (): CodeNodeReturn {
         skip,
         criticalCount: criticals.length,
         warningCount: warnings.length,
-        warningGroupCount: warningGroups.length,
         tradeCount: trades.length,
         discordUrl,
         discordBody: JSON.stringify({ embeds: [embed] }),

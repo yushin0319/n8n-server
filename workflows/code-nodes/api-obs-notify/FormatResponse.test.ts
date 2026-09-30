@@ -118,4 +118,24 @@ describe("FormatResponse", () => {
     stubNodesDiscordSkipped({ object: "error", code: "validation_error" });
     expect(callAndGetItems()[0].json.success).toBe(false);
   });
+
+  it("critical なのに送信できなかった (URL 未設定) → success=false", () => {
+    vi.stubGlobal("$", (n: string) => {
+      if (n === "PrepNotify")
+        return {
+          first: () => ({ json: { ...prepStub, sendDiscordNow: false } }),
+        };
+      throw new Error(`node not executed: ${n}`);
+    });
+    vi.stubGlobal("$input", {
+      first: () => ({ json: { object: "page", id: "p" } }),
+    });
+    const items = callAndGetItems();
+    expect(items[0].json.success).toBe(false);
+    expect(items[0].json.discord).toEqual({
+      ok: false,
+      status: null,
+      skipped: true,
+    });
+  });
 });

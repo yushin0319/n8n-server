@@ -287,7 +287,7 @@ def send_discord_summary(results: list[dict]) -> None:
     if failed == 0:
         print("全件成功のため Discord 通知スキップ")
         return
-    color = 0x2ECC71 if failed == 0 else 0xE74C3C
+    color = 0xE74C3C
 
     lines = []
     for r in results:

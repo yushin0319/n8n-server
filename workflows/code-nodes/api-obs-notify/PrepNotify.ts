@@ -102,9 +102,11 @@ export default function (): CodeNodeReturn {
     },
     severity: { select: { name: severity } },
     service: { select: { name: service } },
-    discord_channel: { select: { name: channel } },
     timestamp: { date: { start: timestampIso } },
   };
+  // 実際に即時送信したものだけ送信先を残す（送っていない記録を「送った」と読ませない）
+  if (sendDiscordNow)
+    notionProps.discord_channel = { select: { name: channel } };
   if (repo) notionProps.repo = { select: { name: repo } };
   if (summary) {
     notionProps.summary = {

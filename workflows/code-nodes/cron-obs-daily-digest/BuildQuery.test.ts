@@ -24,7 +24,7 @@ describe("BuildQuery", () => {
     );
   });
 
-  it("直近 24h の critical / warning / crypto-ai-trader の約定 を OR で取る", () => {
+  it("直近 24h の critical / warning / crypto-ai-trader の info（約定）を OR で取る", () => {
     const body = JSON.parse(run()[0].json.requestBody as string);
     const since = {
       property: "timestamp",
@@ -46,7 +46,6 @@ describe("BuildQuery", () => {
             since,
             { property: "severity", select: { equals: "info" } },
             { property: "service", select: { equals: "crypto-ai-trader" } },
-            { property: "subject", title: { contains: "約定" } },
           ],
         },
       ],

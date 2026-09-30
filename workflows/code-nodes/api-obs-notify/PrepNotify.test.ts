@@ -38,7 +38,8 @@ describe("PrepNotify", () => {
     );
     expect(notion.properties.severity.select.name).toBe("info");
     expect(notion.properties.service.select.name).toBe("n8n");
-    expect(notion.properties.discord_channel.select.name).toBe("obs-info");
+    // Discord に送っていないので送信先は記録しない
+    expect(notion.properties.discord_channel).toBeUndefined();
     expect(notion.properties.subject.title[0].text.content).toBe("test");
   });
 
@@ -253,10 +254,15 @@ describe("PrepNotify", () => {
       });
     }
 
-    it("critical + URL 設定あり → true", () => {
+    it("critical + URL 設定あり → true / Notion に送信先を記録", () => {
       vi.stubGlobal("$env", allUrls);
       stubSeverity("critical");
-      expect(callAndGetItems()[0].json.sendDiscordNow).toBe(true);
+      const items = callAndGetItems();
+      expect(items[0].json.sendDiscordNow).toBe(true);
+      const notion = JSON.parse(items[0].json.notionBody as string);
+      expect(notion.properties.discord_channel.select.name).toBe(
+        "obs-critical",
+      );
     });
 
     it("warning は URL 設定があっても false（日次まとめに回す）", () => {
