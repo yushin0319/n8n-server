@@ -144,17 +144,20 @@ export function isRetired(entry: DeprecationEntry, now: Date): boolean {
 
 // --- 共通ヘルパー ---
 
-/** HTML → 1 行のテキスト */
-function htmlToText(html: string): string {
+/**
+ * HTML → 1 行のテキスト（解析用。出力を HTML として使うことはない）。
+ * &amp; は最後に戻す（先に戻すと "&amp;lt;" が "<" まで二重に戻るため）
+ */
+export function htmlToText(html: string): string {
   return html
-    .replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/g, " ")
+    .replace(/<(script|style)\b[\s\S]*?<\/\1\s*>/gi, " ")
     .replace(/<[^>]+>/g, " ")
     .replace(/&nbsp;|&#160;/g, " ")
-    .replace(/&amp;/g, "&")
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"')
     .replace(/&#39;|&#x27;/g, "'")
+    .replace(/&amp;/g, "&")
     .replace(ZERO_WIDTH_SPACE, " ")
     .replace(/\s+/g, " ");
 }

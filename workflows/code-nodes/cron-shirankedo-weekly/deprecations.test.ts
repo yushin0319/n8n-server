@@ -11,6 +11,7 @@ import {
   buildIndex,
   type DeprecationEntry,
   findRetirement,
+  htmlToText,
   isRetired,
   modelKey,
   parseDeepseek,
@@ -51,6 +52,22 @@ describe("parseMonthDate", () => {
     "",
   ])("'%s' は読めないので null", (text) => {
     expect(parseMonthDate(text)).toBeNull();
+  });
+});
+
+describe("htmlToText", () => {
+  it("大文字や空白入りの閉じタグの script / style も取り除く", () => {
+    expect(
+      htmlToText(
+        "<p>a</p><SCRIPT>x()</SCRIPT ><style>.b{}</style>\n<Style>c</STYLE>b",
+      ).trim(),
+    ).toBe("a b");
+  });
+
+  it("&amp; は最後に戻す（二重に戻さない）", () => {
+    expect(htmlToText("&amp;lt;x&amp;gt; &lt;y&gt;").trim()).toBe(
+      "&lt;x&gt; <y>",
+    );
   });
 });
 
