@@ -69,6 +69,7 @@ export const PROVIDER_VENDOR: Record<string, Vendor> = {
  * - retireAt: 停止時刻（UTC ISO）。読めなければ null
  * - stopped: 停止済みと明示されている（Google models ページの "(Shut down)"）。日付は無い
  * - nullKind: retireAt が null の理由。"earliest" は「最短でこの日以降」の注記、"tbd" は未定・延期
+ * - earliestAt: 「最短でこの日以降」の日付（読めた場合）。この時刻より前には除外しない
  */
 export interface DeprecationEntry {
   vendor: Vendor;
@@ -76,6 +77,7 @@ export interface DeprecationEntry {
   retireAt: string | null;
   stopped?: boolean;
   nullKind?: "earliest" | "tbd";
+  earliestAt?: string;
 }
 
 export interface ParseResult {
@@ -134,11 +136,18 @@ export function parseMonthDate(text: string): string | null {
   return endOfDayAnywhere(Number(m[3]), month, Number(m[2]));
 }
 
+const EARLIEST_PREFIX =
+  /^\s*\**\s*(?:at earliest|not sooner than|earliest)\s*:?\s*/i;
+
 /** 日付セルが読めないときの理由。「最短でこの日以降」の注記なら earliest、それ以外は tbd */
 export function nullKindOf(text: string): "earliest" | "tbd" {
-  return /^\s*\**\s*(?:at earliest|not sooner than|earliest)/i.test(text)
-    ? "earliest"
-    : "tbd";
+  return EARLIEST_PREFIX.test(text) ? "earliest" : "tbd";
+}
+
+/** 「at earliest 2024-06-13」「Not sooner than September 1, 2027」の日付。読めなければ undefined */
+export function parseEarliest(text: string): string | undefined {
+  if (!EARLIEST_PREFIX.test(text)) return undefined;
+  return parseMonthDate(text.replace(EARLIEST_PREFIX, "")) ?? undefined;
 }
 
 /** 時差付きの現地時刻 → UTC ISO（offsetHours は UTC からの差。北京 +8） */
@@ -198,39 +207,65 @@ function backticked(text: string): string[] {
 const MODEL_ID = /^[a-z0-9][a-z0-9.\-_]*$/i;
 
 /**
- * 同じ ID が複数の表に載る場合の統合。早めには消さない順で採用する:
- * 1. 日付未定・延期（tbd）
- * 2. 確定した停止日（複数あれば遅いほう）・停止済みの明示
- * 3. 「最短でこの日以降」の注記（earliest）。確定した停止日があればそちらを優先する
- *    （例: gpt-4-0314 の古い "at earliest 2024-06-13" より、確定した 2026-03-26 の停止を採る）
+ * 同じ ID が複数の表に載る場合の統合。早めには消さない側に寄せる:
+ * - 日付未定・延期（tbd）が 1 つでもあれば、除外しない（retireAt: null）
+ * - 確定した停止日は遅いほうを採る。「最短でこの日以降」（earliestAt）がそれより遅ければ earliestAt を採る
+ *   （例: gpt-4-0314 は古い "at earliest 2024-06-13" と確定 2026-03-26 → 2026-03-26 の翌日 12:00 UTC）
+ * - 「最短」の注記だけで確定日が無い場合は除外しない（earliestAt は残す）
+ * - 停止済みの明示（stopped）は確定扱い
  */
-function entryRank(e: DeprecationEntry): number {
-  if (e.stopped || e.retireAt !== null) return 2;
-  return e.nullKind === "earliest" ? 1 : 3;
-}
-
 function dedupe(entries: DeprecationEntry[]): DeprecationEntry[] {
-  const seen = new Map<string, DeprecationEntry>();
+  const groups = new Map<string, DeprecationEntry[]>();
   for (const e of entries) {
-    const prev = seen.get(e.id);
-    if (!prev) {
-      seen.set(e.id, e);
-      continue;
+    const list = groups.get(e.id);
+    if (list) list.push(e);
+    else groups.set(e.id, [e]);
+  }
+  const later = (a?: string | null, b?: string | null) =>
+    !a ? (b ?? undefined) : !b ? a : a > b ? a : b;
+  const out: DeprecationEntry[] = [];
+  for (const [id, list] of groups) {
+    const vendor = list[0].vendor;
+    let confirmed: string | undefined;
+    let earliest: string | undefined;
+    let stopped = false;
+    let tbd = false;
+    for (const e of list) {
+      if (e.stopped) stopped = true;
+      if (e.retireAt) confirmed = later(confirmed, e.retireAt);
+      if (e.earliestAt) earliest = later(earliest, e.earliestAt);
+      if (!e.stopped && !e.retireAt && e.nullKind !== "earliest") tbd = true;
     }
-    const a = entryRank(prev);
-    const b = entryRank(e);
-    if (b > a) {
-      seen.set(e.id, e);
-    } else if (
-      a === 2 &&
-      b === 2 &&
-      !prev.stopped &&
-      (e.stopped || (e.retireAt ?? "") > (prev.retireAt ?? ""))
-    ) {
-      seen.set(e.id, e);
+    if (tbd) {
+      out.push({ vendor, id, retireAt: null, nullKind: "tbd" });
+    } else if (stopped && !confirmed) {
+      // 停止済みの明示。「最短」の日付があればそれより前には消さない
+      out.push(
+        earliest
+          ? { vendor, id, retireAt: earliest }
+          : { vendor, id, retireAt: null, stopped: true },
+      );
+    } else if (confirmed) {
+      out.push({
+        vendor,
+        id,
+        retireAt: later(confirmed, earliest) ?? confirmed,
+      });
+    } else {
+      out.push(
+        earliest
+          ? {
+              vendor,
+              id,
+              retireAt: null,
+              nullKind: "earliest",
+              earliestAt: earliest,
+            }
+          : { vendor, id, retireAt: null, nullKind: "earliest" },
+      );
     }
   }
-  return [...seen.values()];
+  return out;
 }
 
 // --- ベンダー別パーサー ---
@@ -277,7 +312,15 @@ export function parseMarkdownTables(md: string, vendor: Vendor): ParseResult {
         entries.push(
           retireAt
             ? { vendor, id, retireAt }
-            : { vendor, id, retireAt, nullKind: nullKindOf(dateCell) },
+            : {
+                vendor,
+                id,
+                retireAt,
+                nullKind: nullKindOf(dateCell),
+                ...(parseEarliest(dateCell)
+                  ? { earliestAt: parseEarliest(dateCell) }
+                  : {}),
+              },
         );
       }
     }
@@ -473,11 +516,13 @@ export function parseDeepseek(html: string): ParseResult {
     const retireAt = endOfDayAnywhere(y, mo, d);
     // 本文は "." を含む版番号（V4.1）を許し、文末の "." で止める
     for (const m of parts[i + 1].matchAll(
-      /\bmodels? ((?:(?!\bmodels?\b)(?:[^.;]|\.(?=\d)))+?) (?:have|has) been retired/g,
+      /\bmodels? ((?:(?!\bmodels?\b)(?:[^.;]|\.(?=\d)))+?) (?:have|has) been retired/gi,
     )) {
       for (const raw of m[1].split(/,\s*(?:and\s+)?|\s+and\s+/)) {
-        // "model aliases X" / "aliases X" の前置きを外す
-        const name = raw.trim().replace(/^(?:model\s+)?aliases?\s+/i, "");
+        // "model aliases X" / "aliases X" / "names X" の前置きを外す
+        const name = raw
+          .trim()
+          .replace(/^(?:model\s+)?(?:aliases?|names?)\s+/i, "");
         if (!name) continue;
         const id = /^deepseek/i.test(name) ? name : `DeepSeek ${name}`;
         entries.push({ vendor: "deepseek", id, retireAt });
@@ -515,25 +560,52 @@ interface SuffixDate {
 }
 
 /**
- * 末尾の日付（YYYY-MM-DD / YYYYMMDD / MMDD / MM-DD / MM-YYYY）を外す。月日として妥当なものだけ。
- * 例: o3-2025-04-16 / claude-3-haiku-20240307 / grok-4-0709 / gemini-2.5-pro-preview-03-25 /
- *     gemini-2.5-flash-lite-preview-09-2025
+ * 末尾の日付（YYYY-MM-DD / YYYYMMDD / MMDD）を外す。月日として妥当なものだけ。
+ * vendorId=true（ベンダーの ID）のときだけ、preview / exp の直後の MM-DD / MM-YYYY も日付とみなす
+ * （AA の表示名には適用しない）。
+ * 例: o3-2025-04-16 / claude-3-haiku-20240307 / grok-4-0709 /
+ *     gemini-2.5-pro-preview-03-25 / gemini-2.5-flash-lite-preview-09-2025（ベンダー ID のみ）
  */
-function stripDateSuffix(s: string): {
+function stripDateSuffix(
+  s: string,
+  vendorId = false,
+): {
   base: string;
   dated: boolean;
   date?: SuffixDate;
 } {
+  // ベンダー ID の preview / exp の直後の MM-DD / MM-YYYY を先に見る（"-09-2025" を MMDD と読まないため）
+  const short = vendorId
+    ? /-(?:preview|exp)-(\d{2})-(\d{2}|\d{4})$/.exec(s)
+    : null;
+  if (short) {
+    const month = +short[1];
+    const date: SuffixDate =
+      short[2].length === 4
+        ? { year: +short[2], month }
+        : { month, day: +short[2] };
+    const okDay = date.day === undefined || (date.day >= 1 && date.day <= 31);
+    const okYear =
+      date.year === undefined || (date.year >= 2000 && date.year <= 2099);
+    if (month >= 1 && month <= 12 && okDay && okYear) {
+      // "preview" / "exp" は残し、日付部分だけ外す
+      return {
+        base: s.slice(0, s.length - short[1].length - short[2].length - 2),
+        dated: true,
+        date,
+      };
+    }
+  }
   const m =
-    /[-\s](\d{4})-(\d{2})-(\d{2})$|[-\s](\d{4})(\d{2})(\d{2})$|[-\s](\d{2})-?(\d{2})$|[-\s](\d{2})-(\d{4})$/.exec(
+    /[-\s](\d{4})-(\d{2})-(\d{2})$|[-\s](\d{4})(\d{2})(\d{2})$|[-\s](\d{2})(\d{2})$/.exec(
       s,
     );
   if (!m) return { base: s, dated: false };
+
   let date: SuffixDate;
   if (m[1]) date = { year: +m[1], month: +m[2], day: +m[3] };
   else if (m[4]) date = { year: +m[4], month: +m[5], day: +m[6] };
-  else if (m[7]) date = { month: +m[7], day: +m[8] };
-  else date = { year: +m[10], month: +m[9] };
+  else date = { month: +m[7], day: +m[8] };
   const okMonth = date.month >= 1 && date.month <= 12;
   const okDay = date.day === undefined || (date.day >= 1 && date.day <= 31);
   const okYear =
@@ -548,7 +620,7 @@ export function snapshotNearRelease(
   releaseDate: string | null | undefined,
   days = 7,
 ): boolean {
-  const date = stripDateSuffix(id.toLowerCase()).date;
+  const date = stripDateSuffix(id.toLowerCase(), true).date;
   if (!date || date.day === undefined || !releaseDate) return false;
   const rel = Date.parse(`${releaseDate.slice(0, 10)}T00:00:00Z`);
   if (!Number.isFinite(rel)) return false;
@@ -586,7 +658,7 @@ const DATE_PAREN =
  */
 export function modelKey(
   name: string,
-  opts: { ignoreExp?: boolean } = {},
+  opts: { ignoreExp?: boolean; vendorId?: boolean } = {},
 ): { key: string; dated: boolean } {
   let qualified = false;
   const kept: string[] = [];
@@ -601,7 +673,7 @@ export function modelKey(
     return "";
   });
   s = s.trim().replace(/[-\s](?:non-)?reasoning$/, "");
-  const { base, dated } = stripDateSuffix(s);
+  const { base, dated } = stripDateSuffix(s, opts.vendorId);
   const tokens = [base, ...kept]
     .join(" ")
     .replace(/([a-z])(\d)/g, "$1 $2")
@@ -631,7 +703,10 @@ export type DeprecationIndex = Map<Vendor, Map<string, KeyGroup>>;
 export function buildIndex(entries: DeprecationEntry[]): DeprecationIndex {
   const index: DeprecationIndex = new Map();
   for (const e of entries) {
-    const { key, dated } = modelKey(e.id, keyOpts(e.vendor));
+    const { key, dated } = modelKey(e.id, {
+      ...keyOpts(e.vendor),
+      vendorId: true,
+    });
     let byKey = index.get(e.vendor);
     if (!byKey) {
       byKey = new Map();
@@ -649,7 +724,9 @@ export function buildIndex(entries: DeprecationEntry[]): DeprecationIndex {
 
 /**
  * AA のモデルが、ベンダー公式の一覧で停止日を過ぎているか。
- * - 日付なしの ID（エイリアス）が一覧にあれば、それらが全て停止済みのときだけ一致
+ * - 日付なしの ID（エイリアス）が一覧にあれば、それらが全て停止済みのときだけ一致。
+ *   ただし AA 名に版・日付の注記がある（"MiMo-V2-Flash (Feb 2026)" 等）場合は、その版が止まったか分からないので、
+ *   同じキーの日付付きスナップショットが 1 つ以上あり全て停止済みのときだけ一致させる
  * - エイリアスが無く、日付付きスナップショットが 1 つだけで、その日付が AA の公開日（release_date）から
  *   ±7 日以内なら同じモデルとみなす（o3 ↔ o3-2025-04-16）。公開日が無い場合は一致させない。
  *   AA 名に版・日付の注記（"GPT-4o (Aug '24)" 等）がある場合も、どのスナップショットか分からないので一致させない
@@ -668,7 +745,13 @@ export function findRetirement(
   const g = index.get(vendor)?.get(aa.key);
   if (!g) return null;
   if (g.aliases.length > 0) {
-    return g.aliases.every((e) => isRetired(e, now)) ? g.aliases[0] : null;
+    if (!g.aliases.every((e) => isRetired(e, now))) return null;
+    if (
+      aa.dated &&
+      !(g.snapshots.length > 0 && g.snapshots.every((e) => isRetired(e, now)))
+    )
+      return null;
+    return g.aliases[0];
   }
   if (
     !aa.dated &&

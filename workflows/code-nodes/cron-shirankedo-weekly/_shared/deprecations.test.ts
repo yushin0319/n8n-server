@@ -254,6 +254,28 @@ describe("parseDeepseek（文の形）", () => {
     ).toEqual(["DeepSeek V3", "DeepSeek V3.1", "DeepSeek V3.2 Exp"]);
   });
 
+  it("大文字の 'Models' と 'model names X and Y' の前置きに対応する", () => {
+    expect(
+      Object.keys(
+        byId(
+          parseDeepseek(page("Models V4 Flash and V4 Pro have been retired."))
+            .entries,
+        ),
+      ),
+    ).toEqual(["DeepSeek V4 Flash", "DeepSeek V4 Pro"]);
+    expect(
+      Object.keys(
+        byId(
+          parseDeepseek(
+            page(
+              "The legacy model names deepseek-chat and deepseek-reasoner have been retired.",
+            ),
+          ).entries,
+        ),
+      ),
+    ).toEqual(["deepseek-chat", "deepseek-reasoner"]);
+  });
+
   it("'model aliases X and Y' の前置きを外す", () => {
     expect(
       Object.keys(
@@ -304,6 +326,30 @@ describe("dedupe（同じ ID が複数の表にある場合）", () => {
       "openai",
     );
     expect(byId(r.entries)).toEqual({ m1: "2026-03-27T12:00:00.000Z" });
+  });
+
+  it("'at earliest' の日付が確定停止日より遅ければ、earliest の日付を採る", () => {
+    const r = parseMarkdownTables(
+      md(["| 2026-03-26 | `m1` |", "| at earliest 2026-12-01 | `m1` |"]),
+      "openai",
+    );
+    expect(byId(r.entries)).toEqual({ m1: "2026-12-02T12:00:00.000Z" });
+  });
+
+  it("'at earliest' だけなら除外しない（日付は earliestAt に残す）", () => {
+    const r = parseMarkdownTables(
+      md(["| Not sooner than September 1, 2027 | `m1` |"]),
+      "openai",
+    );
+    expect(r.entries).toEqual([
+      {
+        vendor: "openai",
+        id: "m1",
+        retireAt: null,
+        nullKind: "earliest",
+        earliestAt: "2027-09-02T12:00:00.000Z",
+      },
+    ]);
   });
 
   it("OpenAI のフィクスチャでも gpt-4-0314 は確定停止日になる", () => {
@@ -394,14 +440,19 @@ describe("modelKey", () => {
     expect(modelKey("o3-2025-04-16").dated).toBe(true);
     expect(modelKey("claude-3-haiku-20240307").dated).toBe(true);
     expect(modelKey("grok-4-0709").dated).toBe(true);
-    expect(modelKey("gemini-2.5-pro-preview-03-25")).toEqual({
-      key: modelKey("gemini-2.5-pro-preview").key,
-      dated: true,
-    });
-    expect(modelKey("gemini-2.5-flash-lite-preview-09-2025")).toEqual({
+    // MM-DD / MM-YYYY はベンダー ID の preview / exp の直後だけ日付とみなす
+    expect(
+      modelKey("gemini-2.5-pro-preview-03-25", { vendorId: true }),
+    ).toEqual({ key: modelKey("gemini-2.5-pro-preview").key, dated: true });
+    expect(
+      modelKey("gemini-2.5-flash-lite-preview-09-2025", { vendorId: true }),
+    ).toEqual({
       key: modelKey("gemini-2.5-flash-lite-preview").key,
       dated: true,
     });
+    // AA の表示名や、preview / exp の後でない数字は日付扱いしない
+    expect(modelKey("gemini-2.5-pro-preview-03-25").dated).toBe(false);
+    expect(modelKey("model-x-10-12", { vendorId: true }).dated).toBe(false);
     expect(modelKey("o3").dated).toBe(false);
     // 2507 は月日として不正（25 月）なので日付扱いしない
     expect(modelKey("Qwen3 235B A22B 2507").dated).toBe(false);
@@ -517,6 +568,46 @@ describe("findRetirement", () => {
     }
   });
 
+  it("注記付きの AA 名は、エイリアスが停止済みでも同じキーのスナップショットが全て停止済みでなければ一致しない", () => {
+    // 実データ: mimo-v2-flash（エイリアス）は廃止済みだが、"MiMo-V2-Flash (Feb 2026)" の版が止まったかは不明
+    const aliasOnly = buildIndex([
+      e("xiaomi", "mimo-v2-flash", "2026-06-29T16:00:00.000Z"),
+    ]);
+    expect(
+      findRetirement("MiMo-V2-Flash (Feb 2026)", "Xiaomi", aliasOnly, now),
+    ).toBeNull();
+    // 注記なし・推論強度だけの注記ならエイリアスで一致
+    expect(
+      findRetirement("MiMo-V2-Flash (Reasoning)", "Xiaomi", aliasOnly, now)?.id,
+    ).toBe("mimo-v2-flash");
+    // DeepSeek V4 Flash 0731（末尾の日付も注記扱い）も同じ規則で残す
+    const ds = buildIndex([
+      e("deepseek", "DeepSeek V4 Flash", "2026-09-11T12:00:00.000Z"),
+    ]);
+    expect(
+      findRetirement("DeepSeek V4 Flash 0731", "DeepSeek", ds, now),
+    ).toBeNull();
+    expect(findRetirement("DeepSeek V4 Flash", "DeepSeek", ds, now)?.id).toBe(
+      "DeepSeek V4 Flash",
+    );
+    // スナップショットが全て停止済みなら注記付きでも一致
+    const withSnaps = buildIndex([
+      e("openai", "gpt-4o", "2026-01-01T00:00:00.000Z"),
+      e("openai", "gpt-4o-2024-05-13", "2026-01-01T00:00:00.000Z"),
+      e("openai", "gpt-4o-2024-08-06", "2026-01-01T00:00:00.000Z"),
+    ]);
+    expect(
+      findRetirement("GPT-4o (Aug '24)", "OpenAI", withSnaps, now)?.id,
+    ).toBe("gpt-4o");
+    const oneSnapAlive = buildIndex([
+      e("openai", "gpt-4o", "2026-01-01T00:00:00.000Z"),
+      e("openai", "gpt-4o-2024-08-06", null),
+    ]);
+    expect(
+      findRetirement("GPT-4o (Aug '24)", "OpenAI", oneSnapAlive, now),
+    ).toBeNull();
+  });
+
   it("推論強度の括弧書きだけなら単一スナップショットの例外を使う", () => {
     const index = buildIndex([
       e("openai", "o3-2025-04-16", "2026-01-01T00:00:00.000Z"),
@@ -560,6 +651,10 @@ describe("snapshotNearRelease", () => {
     // 年の無い MMDD は公開日の前後の年で最も近いものと比べる
     ["grok-4-0709", "2025-07-09", true],
     ["grok-4-0709", "2025-08-01", false],
+    // 年跨ぎ: 12/30 のスナップショットと 1/2 公開、1/2 のスナップショットと 12/30 公開
+    ["model-x-1230", "2026-01-02", true],
+    ["model-x-0102", "2025-12-30", true],
+    ["model-x-0102", "2026-01-12", false],
     // MM-DD（Google 形式）
     ["gemini-2.5-pro-preview-03-25", "2025-03-25", true],
     // 日の無い MM-YYYY は比較できない
