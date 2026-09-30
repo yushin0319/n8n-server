@@ -5,13 +5,15 @@ export default function (): CodeNodeReturn {
   const ok = r.ok !== undefined ? (r.ok as boolean) : false;
   const count = (r.inserted as number) || 0;
   const updated = (r.updated as number) || 0;
+  // shirankedo 側で今回の一覧に無いモデルを削除した件数
+  const deleted = (r.deleted as number) || 0;
   return [
     {
       json: ok
         ? obsNotifyFromCron({
             label: "LLM価格更新完了",
             isError: false,
-            detail: `${count}件追加, ${updated}件更新`,
+            detail: `${count}件追加, ${updated}件更新, ${deleted}件削除`,
             service: "n8n",
             repo: "shirankedo",
           })

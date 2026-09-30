@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import parseLLMData, { familyKey, shouldSkip } from "./ParseLLMData";
+import parseLLMData, {
+  dropSuperseded,
+  familyKey,
+  seriesOf,
+  shouldSkip,
+} from "./ParseLLMData";
 
 /** テスト用のAAモデルデータを生成 */
 function makeModel(
@@ -106,6 +111,27 @@ describe("ParseLLMData", () => {
     expect(models[0].score).toBe(75);
   });
 
+  it("同一シリーズの旧バージョンはスコアが高くても除外される", () => {
+    // AA は旧モデルも評価し続けるため、新版が出たら旧版を送らない
+    stubMergedInput([
+      makeModel({ name: "Claude Opus 4.7 (Adaptive Reasoning)", score: 40 }),
+      makeModel({ name: "Claude Opus 5.5 (Max Effort)", score: 57 }),
+      makeModel({ name: "Claude 4.5 Sonnet (Reasoning)", score: 60 }),
+      makeModel({ name: "Claude Sonnet 5.5 (Max Effort)", score: 56 }),
+      makeModel({ name: "Claude 4.5 Haiku", score: 17 }),
+    ]);
+
+    const items = callAndGetItems();
+    const names = JSON.parse(items[0].json.requestBody as string).map(
+      (m: { modelName: string }) => m.modelName,
+    );
+    expect(names).toEqual([
+      "Claude Opus 5.5",
+      "Claude Sonnet 5.5",
+      "Claude 4.5 Haiku",
+    ]);
+  });
+
   it("未知プロバイダのモデルは除外される", () => {
     stubMergedInput([makeModel({ creator: "UnknownCorp" })]);
 
@@ -129,6 +155,8 @@ describe("shouldSkip", () => {
     "Qwen3 8B",
     "GLM-4V Plus",
     "Nova 2.1 Omni",
+    "Kimi K2.7 Code",
+    "Grok Code Fast 1",
   ])("'%s' はスキップされる", (name) => {
     expect(shouldSkip(name)).toBe(true);
   });
@@ -161,5 +189,75 @@ describe("familyKey", () => {
     ["Claude 4.5 Sonnet (2025-10-22)", "Claude 4.5 Sonnet"],
   ])("'%s' → '%s'", (input, expected) => {
     expect(familyKey(input)).toBe(expected);
+  });
+});
+
+describe("seriesOf", () => {
+  it.each([
+    ["Claude Opus 4.7", "claude opus", 4.7],
+    ["Claude 4.5 Sonnet", "claude sonnet", 4.5],
+    ["Claude Sonnet 5.5", "claude sonnet", 5.5],
+    ["GPT-5.6 Sol", "gpt sol", 5.6],
+    ["GPT-6.1 Sol", "gpt sol", 6.1],
+    ["GPT-5 mini", "gpt mini", 5],
+    ["Gemini 3.1 Pro Preview", "gemini pro", 3.1],
+    ["Gemini 3.5 Flash-Lite", "flash gemini lite", 3.5],
+    ["Qwen3.8 Max", "max qwen", 3.8],
+    ["Qwen3.6 27B", "27b qwen", 3.6],
+    ["Kimi K2.6", "k kimi", 2.6],
+    ["MiniMax-M2.5", "m minimax", 2.5],
+    ["MiMo-V2.6-Pro", "mimo pro v", 2.6],
+    ["DeepSeek V4 Flash 0731", "deepseek flash v", 4],
+    // 4.20 は 4.2 として扱う（4.7 より旧）
+    ["Grok 4.20", "grok", 4.2],
+    // 末尾の " v2" は同一版の改訂なのでシリーズ名に含めない
+    ["Grok 4.20 0309 v2", "grok", 4.2],
+    ["o3", "o", 3],
+    ["Kimi K2 Thinking", "k kimi", 2],
+    ["Qwen3 Max Thinking", "max qwen", 3],
+  ])("'%s' → series '%s' / version %s", (name, series, version) => {
+    expect(seriesOf(name)).toEqual({ series, version });
+  });
+
+  it("版番号を含まない名前は null", () => {
+    expect(seriesOf("Muse Glimmer")).toBeNull();
+    expect(seriesOf("Nova Premier")).toBeNull();
+  });
+});
+
+describe("dropSuperseded", () => {
+  it("シリーズ内の最新版だけ残し、別シリーズと版番号なしは残す", () => {
+    const names = [
+      "GPT-5.6 Sol",
+      "GPT-6 Sol",
+      "GPT-6.1 Sol",
+      "GPT-5.6 Terra",
+      "Gemini 3.7 Flash",
+      "Gemini 3.8 Flash",
+      "Gemini 3.5 Flash-Lite",
+      "Muse Glimmer",
+    ];
+    const kept = dropSuperseded(names.map((name) => ({ name }))).map(
+      (m) => m.name,
+    );
+    expect(kept).toEqual([
+      "GPT-6.1 Sol",
+      "GPT-5.6 Terra",
+      "Gemini 3.8 Flash",
+      "Gemini 3.5 Flash-Lite",
+      "Muse Glimmer",
+    ]);
+  });
+
+  it("同じ版の派生（推論強度違い）は全て残す", () => {
+    const kept = dropSuperseded([
+      { name: "Claude Opus 5.5 (High Effort)" },
+      { name: "Claude Opus 5.5 (Max Effort)" },
+      { name: "Claude Opus 5 (Max Effort)" },
+    ]).map((m) => m.name);
+    expect(kept).toEqual([
+      "Claude Opus 5.5 (High Effort)",
+      "Claude Opus 5.5 (Max Effort)",
+    ]);
   });
 });

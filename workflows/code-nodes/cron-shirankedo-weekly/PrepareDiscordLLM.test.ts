@@ -23,6 +23,17 @@ describe("PrepareDiscordLLM", () => {
     expect(out.summary).toContain("3件更新");
   });
 
+  it("成功時: 削除件数があれば summary に出す", () => {
+    vi.stubGlobal("$input", {
+      first: () => ({
+        json: { ok: true, inserted: 2, updated: 1, deleted: 4 },
+      }),
+    });
+
+    const out = callAndGetItems()[0].json;
+    expect(out.summary).toContain("4件削除");
+  });
+
   it("失敗時: warning / ❌ / LLM価格更新失敗", () => {
     vi.stubGlobal("$input", { first: () => ({ json: { ok: false } }) });
 
