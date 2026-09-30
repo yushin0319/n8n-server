@@ -8,16 +8,35 @@ function callAndGetItems() {
 }
 
 const prepStub = {
-  severity: "info",
+  severity: "critical",
   service: "n8n",
-  channel: "obs-info",
+  channel: "obs-critical",
+  sendDiscordNow: true,
 };
 
-function stubNodes(discordJson: unknown, notionJson: unknown) {
+function stubNodes(
+  discordJson: unknown,
+  notionJson: unknown,
+  prep: IDataObject = prepStub,
+) {
   vi.stubGlobal("$", (n: string) => {
-    if (n === "PrepNotify") return { first: () => ({ json: prepStub }) };
+    if (n === "PrepNotify") return { first: () => ({ json: prep }) };
     if (n === "SendDiscord") return { first: () => ({ json: discordJson }) };
     throw new Error(`unknown: ${n}`);
+  });
+  vi.stubGlobal("$input", { first: () => ({ json: notionJson }) });
+}
+
+// SendDiscord を通らなかった実行で $("SendDiscord") を参照すると n8n では throw する
+function stubNodesDiscordSkipped(notionJson: unknown) {
+  vi.stubGlobal("$", (n: string) => {
+    if (n === "PrepNotify")
+      return {
+        first: () => ({
+          json: { ...prepStub, severity: "warning", sendDiscordNow: false },
+        }),
+      };
+    throw new Error(`node not executed: ${n}`);
   });
   vi.stubGlobal("$input", { first: () => ({ json: notionJson }) });
 }
@@ -76,6 +95,27 @@ describe("FormatResponse", () => {
 
   it("両方失敗 → success=false", () => {
     stubNodes({ error: "timeout" }, { object: "error", code: "rate_limited" });
+    expect(callAndGetItems()[0].json.success).toBe(false);
+  });
+
+  it("Discord 送信スキップ + Notion 成功 → success=true / skipped=true", () => {
+    stubNodesDiscordSkipped({ object: "page", id: "page-9" });
+    const items = callAndGetItems();
+    expect(items[0].json.success).toBe(true);
+    expect(items[0].json.discord).toEqual({
+      ok: true,
+      status: null,
+      skipped: true,
+    });
+    expect(items[0].json.notion).toEqual({
+      ok: true,
+      page_id: "page-9",
+      error_code: null,
+    });
+  });
+
+  it("Discord 送信スキップ + Notion 失敗 → success=false", () => {
+    stubNodesDiscordSkipped({ object: "error", code: "validation_error" });
     expect(callAndGetItems()[0].json.success).toBe(false);
   });
 });

@@ -273,13 +273,20 @@ def validate_response_structure(wf_name: str, action: str, result: dict) -> tupl
 
 
 def send_discord_summary(results: list[dict]) -> None:
-    """全結果をDiscord webhookに送信."""
+    """失敗があるときだけ全結果をDiscord webhookに送信.
+
+    全件成功はデプロイごとの成功通知になり Discord が埋まるため送らない
+    (結果は GitHub Actions のログに残る)。
+    """
     if not DISCORD_WEBHOOK_URL:
         print("DISCORD_WEBHOOK_URL未設定、Discord通知スキップ")
         return
 
     passed = sum(1 for r in results if r["ok"])
     failed = len(results) - passed
+    if failed == 0:
+        print("全件成功のため Discord 通知スキップ")
+        return
     color = 0x2ECC71 if failed == 0 else 0xE74C3C
 
     lines = []

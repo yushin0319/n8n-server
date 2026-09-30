@@ -65,6 +65,10 @@ export default function (): CodeNodeReturn {
   // env 未設定時は空文字。SendDiscord 側 neverError=true で WF は続行する。
   const discordUrl =
     typeof $env !== "undefined" && $env[envKey] ? String($env[envKey]) : "";
+  // 即時の Discord 送信は critical のみ。warning は cron/obs-daily-digest が
+  // 毎日 23:00 JST に 1 通へまとめ、info は Notion 記録のみ（Discord 通知過多の是正）。
+  // URL 空のまま SendDiscord を通すと HTTP ノードがエラーになるため、IF で経路ごと外す。
+  const sendDiscordNow = severity === "critical" && discordUrl !== "";
 
   const summary = (body.summary as string) || "";
   const rawUrl = (body.url as string) || "";
@@ -129,6 +133,7 @@ export default function (): CodeNodeReturn {
         channel,
         envKey,
         discordUrl,
+        sendDiscordNow,
         discordBody: JSON.stringify(discordBody),
         notionBody: JSON.stringify(notionBody),
       },

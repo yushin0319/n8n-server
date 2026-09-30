@@ -33,6 +33,8 @@
 - Healthchecks.io（fail ping）
 - Netdata Agent（host メトリクス）
 
+通知経路（`api/obs-notify`）: 全件を Notion 観測性 DB に記録する。Discord へは **critical のみ即時**（#obs-critical、@here）。warning と crypto-ai-trader の約定は `cron/obs-daily-digest` が毎日 23:00 JST に #obs-warning へ 1 通にまとめる（対象 0 件の日は送らない）。info は Discord に送らない。`smoke_test.py` の Discord 通知も失敗時のみ。
+
 定期メンテ・自己防衛（systemd timer）:
 - `n8n-wal-checkpoint.timer` — 毎日 03:00 JST（自動 reboot の直前窓）に n8n SQLite の WAL を `TRUNCATE` して肥大を防ぐ
 - `oci-mem-watch.timer` → `check-host-mem.sh` — 10 分間隔。severity 判定は container の `memory.current`（ライブ値）で行う。`memory.peak` は累計値で起動直後の migration スパイクに引っ張られるため summary の参考表示のみ。**閾値は warning 上限（`CURRENT_WARN=85`）で critical は撤廃**（停止系は別監視が捕捉するので、pressure 段階で夜中に起こさない）
@@ -59,7 +61,7 @@ CI（`.github/workflows/`）では typecheck + vitest + Biome + Ruff + validate_
 gh workflow run deploy.yml --repo yushin0319/n8n-server --field deploy_all=true
 ```
 
-`server-config/setup.sh` は OCI 上の OS 構成（`rpcbind` 削除 / fail2ban / sshd ハードニング / unattended-upgrades + 04:00 JST 自動 reboot / TZ=JST / iptables / nginx 同期 / `docker compose up -d --pull always` / Netdata Agent）を冪等に適用するスクリプト。`docker compose up` の直前に obs-notify へ **deploy マーカー（severity=info）** を 1 本投げるので、image 更新後 10 分ほど cron/adapter が一過性失敗しても「誤報ではなく deploy 由来」と観測性 DB / Discord から判別できる。OS 変更を伴う PR をマージしたら OCI に SSH してから:
+`server-config/setup.sh` は OCI 上の OS 構成（`rpcbind` 削除 / fail2ban / sshd ハードニング / unattended-upgrades + 04:00 JST 自動 reboot / TZ=JST / iptables / nginx 同期 / `docker compose up -d --pull always` / Netdata Agent）を冪等に適用するスクリプト。`docker compose up` の直前に obs-notify へ **deploy マーカー（severity=info）** を 1 本投げるので、image 更新後 10 分ほど cron/adapter が一過性失敗しても「誤報ではなく deploy 由来」と観測性 DB から判別できる（info は Discord には送らない）。OS 変更を伴う PR をマージしたら OCI に SSH してから:
 
 ```bash
 bash server-config/setup.sh
