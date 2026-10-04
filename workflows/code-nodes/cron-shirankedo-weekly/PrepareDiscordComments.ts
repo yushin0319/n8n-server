@@ -9,7 +9,7 @@ export default function (): CodeNodeReturn {
         ? obsNotifyFromCron({
             label: "ページコメント生成完了",
             isError: false,
-            detail: "3件",
+            detail: "1件（トレンドページの総評）",
             service: "n8n",
             repo: "shirankedo",
           })

@@ -53,8 +53,6 @@ export default function (): CodeNodeReturn {
       json: {
         hasSummaries: true,
         trendPrompt,
-        aiApiPrompt: "",
-        aiSubPrompt: "",
       },
     },
   ];
