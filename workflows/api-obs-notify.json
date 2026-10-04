@@ -126,7 +126,6 @@
           "timeout": 10000,
           "response": {
             "response": {
-              "neverError": true,
               "responseFormat": "json"
             }
           }
@@ -140,6 +139,11 @@
       ],
       "name": "CreateNotionPage",
       "id": "obs-0004-4000-8000-000000000004",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput",
+      "notes": "lint-allow: notion-create-retry Notion の一時的な 5xx で観測性の記録が欠けるのを防ぐ (2026-10-01 の障害で 27 件中 18 件欠落)。500 でも書き込みが反映されている場合の重複記録は許容 (湧心くん判断 2026-10-04)。待ちは呼び出し側の timeout 10s に収める。",
       "credentials": {
         "notionApi": {
           "id": "StdChbKZz3co4jDO",

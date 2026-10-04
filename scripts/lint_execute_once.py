@@ -13,6 +13,8 @@ N 件の入力を per-item 実行 → Notion API を N 倍呼び出し → メ�
    executeOnce 未設定。ループ毎に N 倍実行されるリスク。
 2. Notion 書き込み (POST/PATCH api.notion.com or n8n-nodes-base.notion で create/update)
    が retryOnFail=true。リトライで重複ページ作成のリスク。
+   重複より欠落の方が困るノード (観測性 DB への記録など) は、node の notes に
+   `lint-allow: notion-create-retry <理由>` と書いた場合だけ WARN に下げる (理由必須)。
 
 ### WARN (情報提供、CI は通す)
 
@@ -44,6 +46,9 @@ WORKFLOWS_DIR = os.path.join(os.path.dirname(__file__), "..", "workflows")
 # Notion 専用ノード
 NOTION_NODE_TYPE = "n8n-nodes-base.notion"
 HTTP_NODE_TYPE = "n8n-nodes-base.httpRequest"
+
+# Notion create + retryOnFail を意図して許可する印 (後ろに理由が必要)
+ALLOW_CREATE_RETRY = "lint-allow: notion-create-retry"
 
 # SplitInBatches v3 の loop 出力 index
 SPLITBATCH_TYPE = "n8n-nodes-base.splitInBatches"
@@ -93,6 +98,15 @@ def _is_notion_create(node: dict[str, Any]) -> bool:
         if _is_notion_host(url) and method == "POST":
             return True
     return False
+
+
+def _allows_create_retry(node: dict[str, Any]) -> bool:
+    """notes に ALLOW_CREATE_RETRY と理由が書かれているか判定する (印だけで理由なしは不可)。"""
+    notes = str(node.get("notes", "") or "")
+    idx = notes.find(ALLOW_CREATE_RETRY)
+    if idx < 0:
+        return False
+    return bool(notes[idx + len(ALLOW_CREATE_RETRY) :].strip(" :：-\n"))
 
 
 def _get_loop_predecessors(
@@ -174,7 +188,12 @@ def lint_workflow(path: str) -> tuple[list[str], list[str]]:
             )
         # ERROR 2: Notion 新規作成で retryOnFail=true（重複作成リスク）
         # 注: PATCH (pageId 指定の update) や GET は冪等なので除外
-        if retry and is_create:
+        if retry and is_create and _allows_create_retry(node):
+            warnings.append(
+                f"{name}: Notion create/POST の retryOnFail を notes の {ALLOW_CREATE_RETRY} で許可"
+                "（重複作成を許容）"
+            )
+        elif retry and is_create:
             errors.append(
                 f"{name}: Notion create/POST で retryOnFail=true → リトライで重複ページ作成のリスク"
             )
