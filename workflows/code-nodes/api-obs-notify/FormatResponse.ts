@@ -14,6 +14,12 @@ export default function (): CodeNodeReturn {
     discord = { ok: prep.severity !== "critical", status: null, skipped: true };
   }
   const notionOk = notion.object !== "error" && Boolean(notion.id);
+  // CreateNotionPage は retryOnFail + onError=continueRegularOutput。再試行を使い切ると
+  // Notion の本文ではなく { error: <reject 理由> } が来るので、HTTP コードをそこから拾う。
+  const failure = (notion.error ?? {}) as IDataObject;
+  const httpCode = failure.httpCode ?? failure.statusCode ?? null;
+  const errorCode =
+    notion.code ?? (httpCode === null ? null : String(httpCode));
 
   return [
     {
@@ -26,7 +32,7 @@ export default function (): CodeNodeReturn {
         notion: {
           ok: notionOk,
           page_id: notion.id ?? null,
-          error_code: notionOk ? null : (notion.code ?? null),
+          error_code: notionOk ? null : errorCode,
         },
       },
     },

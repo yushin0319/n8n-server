@@ -119,6 +119,42 @@ describe("FormatResponse", () => {
     expect(callAndGetItems()[0].json.success).toBe(false);
   });
 
+  // CreateNotionPage は retryOnFail + onError=continueRegularOutput。再試行を使い切ると
+  // HTTP Request ノードは { error: <reject 理由> } を 1 item 出す (HttpRequestV3 の continueOnFail 分岐)
+  it("Notion 再試行後も 5xx → ok=false / error_code に HTTP コード (httpCode)", () => {
+    stubNodesDiscordSkipped({
+      error: {
+        httpCode: "500",
+        message: "Cross-cell memcached access is not allowed",
+      },
+    });
+    const items = callAndGetItems();
+    expect(items[0].json.success).toBe(false);
+    expect(items[0].json.notion).toEqual({
+      ok: false,
+      page_id: null,
+      error_code: "500",
+    });
+  });
+
+  it("Notion 再試行後も失敗 (statusCode のみ) → error_code に HTTP コード", () => {
+    stubNodesDiscordSkipped({ error: { statusCode: 503, message: "x" } });
+    expect(callAndGetItems()[0].json.notion).toEqual({
+      ok: false,
+      page_id: null,
+      error_code: "503",
+    });
+  });
+
+  it("Notion がネットワークエラー (HTTP コードなし) → error_code=null", () => {
+    stubNodesDiscordSkipped({ error: { message: "socket hang up" } });
+    expect(callAndGetItems()[0].json.notion).toEqual({
+      ok: false,
+      page_id: null,
+      error_code: null,
+    });
+  });
+
   it("critical なのに送信できなかった (URL 未設定) → success=false", () => {
     vi.stubGlobal("$", (n: string) => {
       if (n === "PrepNotify")
