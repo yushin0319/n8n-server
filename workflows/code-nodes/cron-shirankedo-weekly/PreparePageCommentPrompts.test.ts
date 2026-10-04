@@ -41,6 +41,17 @@ describe("PreparePageCommentPrompts", () => {
     expect(items[0].json.trendPrompt).toBeDefined();
   });
 
+  it("AI API / AI サブスク用の空プロンプトを出力しない", () => {
+    vi.stubGlobal("$input", {
+      first: () => ({ json: { data: mockTrendRanking } }),
+      all: () => [{ json: { data: mockTrendRanking } }],
+    });
+
+    const json = callAndGetItems()[0].json;
+    expect(json).not.toHaveProperty("aiApiPrompt");
+    expect(json).not.toHaveProperty("aiSubPrompt");
+  });
+
   it("プロンプトにトレンドリポのdisplayNameが含まれる", () => {
     vi.stubGlobal("$input", {
       first: () => ({ json: { data: mockTrendRanking } }),

@@ -135,71 +135,6 @@
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "googlePalmApi",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: $json.aiApiPrompt }] }], generationConfig: { temperature: 0.8 } }) }}",
-        "options": {}
-      },
-      "id": "31d17f66-6f13-46fa-bb6e-f0372454c794",
-      "name": "GeminiAIApiComment",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        3840,
-        600
-      ],
-      "credentials": {
-        "googlePalmApi": {
-          "id": "rlflsmwVLnPi2SAN",
-          "name": "Google Gemini(PaLM) Api account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "jsCode": "// @external cron-shirankedo-weekly/FormatAIApiComment.ts"
-      },
-      "id": "7ed4f490-5bf7-4121-a1e8-ab986befb9d5",
-      "name": "FormatAIApiComment",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        4080,
-        600
-      ]
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "googlePalmApi",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: $json.aiSubPrompt }] }], generationConfig: { temperature: 0.8 } }) }}",
-        "options": {}
-      },
-      "id": "6c1eabd8-b76d-42ad-bcf1-3228e45bf4cb",
-      "name": "GeminiAISubComment",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        4320,
-        600
-      ],
-      "credentials": {
-        "googlePalmApi": {
-          "id": "rlflsmwVLnPi2SAN",
-          "name": "Google Gemini(PaLM) Api account"
-        }
-      }
-    },
-    {
-      "parameters": {
         "jsCode": "// @external cron-shirankedo-weekly/FormatPageComments.ts"
       },
       "id": "b11c154b-d7ca-4990-9f09-eaa6ca170134",
@@ -409,96 +344,6 @@
           },
           "conditions": [
             {
-              "id": "sw-cond-skip-gemini-ai-api-comment",
-              "leftValue": "={{ $execution.customData.get('isTest') }}",
-              "rightValue": "true",
-              "operator": {
-                "type": "string",
-                "operation": "equals"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        3730,
-        600
-      ],
-      "name": "IfSkipGeminiAIApiComment",
-      "id": "sw-0022-4000-8000-000000000022"
-    },
-    {
-      "parameters": {
-        "jsCode": "// @external cron-shirankedo-weekly/MockGeminiAIApiComment.ts"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        3730,
-        500
-      ],
-      "name": "MockGeminiAIApiComment",
-      "id": "sw-0032-4000-8000-000000000032"
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict"
-          },
-          "conditions": [
-            {
-              "id": "sw-cond-skip-gemini-ai-sub-comment",
-              "leftValue": "={{ $execution.customData.get('isTest') }}",
-              "rightValue": "true",
-              "operator": {
-                "type": "string",
-                "operation": "equals"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        4210,
-        600
-      ],
-      "name": "IfSkipGeminiAISubComment",
-      "id": "sw-0023-4000-8000-000000000023"
-    },
-    {
-      "parameters": {
-        "jsCode": "// @external cron-shirankedo-weekly/MockGeminiAISubComment.ts"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        4210,
-        500
-      ],
-      "name": "MockGeminiAISubComment",
-      "id": "sw-0033-4000-8000-000000000033"
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict"
-          },
-          "conditions": [
-            {
               "id": "sw-cond-skip-post-page-comments",
               "leftValue": "={{ $execution.customData.get('isTest') }}",
               "rightValue": "true",
@@ -642,39 +487,6 @@
       "main": [
         [
           {
-            "node": "IfSkipGeminiAIApiComment",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "GeminiAIApiComment": {
-      "main": [
-        [
-          {
-            "node": "FormatAIApiComment",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "FormatAIApiComment": {
-      "main": [
-        [
-          {
-            "node": "IfSkipGeminiAISubComment",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "GeminiAISubComment": {
-      "main": [
-        [
-          {
             "node": "FormatPageComments",
             "type": "main",
             "index": 0
@@ -789,64 +601,6 @@
         [
           {
             "node": "FormatTrendComment",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "IfSkipGeminiAIApiComment": {
-      "main": [
-        [
-          {
-            "node": "MockGeminiAIApiComment",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "GeminiAIApiComment",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "MockGeminiAIApiComment": {
-      "main": [
-        [
-          {
-            "node": "FormatAIApiComment",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "IfSkipGeminiAISubComment": {
-      "main": [
-        [
-          {
-            "node": "MockGeminiAISubComment",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "GeminiAISubComment",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "MockGeminiAISubComment": {
-      "main": [
-        [
-          {
-            "node": "FormatPageComments",
             "type": "main",
             "index": 0
           }

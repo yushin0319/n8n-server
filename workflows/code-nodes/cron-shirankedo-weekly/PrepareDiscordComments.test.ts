@@ -18,6 +18,8 @@ describe("PrepareDiscordComments", () => {
     expect(out.severity).toBe("info");
     expect(out.subject).toContain("✅");
     expect(out.subject).toContain("ページコメント生成完了");
+    // 保存するのはトレンドページの総評 1 件だけ
+    expect(out.summary).toContain("1件");
   });
 
   it("失敗時: warning / ❌ / ページコメント生成失敗", () => {

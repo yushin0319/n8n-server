@@ -19,22 +19,13 @@ describe("FormatTrendComment", () => {
         },
       }),
     });
-    vi.stubGlobal("$", (nodeName: string) => {
-      if (nodeName === "HasSummariesForComments") {
-        return {
-          first: () => ({
-            json: { aiApiPrompt: "api prompt", aiSubPrompt: "sub prompt" },
-          }),
-        };
-      }
-      throw new Error(`Unknown node: ${nodeName}`);
-    });
-
     const items = callAndGetItems();
     expect(items[0].json.trendComment).toBe("トレンドテキスト");
   });
 
-  it("aiApiPromptとaiSubPromptを引き継ぐ", () => {
+  // 表示されるのはトレンドページの総評だけ。AI API / AI サブスク用の空プロンプトは引き継がない
+  // (2026-10-04 に空プロンプトの Gemini 呼び出しが "Request has empty input" で WF ごと失敗した)
+  it("出力は trendComment だけ (他ノードを参照しない)", () => {
     vi.stubGlobal("$input", {
       first: () => ({
         json: {
@@ -43,21 +34,10 @@ describe("FormatTrendComment", () => {
       }),
     });
     vi.stubGlobal("$", (nodeName: string) => {
-      if (nodeName === "HasSummariesForComments") {
-        return {
-          first: () => ({
-            json: {
-              aiApiPrompt: "my api prompt",
-              aiSubPrompt: "my sub prompt",
-            },
-          }),
-        };
-      }
       throw new Error(`Unknown node: ${nodeName}`);
     });
 
     const items = callAndGetItems();
-    expect(items[0].json.aiApiPrompt).toBe("my api prompt");
-    expect(items[0].json.aiSubPrompt).toBe("my sub prompt");
+    expect(Object.keys(items[0].json)).toEqual(["trendComment"]);
   });
 });
