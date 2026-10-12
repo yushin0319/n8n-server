@@ -88,7 +88,8 @@ function familyKey(n: string): string {
   c = c.replace(/Kimi K2(?!\.5).*/g, "Kimi K2");
   c = c.replace(/MiniMax-M2\.\d+/g, "MiniMax-M2");
   c = c.replace(/MiniMax M2/g, "MiniMax-M2");
-  c = c.replace(/(GLM-\d+(?:\.\d+)?)\b.*/g, "$1");
+  // "-Flash" / "-Turbo" のようにハイフンでつながる派生モデルは本体と分けて残す
+  c = c.replace(/(GLM-\d+(?:\.\d+)?(?:-[A-Za-z]+)*)\b.*/g, "$1");
   c = c.replace(/(MiMo-V2-Flash).*/g, "$1");
   c = c.replace(/(Nova \d+\.\d+ (?:Pro|Lite|Omni)).*/g, "$1");
   c = c.replace(/(Nova Premier).*/g, "$1");
