@@ -1,0 +1,39 @@
+<table class="mdx-table"><colgroup><col style="width: 14.09%"><col style="width: 22.44%"><col style="width: 22.44%"><col style="width: 13.99%"><col style="width: 27.040000000000006%"></colgroup><thead class="mdx-thead"><tr class="mdx-tr"><p class="mdx-p"><th class="mdx-th"><span style="display: inline-block; width: 100%; text-align: left;">Deprecated Model</span></th>
+<th class="mdx-th"><span style="display: inline-block; width: 100%; text-align: left;">Deprecated Time</span></th>
+<th class="mdx-th"><span style="display: inline-block; width: 100%; text-align: left;">System replacement time</span></th>
+<th class="mdx-th"><span style="display: inline-block; width: 100%; text-align: left;">System Replacement Model</span></th>
+<th class="mdx-th"><span style="display: inline-block; width: 100%; text-align: left;">Replacement Impact</span></th></p></tr></thead><tbody class="mdx-tbody"><tr class="mdx-tr"><p class="mdx-p"><td class="mdx-td"><span style="display: inline-block; width: 100%; text-align: left;">mimo-v2.5-pro</span></td>
+<td class="mdx-td"><span style="display: inline-block; width: 100%; text-align: left;">10:00, October 21,2026 (UTC+8)</span></td>
+<td class="mdx-td"><span style="display: inline-block; width: 100%; text-align: left;">10:00, October 14,2026 (UTC+8)</span></td>
+<td class="mdx-td"><span style="display: inline-block; width: 100%; text-align: left;">mimo-v2.6-pro</span></td>
+<td class="mdx-td"><span style="display: inline-block; width: 100%; text-align: left;">API parameters are fully adapted. The mimo-v2.5-pro only supports text input, while switching to mimo-v2.6-pro will enable multimodal understanding capability.</span></td></p></tr><tr class="mdx-tr"><p class="mdx-p"><td class="mdx-td"><span style="display: inline-block; width: 100%; text-align: left;">mimo-v2.5</span></td>
+<td class="mdx-td"><span style="display: inline-block; width: 100%; text-align: left;">10:00, October 21,2026 (UTC+8)</span></td>
+<td class="mdx-td"><span style="display: inline-block; width: 100%; text-align: left;">10:00, October 14,2026 (UTC+8)</span></td>
+<td class="mdx-td"><span style="display: inline-block; width: 100%; text-align: left;">mimo-v2.6-flash</span></td>
+<td class="mdx-td"><span style="display: inline-block; width: 100%; text-align: left;">The default values of parameters have changed; please refer to the details below.</span></td></p></tr></tbody></table>
+<table class="mdx-table"><colgroup><col style="width: 42.36%"><col style="width: 28.82%"><col style="width: 28.819999999999993%"></colgroup><thead class="mdx-thead"><tr class="mdx-tr"><p class="mdx-p"><th class="mdx-th"><span style="display: inline-block; width: 100%; text-align: left;">Variance Item</span></th>
+<th class="mdx-th"><span style="display: inline-block; width: 100%; text-align: left;">mimo-v2.5</span></th>
+<th class="mdx-th"><span style="display: inline-block; width: 100%; text-align: left;">mimo-v2.6-flash</span></th></p></tr></thead><tbody class="mdx-tbody"><tr class="mdx-tr"><p class="mdx-p"><td class="mdx-td"><span style="display: inline-block; width: 100%; text-align: left;"><code class="mdx-code-inline">max_completion_tokens </code>default value</span></td>
+<td class="mdx-td"><span style="display: inline-block; width: 100%; text-align: left;"><code class="mdx-code-inline">32768</code></span></td>
+<td class="mdx-td"><span style="display: inline-block; width: 100%; text-align: left;"><code class="mdx-code-inline">131072</code></span></td></p></tr></tbody></table>
+<table class="mdx-table"><colgroup><col style="width: 14.88%"><col style="width: 21.76%"><col style="width: 21.76%"><col style="width: 13.56%"><col style="width: 28.039999999999992%"></colgroup><thead class="mdx-thead"><tr class="mdx-tr"><p class="mdx-p"><th class="mdx-th"><span style="display: inline-block; width: 100%; text-align: left;">Deprecated Model</span></th>
+<th class="mdx-th"><span style="display: inline-block; width: 100%; text-align: left;">Deprecated Time</span></th>
+<th class="mdx-th"><span style="display: inline-block; width: 100%; text-align: left;">System replacement time</span></th>
+<th class="mdx-th"><span style="display: inline-block; width: 100%; text-align: left;">System Replacement Model</span></th>
+<th class="mdx-th"><span style="display: inline-block; width: 100%; text-align: left;">Replacement Impact</span></th></p></tr></thead><tbody class="mdx-tbody"><tr class="mdx-tr"><p class="mdx-p"><td class="mdx-td"><span style="display: inline-block; width: 100%; text-align: left;">mimo-v2-pro</span></td>
+<td class="mdx-td"><span style="display: inline-block; width: 100%; text-align: left;">2026.6.30 00:00 (UTC+8)</span></td>
+<td class="mdx-td"><span style="display: inline-block; width: 100%; text-align: left;">2026.6.1 00:00 (UTC+8)</span></td>
+<td class="mdx-td"><span style="display: inline-block; width: 100%; text-align: left;">mimo-v2.5-pro</span></td>
+<td class="mdx-td"><span style="display: inline-block; width: 100%; text-align: left;">API parameters are fully adapted</span></td></p></tr><tr class="mdx-tr"><p class="mdx-p"><td class="mdx-td"><span style="display: inline-block; width: 100%; text-align: left;">mimo-v2-omni</span></td>
+<td class="mdx-td"><span style="display: inline-block; width: 100%; text-align: left;">2026.6.30 00:00 (UTC+8)</span></td>
+<td class="mdx-td"><span style="display: inline-block; width: 100%; text-align: left;">2026.6.1 00:00 (UTC+8)</span></td>
+<td class="mdx-td"><span style="display: inline-block; width: 100%; text-align: left;">mimo-v2.5</span></td>
+<td class="mdx-td"><span style="display: inline-block; width: 100%; text-align: left;">API parameters are fully adapted</span></td></p></tr><tr class="mdx-tr"><p class="mdx-p"><td class="mdx-td"><span style="display: inline-block; width: 100%; text-align: left;">mimo-v2-flash</span></td>
+<td class="mdx-td"><span style="display: inline-block; width: 100%; text-align: left;">2026.6.30 00:00 (UTC+8)</span></td>
+<td class="mdx-td"><span style="display: inline-block; width: 100%; text-align: left;">2026.6.18 00:00 (UTC+8)</span></td>
+<td class="mdx-td"><span style="display: inline-block; width: 100%; text-align: left;">mimo-v2.5</span></td>
+<td class="mdx-td"><span style="display: inline-block; width: 100%; text-align: left;">The default value of the parameter has changed, see details below </span></td></p></tr><tr class="mdx-tr"><p class="mdx-p"><td class="mdx-td"><span style="display: inline-block; width: 100%; text-align: left;">mimo-v2-tts</span></td>
+<td class="mdx-td"><span style="display: inline-block; width: 100%; text-align: left;">2026.6.30 00:00 (UTC+8)</span></td>
+<td class="mdx-td"><span style="display: inline-block; width: 100%; text-align: left;">2026.6.27 00:00 (UTC+8)</span></td>
+<td class="mdx-td"><span style="display: inline-block; width: 100%; text-align: left;">mimo-v2.5-tts</span></td>
+<td class="mdx-td"><span style="display: inline-block; width: 100%; text-align: left;">Timbre remapping,<code class="mdx-code-inline">mimo_default</code> is mapped to <code class="mdx-code-inline">冰糖</code> in Chinese clusters and <code class="mdx-code-inline">mia</code> in other clusters.</span></td></p></tr></tbody></table>

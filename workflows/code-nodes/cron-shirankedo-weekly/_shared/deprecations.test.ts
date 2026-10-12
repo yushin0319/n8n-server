@@ -7,6 +7,8 @@ import kimiMd from "../__fixtures__/deprecations/kimi.md.txt?raw";
 import openaiMd from "../__fixtures__/deprecations/openai.md.txt?raw";
 import xaiGuide from "../__fixtures__/deprecations/xai-llms-full.excerpt.txt?raw";
 import xiaomiHtml from "../__fixtures__/deprecations/xiaomi.html.txt?raw";
+// 2026-10-12 取得。日付が "(UTC+8)" 付きの書式に変わった版（表の部分だけの抜粋）
+import xiaomi202610Html from "../__fixtures__/deprecations/xiaomi-2026-10.excerpt.html.txt?raw";
 import {
   buildIndex,
   type DeprecationEntry,
@@ -212,6 +214,45 @@ describe("parseXiaomi", () => {
     expect(ids["mimo-v2.5"]).toBe("2026-10-21T02:00:00.000Z");
     expect(ids["mimo-v2-pro"]).toBe("2026-06-29T16:00:00.000Z");
     expect(ids["mimo-v2.6-pro"]).toBeUndefined();
+  });
+
+  it("2026-10 の書式（'(UTC+8)' 付き）も UTC に換算する", () => {
+    const r = parseXiaomi(xiaomi202610Html);
+    expect(r.markerFound).toBe(true);
+    expect(byId(r.entries)).toEqual({
+      "mimo-v2.5-pro": "2026-10-21T02:00:00.000Z",
+      "mimo-v2.5": "2026-10-21T02:00:00.000Z",
+      "mimo-v2-pro": "2026-06-29T16:00:00.000Z",
+      "mimo-v2-omni": "2026-06-29T16:00:00.000Z",
+      "mimo-v2-flash": "2026-06-29T16:00:00.000Z",
+      "mimo-v2-tts": "2026-06-29T16:00:00.000Z",
+    });
+  });
+});
+
+describe("parseXiaomi（日付の書式）", () => {
+  const page = (date: string) =>
+    `<table><tr><th>Deprecated Model</th><th>Deprecated Time</th></tr><tr><td>mimo-v2.5</td><td>${date}</td></tr></table>`;
+  const retireAt = (date: string) =>
+    parseXiaomi(page(date)).entries[0]?.retireAt;
+
+  it.each([
+    ["Beijing Time 2026.10.21 10:00", "2026-10-21T02:00:00.000Z"],
+    ["2026.6.30 00:00 (UTC+8)", "2026-06-29T16:00:00.000Z"],
+    ["10:00, October 21,2026 (UTC+8)", "2026-10-21T02:00:00.000Z"],
+    ["10:00, Oct 21, 2026 (UTC+8)", "2026-10-21T02:00:00.000Z"],
+    ["2026.10.21 10:00 (UTC-5)", "2026-10-21T15:00:00.000Z"],
+  ])("'%s' → %s", (date, expected) => {
+    expect(retireAt(date)).toBe(expected);
+  });
+
+  it.each([
+    "2026.10.21 10:00",
+    "10:00, October 21,2026",
+    "TBD",
+    "10:00, Smarch 21,2026 (UTC+8)",
+  ])("タイムゾーンが無い・読めない '%s' は null（除外しない）", (date) => {
+    expect(retireAt(date)).toBeNull();
   });
 });
 

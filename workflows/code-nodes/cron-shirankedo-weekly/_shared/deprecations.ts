@@ -129,11 +129,18 @@ export function parseMonthDate(text: string): string | null {
   const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(t);
   if (iso)
     return endOfDayAnywhere(Number(iso[1]), Number(iso[2]), Number(iso[3]));
-  const m = /^([A-Za-z]{3})[a-z]*\.?\s+(\d{1,2}),\s*(\d{4})$/.exec(t);
+  const md = parseMonthDayYear(t);
+  return md ? endOfDayAnywhere(md.y, md.mo, md.d) : null;
+}
+
+/** "October 21, 2026" / "Oct 1, 2026" / "October 21,2026" → 年月日。読めなければ null */
+function parseMonthDayYear(
+  text: string,
+): { y: number; mo: number; d: number } | null {
+  const m = /^([A-Za-z]{3})[a-z]*\.?\s+(\d{1,2}),\s*(\d{4})$/.exec(text);
   if (!m) return null;
-  const month = MONTHS.indexOf(m[1].toLowerCase()) + 1;
-  if (month === 0) return null;
-  return endOfDayAnywhere(Number(m[3]), month, Number(m[2]));
+  const mo = MONTHS.indexOf(m[1].toLowerCase()) + 1;
+  return mo === 0 ? null : { y: Number(m[3]), mo, d: Number(m[2]) };
 }
 
 const EARLIEST_PREFIX =
@@ -390,19 +397,11 @@ export function parseXaiGuide(md: string): ParseResult {
     markerFound = true;
     let retireAt = parseMonthDate(h[1]);
     const t = /at (\d{1,2}):(\d{2}) (AM|PM) PT/.exec(sec);
-    const d = /([A-Za-z]+) (\d{1,2}), (\d{4})/.exec(h[1]);
-    if (t && d && retireAt) {
-      const month = MONTHS.indexOf(d[1].slice(0, 3).toLowerCase()) + 1;
+    const d = parseMonthDayYear(h[1]);
+    if (t && d) {
       let hour = Number(t[1]) % 12;
       if (t[3] === "PM") hour += 12;
-      retireAt = localToUtc(
-        Number(d[3]),
-        month,
-        Number(d[2]),
-        hour,
-        Number(t[2]),
-        -8,
-      );
+      retireAt = localToUtc(d.y, d.mo, d.d, hour, Number(t[2]), -8);
     }
     for (const m of sec.matchAll(/^\s*[*-]\s+`([^`]+)`\s*$/gm)) {
       entries.push({ vendor: "xai", id: m[1], retireAt });
@@ -451,21 +450,34 @@ export function parseKimi(md: string): ParseResult {
   return { entries: dedupe(entries), markerFound: true };
 }
 
-/** "Beijing Time 2026.10.21 10:00" → UTC ISO。読めなければ null */
-function parseBeijingTime(text: string): string | null {
-  const m =
-    /^Beijing Time\s+(\d{4})\.(\d{1,2})\.(\d{1,2})\s+(\d{1,2}):(\d{2})$/.exec(
-      text.trim(),
-    );
-  if (!m) return null;
-  return localToUtc(
-    Number(m[1]),
-    Number(m[2]),
-    Number(m[3]),
-    Number(m[4]),
-    Number(m[5]),
-    8,
-  );
+/**
+ * Xiaomi の停止日時 → UTC ISO。次の書式を読む（2026-10 に 2・3 の書式へ変わった）:
+ *   1. "Beijing Time 2026.10.21 10:00"
+ *   2. "2026.6.30 00:00 (UTC+8)"
+ *   3. "10:00, October 21,2026 (UTC+8)"
+ * タイムゾーンが書かれていない・読めない場合は null（除外しない）
+ */
+function parseXiaomiTime(text: string): string | null {
+  const t = text.trim();
+  const beijing = /^Beijing Time\s+(.+)$/.exec(t);
+  const utc = /^(.+?)\s*\(UTC\s*([+-]\d{1,2})\)$/.exec(t);
+  let body: string;
+  let offset: number;
+  if (beijing) [body, offset] = [beijing[1], 8];
+  else if (utc) [body, offset] = [utc[1], Number(utc[2])];
+  else return null;
+
+  // 残りは "2026.6.30 00:00" か "10:00, October 21,2026"
+  const ymd = /^(\d{4})\.(\d{1,2})\.(\d{1,2})\s+(\d{1,2}):(\d{2})$/.exec(body);
+  const named = /^(\d{1,2}):(\d{2}),?\s+(.+)$/.exec(body);
+  const md = named && parseMonthDayYear(named[3]);
+  let parts: number[];
+  if (ymd) parts = ymd.slice(1).map(Number);
+  else if (named && md)
+    parts = [md.y, md.mo, md.d, Number(named[1]), Number(named[2])];
+  else return null;
+  const [y, mo, d, h, mi] = parts;
+  return localToUtc(y, mo, d, h, mi, offset);
 }
 
 /**
@@ -495,7 +507,7 @@ export function parseXiaomi(html: string): ParseResult {
       entries.push({
         vendor: "xiaomi",
         id,
-        retireAt: parseBeijingTime(cells[dateCol] ?? ""),
+        retireAt: parseXiaomiTime(cells[dateCol] ?? ""),
       });
     }
   }
