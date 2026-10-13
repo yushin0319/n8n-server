@@ -123,6 +123,39 @@ describe("collectDeprecations", () => {
     ]);
   });
 
+  /** Xiaomi の廃止表に、停止日を読めない行を足す */
+  const withUnreadableXiaomi = (ids: string[]) =>
+    allOk().map((p) =>
+      p.vendor === "xiaomi"
+        ? page(
+            "xiaomi",
+            `${xiaomiHtml}<table><tr><th>Deprecated Model</th><th>Deprecated Time</th></tr>${ids
+              .map((id) => `<tr><td>${id}</td><td>2026/12/01 10:00</td></tr>`)
+              .join("")}</table>`,
+          )
+        : p,
+    );
+
+  it("停止日を読めないエントリが 1 件でもあれば警告し、読めたエントリは使う", () => {
+    const r = collectDeprecations(withUnreadableXiaomi(["mimo-v3"]));
+    expect(r.deprecationWarnings).toEqual([
+      "xiaomi: 停止日を読めない廃止エントリが 1 件（mimo-v3）",
+    ]);
+    const xiaomi = r.deprecations.filter((e) => e.vendor === "xiaomi");
+    expect(xiaomi.find((e) => e.id === "mimo-v2-pro")?.retireAt).toBe(
+      "2026-06-29T16:00:00.000Z",
+    );
+    expect(xiaomi.find((e) => e.id === "mimo-v3")?.retireAt).toBeNull();
+  });
+
+  it("読めないエントリの ID は先頭 5 件まで出し、残りは件数にする", () => {
+    const ids = ["m-1", "m-2", "m-3", "m-4", "m-5", "m-6", "m-7"];
+    const r = collectDeprecations(withUnreadableXiaomi(ids));
+    expect(r.deprecationWarnings).toEqual([
+      "xiaomi: 停止日を読めない廃止エントリが 7 件（m-1, m-2, m-3, m-4, m-5 ほか 2 件）",
+    ]);
+  });
+
   it("xAI の llms.txt 取得失敗（indexError）を警告する", () => {
     const pages = allOk()
       .filter((p) => p.vendor !== "xai")

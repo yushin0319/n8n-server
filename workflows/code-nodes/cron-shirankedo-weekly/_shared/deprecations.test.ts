@@ -16,6 +16,7 @@ import {
   htmlToText,
   isRetired,
   modelKey,
+  nullKindOf,
   parseDeepseek,
   parseGoogleModels,
   parseKimi,
@@ -253,6 +254,137 @@ describe("parseXiaomi（日付の書式）", () => {
     "10:00, Smarch 21,2026 (UTC+8)",
   ])("タイムゾーンが無い・読めない '%s' は null（除外しない）", (date) => {
     expect(retireAt(date)).toBeNull();
+  });
+
+  it("読めない理由を nullKind に残す（数字があれば unreadable、未定は tbd）", () => {
+    const kindOf = (date: string) => parseXiaomi(page(date)).entries[0];
+    expect(kindOf("2026.10.21 10:00").nullKind).toBe("unreadable");
+    expect(kindOf("TBD").nullKind).toBe("tbd");
+    expect(kindOf("2026.6.30 00:00 (UTC+8)").nullKind).toBeUndefined();
+  });
+});
+
+/** id → nullKind の対応表 */
+function kinds(
+  entries: DeprecationEntry[],
+): Record<string, string | undefined> {
+  return Object.fromEntries(entries.map((e) => [e.id, e.nullKind]));
+}
+
+describe("nullKindOf（読めない日付の理由）", () => {
+  it.each([
+    ["at earliest 2024-06-13", "earliest"],
+    ["Not sooner than September 1, 2027", "earliest"],
+    // 「最短」の注記でも日付が読めなければ unreadable（最短日を守れないので除外もしない）
+    ["at earliest 2026/10/21", "unreadable"],
+    ["To be announced", "tbd"],
+    ["TBD", "tbd"],
+    ["No shutdown date announced", "tbd"],
+    ["N/A", "tbd"],
+    ["—", "tbd"],
+    ["", "tbd"],
+    ["2026/10/21", "unreadable"],
+    ["Oct 1 2026", "unreadable"],
+    ["Q4 2026", "unreadable"],
+  ])("'%s' → %s", (text, kind) => {
+    expect(nullKindOf(text)).toBe(kind);
+  });
+});
+
+describe("読めない日付（unreadable）", () => {
+  const md = (rows: string[]) =>
+    ["| Shutdown date | Model |", "| --- | --- |", ...rows, ""].join("\n");
+
+  it("OpenAI / Anthropic の表: 数字があるのに読めない日付は unreadable、未定は tbd", () => {
+    const r = parseMarkdownTables(
+      md([
+        "| 2026/10/21 | `m1` |",
+        "| To be announced | `m2` |",
+        "| Oct 1, 2026 | `m3` |",
+      ]),
+      "openai",
+    );
+    expect(kinds(r.entries)).toEqual({
+      m1: "unreadable",
+      m2: "tbd",
+      m3: undefined,
+    });
+  });
+
+  it("同じ ID に読めない日付が 1 つでもあれば unreadable（除外しない）", () => {
+    const r = parseMarkdownTables(
+      md(["| Oct 1, 2026 | `m1` |", "| 2026/10/21 | `m1` |", "| TBD | `m1` |"]),
+      "openai",
+    );
+    expect(r.entries).toEqual([
+      { vendor: "openai", id: "m1", retireAt: null, nullKind: "unreadable" },
+    ]);
+  });
+
+  it("Kimi: 告知文の日付が読めない行・告知文が無い Deprecated 行は unreadable", () => {
+    const r = parseKimi(
+      [
+        "## Deprecated Models",
+        "> `kimi-a` was officially discontinued on **2026/10/21** and is no longer maintained.",
+        "| Model | Status |",
+        "| --- | --- |",
+        "| `kimi-a` | Deprecated |",
+        "| `kimi-b` | Deprecated |",
+        "",
+      ].join("\n"),
+    );
+    expect(kinds(r.entries)).toEqual({
+      "kimi-a": "unreadable",
+      "kimi-b": "unreadable",
+    });
+  });
+
+  it("xAI: Retirement 見出しの日付が読めなければ unreadable で残す", () => {
+    const r = parseXaiGuide(
+      ["# Grok Model Retirement on 2026-11-02", "", "* `grok-x`", ""].join(
+        "\n",
+      ),
+    );
+    expect(r.markerFound).toBe(true);
+    expect(r.entries).toEqual([
+      { vendor: "xai", id: "grok-x", retireAt: null, nullKind: "unreadable" },
+    ]);
+  });
+
+  it("DeepSeek: Date の書式が読めない節は前の節に混ぜず unreadable にする", () => {
+    const r = parseDeepseek(
+      [
+        "<p>Date: 2026-09-10</p><p>The models V4 Flash have been retired.</p>",
+        "<p>Date: 2026/10/20</p><p>The models V4 Pro have been retired.</p>",
+      ].join(""),
+    );
+    expect(r.entries).toEqual([
+      {
+        vendor: "deepseek",
+        id: "DeepSeek V4 Flash",
+        retireAt: "2026-09-11T12:00:00.000Z",
+      },
+      {
+        vendor: "deepseek",
+        id: "DeepSeek V4 Pro",
+        retireAt: null,
+        nullKind: "unreadable",
+      },
+    ]);
+  });
+
+  it("各社のフィクスチャに unreadable は無い", () => {
+    const all = [
+      ...parseMarkdownTables(openaiMd, "openai").entries,
+      ...parseMarkdownTables(anthropicMd, "anthropic").entries,
+      ...parseGoogleModels(googleModelsMd).entries,
+      ...parseXaiGuide(xaiGuide).entries,
+      ...parseKimi(kimiMd).entries,
+      ...parseXiaomi(xiaomiHtml).entries,
+      ...parseXiaomi(xiaomi202610Html).entries,
+      ...parseDeepseek(deepseekHtml).entries,
+    ];
+    expect(all.filter((e) => e.nullKind === "unreadable")).toEqual([]);
   });
 });
 
