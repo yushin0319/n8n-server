@@ -278,6 +278,12 @@ describe("familyKey", () => {
     ["MiniMax-M2.5", "MiniMax-M2"],
     ["MiniMax M2", "MiniMax-M2"],
     ["Claude 4.5 Sonnet (2025-10-22)", "Claude 4.5 Sonnet"],
+    ["GLM-5.3 (Max)", "GLM-5.3"],
+    ["GLM-5.3 (Low)", "GLM-5.3"],
+    // ハイフンでつながる派生モデル（Flash / Turbo）は本体と別ファミリー
+    ["GLM-5.3-Flash", "GLM-5.3-Flash"],
+    ["GLM-4.7-Flash (Reasoning)", "GLM-4.7-Flash"],
+    ["GLM-5-Turbo", "GLM-5-Turbo"],
   ])("'%s' → '%s'", (input, expected) => {
     expect(familyKey(input)).toBe(expected);
   });
