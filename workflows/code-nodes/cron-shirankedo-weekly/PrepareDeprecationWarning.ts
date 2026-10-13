@@ -7,7 +7,8 @@ export default function (): CodeNodeReturn {
   return [
     {
       json: obsNotifyFromCron({
-        label: "LLM 廃止一覧の取得・解析に失敗（該当社は除外なしで継続）",
+        // 社ごとの全滅（その社は除外なし）と、一部の停止日だけ読めない場合（その分は除外なし）の両方に当てはまる文言
+        label: "LLM 廃止一覧の取得・解析で警告（読めなかった分は除外しない）",
         isError: true,
         detail: warnings.join(" / ").substring(0, 500),
         service: "n8n",

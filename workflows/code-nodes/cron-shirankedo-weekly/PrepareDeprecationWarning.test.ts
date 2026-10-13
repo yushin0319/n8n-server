@@ -28,4 +28,11 @@ describe("PrepareDeprecationWarning", () => {
     expect(out[0].json.summary).toContain("openai: HTTP 503");
     expect(out[0].json.summary).toContain("kimi");
   });
+
+  it("件名は社ごとの全滅にも一部だけ読めない場合にも当てはまる文言にする", () => {
+    const out = run(["xiaomi: 停止日を読めない廃止エントリが 1 件（mimo-v3）"]);
+    expect(out[0].json.subject).toBe(
+      "❌ LLM 廃止一覧の取得・解析で警告（読めなかった分は除外しない）",
+    );
+  });
 });

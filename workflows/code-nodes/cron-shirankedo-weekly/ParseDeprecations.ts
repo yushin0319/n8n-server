@@ -59,6 +59,20 @@ function collectVendor(
     warnings.push(`${vendor}: 日付付き・停止済みの廃止エントリが 0 件です`);
     return [];
   }
+  // 一部の行だけ書式が変わった場合も気づけるよう、読めない停止日は 1 件でも警告する（読めた分は使う）
+  const unreadable = [
+    ...new Set(
+      entries.filter((e) => e.nullKind === "unreadable").map((e) => e.id),
+    ),
+  ];
+  if (unreadable.length > 0) {
+    // 1 社の ID で通知本文（500 文字）が埋まらないよう先頭 5 件だけ出す
+    const shown = unreadable.slice(0, 5);
+    const rest = unreadable.length - shown.length;
+    warnings.push(
+      `${vendor}: 停止日を読めない廃止エントリが ${unreadable.length} 件（${shown.join(", ")}${rest > 0 ? ` ほか ${rest} 件` : ""}）`,
+    );
+  }
   return entries;
 }
 
@@ -67,7 +81,9 @@ function collectVendor(
  * 社ごとに fail-open: 取得失敗 / 構造が見つからない / 日付付きエントリ 0 件 / 解析中の例外なら、
  * その社のエントリは使わず（除外 0 件）警告だけ出す。例外で WF 全体（LLM 一覧・為替の投稿）を止めない。
  * 「0 件」は前回との比較ではなく常に異常とみなす。各社の一覧は過去の廃止（Google は停止済みの旧モデル）も載せ続けるため、
- * 正常なら 1 件以上あるはずで、状態を持たなくても同じ判定になる
+ * 正常なら 1 件以上あるはずで、状態を持たなくても同じ判定になる。
+ * 停止日を読めないエントリ（nullKind: unreadable）が 1 件でもあれば、その社のエントリは使ったうえで警告する
+ * （読めない分は除外されない。新しい行だけ書式が変わった場合に黙って漏らさないため）
  */
 export function collectDeprecations(pages: IDataObject[]): DeprecationResult {
   const deprecations: DeprecationEntry[] = [];

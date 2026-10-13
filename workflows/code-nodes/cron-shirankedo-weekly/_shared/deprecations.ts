@@ -68,7 +68,8 @@ export const PROVIDER_VENDOR: Record<string, Vendor> = {
  * 廃止エントリ。
  * - retireAt: 停止時刻（UTC ISO）。読めなければ null
  * - stopped: 停止済みと明示されている（Google models ページの "(Shut down)"）。日付は無い
- * - nullKind: retireAt が null の理由。"earliest" は「最短でこの日以降」の注記、"tbd" は未定・延期
+ * - nullKind: retireAt が null の理由。"earliest" は「最短でこの日以降」の注記、"tbd" は未定・延期、
+ *   "unreadable" は日付らしいのに読めない（書式が変わった等。ParseDeprecations が警告する）
  * - earliestAt: 「最短でこの日以降」の日付（読めた場合）。この時刻より前には除外しない
  */
 export interface DeprecationEntry {
@@ -76,9 +77,11 @@ export interface DeprecationEntry {
   id: string;
   retireAt: string | null;
   stopped?: boolean;
-  nullKind?: "earliest" | "tbd";
+  nullKind?: NullKind;
   earliestAt?: string;
 }
+
+export type NullKind = "earliest" | "tbd" | "unreadable";
 
 export interface ParseResult {
   entries: DeprecationEntry[];
@@ -146,9 +149,31 @@ function parseMonthDayYear(
 const EARLIEST_PREFIX =
   /^\s*\**\s*(?:at earliest|not sooner than|earliest)\s*:?\s*/i;
 
-/** 日付セルが読めないときの理由。「最短でこの日以降」の注記なら earliest、それ以外は tbd */
-export function nullKindOf(text: string): "earliest" | "tbd" {
-  return EARLIEST_PREFIX.test(text) ? "earliest" : "tbd";
+/**
+ * 日付セルが読めないときの理由。「最短でこの日以降」の注記なら earliest、
+ * 数字を含まない（TBD / To be announced / N/A 等の未定）なら tbd、
+ * 数字を含むのに読めない（書式が変わった等）なら unreadable。
+ * 「最短」の注記でも日付が読めなければ unreadable（最短日を守れないので、確定日があっても除外しない）
+ */
+export function nullKindOf(text: string): NullKind {
+  const hasDigit = /\d/.test(text);
+  if (EARLIEST_PREFIX.test(text))
+    return parseEarliest(text) || !hasDigit ? "earliest" : "unreadable";
+  return hasDigit ? "unreadable" : "tbd";
+}
+
+type DatePart = Pick<DeprecationEntry, "retireAt" | "nullKind">;
+
+/**
+ * 停止時刻（読めなければ null）→ エントリの日付部分。読めない場合、元の文字列があれば nullKindOf で理由を決め、
+ * 無ければ（日付の入った見出し・告知文そのものが見つからない）unreadable
+ */
+function datePart(retireAt: string | null, raw?: string): DatePart {
+  if (retireAt) return { retireAt };
+  return {
+    retireAt: null,
+    nullKind: raw === undefined ? "unreadable" : nullKindOf(raw),
+  };
 }
 
 /** 「at earliest 2024-06-13」「Not sooner than September 1, 2027」の日付。読めなければ undefined */
@@ -220,6 +245,7 @@ const MODEL_ID = /^[a-z0-9][a-z0-9.\-_]*$/i;
  *   （例: gpt-4-0314 は古い "at earliest 2024-06-13" と確定 2026-03-26 → 2026-03-26 の翌日 12:00 UTC）
  * - 「最短」の注記だけで確定日が無い場合は除外しない（earliestAt は残す）
  * - 停止済みの明示（stopped）は確定扱い
+ * - 読めない日付（unreadable）が 1 つでもあれば unreadable として残す（除外はせず、警告に使う）
  */
 function dedupe(entries: DeprecationEntry[]): DeprecationEntry[] {
   const groups = new Map<string, DeprecationEntry[]>();
@@ -244,7 +270,14 @@ function dedupe(entries: DeprecationEntry[]): DeprecationEntry[] {
       if (!e.stopped && !e.retireAt && e.nullKind !== "earliest") tbd = true;
     }
     if (tbd) {
-      out.push({ vendor, id, retireAt: null, nullKind: "tbd" });
+      out.push({
+        vendor,
+        id,
+        retireAt: null,
+        nullKind: list.some((e) => e.nullKind === "unreadable")
+          ? "unreadable"
+          : "tbd",
+      });
     } else if (stopped && !confirmed) {
       // 停止済みの明示。「最短」の日付があればそれより前には消さない
       out.push(
@@ -385,26 +418,29 @@ export function parseXaiIndex(txt: string): string[] {
 /**
  * xAI の移行ガイド。見出し "# ... Retirement on May 15, 2026" の節にある
  * "* `slug`" の箇条書きを引退モデルとする。
- * "at 12:00 PM PT" があれば PST（UTC-8）で換算する（PDT より 1 時間遅く、早めに消すことはない）
+ * "at 12:00 PM PT" があれば PST（UTC-8）で換算する（PDT より 1 時間遅く、早めに消すことはない）。
+ * 見出しに Retirement はあるが日付が読めない節は unreadable にする（見出しの書式変更で黙って漏らさない）
  */
 export function parseXaiGuide(md: string): ParseResult {
   const entries: DeprecationEntry[] = [];
   let markerFound = false;
   const sections = md.split(/\n(?=# )/);
   for (const sec of sections) {
-    const h = /^#\s.*Retirement on ([A-Za-z]+ \d{1,2}, \d{4})/m.exec(sec);
+    const h = /^#\s.*\bRetirement\b(.*)$/m.exec(sec);
     if (!h) continue;
     markerFound = true;
-    let retireAt = parseMonthDate(h[1]);
+    const ds = /\bon ([A-Za-z]+ \d{1,2}, \d{4})/.exec(h[1])?.[1] ?? "";
+    let retireAt = parseMonthDate(ds);
     const t = /at (\d{1,2}):(\d{2}) (AM|PM) PT/.exec(sec);
-    const d = parseMonthDayYear(h[1]);
+    const d = parseMonthDayYear(ds);
     if (t && d) {
       let hour = Number(t[1]) % 12;
       if (t[3] === "PM") hour += 12;
       retireAt = localToUtc(d.y, d.mo, d.d, hour, Number(t[2]), -8);
     }
+    const date = datePart(retireAt);
     for (const m of sec.matchAll(/^\s*[*-]\s+`([^`]+)`\s*$/gm)) {
-      entries.push({ vendor: "xai", id: m[1], retireAt });
+      entries.push({ vendor: "xai", id: m[1], ...date });
     }
   }
   return { entries: dedupe(entries), markerFound };
@@ -413,28 +449,29 @@ export function parseXaiGuide(md: string): ParseResult {
 /**
  * Kimi のモデル一覧（## Deprecated Models 節）。
  * 引用文 "`kimi-k2.5` was officially discontinued on **August 31, 2026**" から日付を取り、
- * "The `kimi-k2` series models ..." は kimi-k2-* の表の行に日付を当てる（ベンダー自身の「シリーズ」宣言）
+ * "The `kimi-k2` series models ..." は kimi-k2-* の表の行に日付を当てる（ベンダー自身の「シリーズ」宣言）。
+ * 引用文の日付が読めない行と、引用文が見つからない Deprecated 行は unreadable にする
  */
 export function parseKimi(md: string): ParseResult {
   const start = md.indexOf("## Deprecated Models");
   if (start < 0) return { entries: [], markerFound: false };
   const body = md.slice(start);
-  const direct = new Map<string, string | null>();
-  const series: { prefix: string; retireAt: string | null }[] = [];
+  const direct = new Map<string, DatePart>();
+  const series: { prefix: string; date: DatePart }[] = [];
   for (const line of body.split(/\r?\n/)) {
     if (!line.startsWith(">") || !/discontinued on/.test(line)) continue;
     const dm = /discontinued on \*\*([^*]+)\*\*/.exec(line);
-    const retireAt = dm ? parseMonthDate(dm[1]) : null;
+    const date = datePart(dm ? parseMonthDate(dm[1]) : null, dm?.[1]);
     const ids = backticked(line).filter((x) => MODEL_ID.test(x));
     if (/\bseries\b/.test(line) && ids.length > 0) {
-      series.push({ prefix: ids[0], retireAt });
+      series.push({ prefix: ids[0], date });
     } else {
-      for (const id of ids) direct.set(id, retireAt);
+      for (const id of ids) direct.set(id, date);
     }
   }
   const entries: DeprecationEntry[] = [];
-  for (const [id, retireAt] of direct)
-    entries.push({ vendor: "kimi", id, retireAt });
+  for (const [id, date] of direct)
+    entries.push({ vendor: "kimi", id, ...date });
   for (const line of body.split(/\r?\n/)) {
     if (!line.trim().startsWith("|")) continue;
     const cells = splitRow(line);
@@ -444,7 +481,7 @@ export function parseKimi(md: string): ParseResult {
       const s = series.find(
         (x) => id === x.prefix || id.startsWith(`${x.prefix}-`),
       );
-      entries.push({ vendor: "kimi", id, retireAt: s ? s.retireAt : null });
+      entries.push({ vendor: "kimi", id, ...(s ? s.date : datePart(null)) });
     }
   }
   return { entries: dedupe(entries), markerFound: true };
@@ -504,10 +541,11 @@ export function parseXiaomi(html: string): ParseResult {
     for (const cells of rows.slice(1)) {
       const id = (cells[modelCol] ?? "").toLowerCase();
       if (!MODEL_ID.test(id)) continue;
+      const dateCell = cells[dateCol] ?? "";
       entries.push({
         vendor: "xiaomi",
         id,
-        retireAt: parseXiaomiTime(cells[dateCol] ?? ""),
+        ...datePart(parseXiaomiTime(dateCell), dateCell),
       });
     }
   }
@@ -516,18 +554,18 @@ export function parseXiaomi(html: string): ParseResult {
 
 /**
  * DeepSeek の Change Log。"Date: YYYY-MM-DD" の節にある
- * "models X and Y have been retired" を拾い、節の日付を停止日とする（引退済みの告知のため）
+ * "models X and Y have been retired" を拾い、節の日付を停止日とする（引退済みの告知のため）。
+ * "Date:" の後ろが YYYY-MM-DD でない節は、前の節に混ぜず unreadable にする
  */
 export function parseDeepseek(html: string): ParseResult {
   const text = htmlToText(html);
-  const parts = text.split(/Date: (\d{4}-\d{2}-\d{2})/);
+  const parts = text.split(/\bDate:\s*/);
   const markerFound = parts.length > 1;
   const entries: DeprecationEntry[] = [];
-  for (let i = 1; i + 1 < parts.length; i += 2) {
-    const [y, mo, d] = parts[i].split("-").map(Number);
-    const retireAt = endOfDayAnywhere(y, mo, d);
+  for (const part of parts.slice(1)) {
+    const date = datePart(parseMonthDate(part.split(/\s/, 1)[0]));
     // 本文は "." を含む版番号（V4.1）を許し、文末の "." で止める
-    for (const m of parts[i + 1].matchAll(
+    for (const m of part.matchAll(
       /\bmodels? ((?:(?!\bmodels?\b)(?:[^.;]|\.(?=\d)))+?) (?:have|has) been retired/gi,
     )) {
       for (const raw of m[1].split(/,\s*(?:and\s+)?|\s+and\s+/)) {
@@ -537,7 +575,7 @@ export function parseDeepseek(html: string): ParseResult {
           .replace(/^(?:model\s+)?(?:aliases?|names?)\s+/i, "");
         if (!name) continue;
         const id = /^deepseek/i.test(name) ? name : `DeepSeek ${name}`;
-        entries.push({ vendor: "deepseek", id, retireAt });
+        entries.push({ vendor: "deepseek", id, ...date });
       }
     }
   }
