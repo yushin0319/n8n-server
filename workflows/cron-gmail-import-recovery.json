@@ -93,7 +93,7 @@
         "limit": 500,
         "simple": true,
         "filters": {
-          "q": "newer_than:3d"
+          "q": "newer_than:7d"
         }
       },
       "type": "n8n-nodes-base.gmail",
@@ -126,7 +126,7 @@
         "returnAll": true,
         "simple": false,
         "filterType": "json",
-        "filterJson": "={{ JSON.stringify({ property: 'date', date: { on_or_after: $now.minus({ days: 4 }).toFormat('yyyy-MM-dd') } }) }}",
+        "filterJson": "={{ JSON.stringify({ property: 'date', date: { on_or_after: $now.minus({ days: 8 }).toFormat('yyyy-MM-dd') } }) }}",
         "options": {}
       },
       "type": "n8n-nodes-base.notion",
