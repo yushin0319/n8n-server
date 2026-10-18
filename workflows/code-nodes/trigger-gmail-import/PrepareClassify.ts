@@ -50,7 +50,12 @@ ${emailList}
 以下のJSON形式で返答してください（他のテキストは不要）:
 {"classifications": [{"index": 1, "importance": "重要"}, {"index": 2, "importance": "不要"}, ...]}`;
 
-  const openRouterOpts = { prompt, temperature: 0.1, maxTokens: 1000 };
+  // 出力は 1 通あたり約 13 トークン（{"index": 92, "importance": "不要"}, ）。
+  // 固定 1000 だと約 75 通で打ち切られて JSON が壊れ、全件が保存されない
+  // （2026-10-18 に 92 通で MAX_TOKENS）。回収 WF は数日分をまとめて流すので件数に比例させる。
+  const maxTokens = Math.min(16000, Math.max(1000, 200 + emails.length * 20));
+
+  const openRouterOpts = { prompt, temperature: 0.1, maxTokens };
   const qwenBody = buildOpenRouterRequest({
     ...openRouterOpts,
     model: "qwen/qwen3-next-80b-a3b-instruct:free",
@@ -66,7 +71,7 @@ ${emailList}
   const geminiBody = buildGeminiRequest({
     prompt,
     temperature: 0.1,
-    maxOutputTokens: 1000,
+    maxOutputTokens: maxTokens,
   });
 
   return [{ json: { qwenBody, gemmaBody, gptossBody, geminiBody, emails } }];

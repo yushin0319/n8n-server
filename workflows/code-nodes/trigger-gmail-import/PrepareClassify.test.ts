@@ -50,6 +50,31 @@ describe("PrepareClassify", () => {
     expect(gemini.generationConfig.temperature).toBe(0.1);
   });
 
+  it("出力上限はメール件数に比例し、92通でも打ち切られない", () => {
+    // 1 通あたりの出力は約 13 トークン。2026-10-18 に 92 通を固定 1000 で投げて MAX_TOKENS になった
+    const many = Array.from({ length: 92 }, (_, i) => ({
+      json: { Subject: `件名${i}`, From: "a@example.com", id: `m-${i}` },
+    }));
+    vi.stubGlobal("$input", { all: () => many });
+
+    const data = (prepareClassify() as INodeExecutionData[])[0].json;
+    const gemini = JSON.parse(data.geminiBody as string);
+    const qwen = JSON.parse(data.qwenBody as string);
+    expect(gemini.generationConfig.maxOutputTokens).toBeGreaterThanOrEqual(
+      92 * 15,
+    );
+    expect(qwen.max_tokens).toBe(gemini.generationConfig.maxOutputTokens);
+  });
+
+  it("件数が少ないときの出力上限は従来どおり 1000", () => {
+    vi.stubGlobal("$input", {
+      all: () => [{ json: { Subject: "s", From: "f", id: "m-1" } }],
+    });
+    const data = (prepareClassify() as INodeExecutionData[])[0].json;
+    const gemini = JSON.parse(data.geminiBody as string);
+    expect(gemini.generationConfig.maxOutputTokens).toBe(1000);
+  });
+
   it("Subject/Fromがない場合デフォルト値を使う", () => {
     vi.stubGlobal("$input", {
       all: () => [
