@@ -1,6 +1,10 @@
 version: 2
 updates:
-  - package-ecosystem: "docker"
+  # /server-config には Dockerfile が無く、イメージは docker-compose.yml に書いてあるので
+  # "docker" ではなく "docker-compose"（"docker" は dependency_file_not_found で毎週失敗していた）。
+  # 注意: マージしても本番には反映されない。サーバーで setup.sh を流すまで旧版のまま動く
+  # （2026-10-18 湧心くん判断: リポと本番の版がずれることを承知で監視を再開）。
+  - package-ecosystem: "docker-compose"
     directory: "/server-config"
     schedule:
       interval: "weekly"
