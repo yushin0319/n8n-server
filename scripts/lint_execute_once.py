@@ -15,6 +15,9 @@ N 件の入力を per-item 実行 → Notion API を N 倍呼び出し → メ�
    が retryOnFail=true。リトライで重複ページ作成のリスク。
    重複より欠落の方が困るノード (観測性 DB への記録など) は、node の notes に
    `lint-allow: notion-create-retry <理由>` と書いた場合だけ WARN に下げる (理由必須)。
+3. n8n の実行一覧 (GET /api/v1/executions) を includeData=true で取る HTTP ノード。
+   大きい実行が混ざると n8n 本体の V8 heap を超えてコンテナごと落ちる
+   (2026-10-19〜22 に db-archive-execution の FetchErrors で毎晩発生)。
 
 ### WARN (情報提供、CI は通す)
 
@@ -100,6 +103,32 @@ def _is_notion_create(node: dict[str, Any]) -> bool:
     return False
 
 
+def _is_execution_list_with_data(node: dict[str, Any]) -> bool:
+    """n8n の実行一覧 (GET /api/v1/executions) を includeData=true で取る HTTP ノードか判定する。
+
+    一覧を中身ごと取ると、大きい実行 (取り込み系は 1 件 1MB 近い) が混ざったときに
+    n8n 本体の V8 heap (256MB) を超えてコンテナごと落ちる (2026-10-19〜22 の db-archive)。
+    1 件だけの取得 (/executions/{id}) は対象外。
+    """
+    if node.get("type", "") != HTTP_NODE_TYPE:
+        return False
+    params = node.get("parameters", {}) or {}
+    url = str(params.get("url", "") or "").lstrip("=")
+    try:
+        parsed = urlparse(url)
+    except ValueError:
+        return False
+    if not parsed.path.rstrip("/").endswith("/api/v1/executions"):
+        return False
+    if "includedata=true" in parsed.query.lower().replace(" ", ""):
+        return True
+    query = (params.get("queryParameters", {}) or {}).get("parameters", []) or []
+    return any(
+        str(p.get("name", "")) == "includeData" and str(p.get("value", "")).lower() == "true"
+        for p in query
+    )
+
+
 def _allows_create_retry(node: dict[str, Any]) -> bool:
     """notes に ALLOW_CREATE_RETRY と理由が書かれているか判定する (印だけで理由なしは不可)。"""
     notes = str(node.get("notes", "") or "")
@@ -173,6 +202,13 @@ def lint_workflow(path: str) -> tuple[list[str], list[str]]:
         in_loop |= _walk_downstream(seed, connections)
 
     for node in nodes:
+        # ERROR 3: 実行一覧を includeData=true で取る（n8n の heap 超過リスク）
+        if _is_execution_list_with_data(node):
+            errors.append(
+                f"{node.get('name', '?')}: GET /api/v1/executions を includeData=true で取得"
+                " → 大きい実行が混ざると n8n の V8 heap を超えて落ちる。"
+                "一覧は includeData=false にし、中身が要るなら /executions/{id} で 1 件ずつ取る"
+            )
         if not _is_notion_node(node):
             continue
         name = node.get("name", "?")
