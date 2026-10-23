@@ -25,6 +25,20 @@ export function notionRichText(
   return arr.map((t: IDataObject) => t.plain_text).join("") || (fallback ?? "");
 }
 
+/** ページ一覧の rich_text 値を Set に集める（空・properties 欠落は除外） */
+export function notionRichTextSet(
+  pages: INodeExecutionData[],
+  key: string,
+): Set<string> {
+  const values = new Set<string>();
+  for (const page of pages) {
+    const props = (page.json?.properties as IDataObject | undefined) ?? {};
+    const text = notionRichText(props, key);
+    if (text) values.add(text);
+  }
+  return values;
+}
+
 /** select 名を抽出 */
 export function notionSelect(
   props: IDataObject,

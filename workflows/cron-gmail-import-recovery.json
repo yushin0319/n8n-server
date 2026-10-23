@@ -183,6 +183,42 @@
     },
     {
       "parameters": {
+        "jsCode": "// @external cron-gmail-import-recovery/FilterImportedUnread.ts"
+      },
+      "id": "gr-0006-4000-8000-000000000006",
+      "name": "FilterImportedUnread",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        50
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "markAsRead",
+        "messageId": "={{ $json.id }}"
+      },
+      "id": "gr-0007-4000-8000-000000000007",
+      "name": "MarkImportedRead",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1320,
+        50
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "rqMLM5TDLPFAXf6K",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
         "jsCode": "// @external cron-gmail-import-recovery/TestResponse.ts"
       },
       "type": "n8n-nodes-base.code",
@@ -301,6 +337,11 @@
             "node": "FilterUnimported",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "FilterImportedUnread",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -332,6 +373,17 @@
         [
           {
             "node": "CheckTestMode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FilterImportedUnread": {
+      "main": [
+        [
+          {
+            "node": "MarkImportedRead",
             "type": "main",
             "index": 0
           }

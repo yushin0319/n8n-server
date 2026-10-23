@@ -5,6 +5,7 @@ import {
   notionMultiSelectFirst,
   notionRelation,
   notionRichText,
+  notionRichTextSet,
   notionSelect,
   notionStatus,
   notionTitle,
@@ -40,6 +41,26 @@ describe("notionRichText", () => {
 
   it("プロパティ未定義時は空文字を返す", () => {
     expect(notionRichText({}, "説明")).toBe("");
+  });
+});
+
+describe("notionRichTextSet", () => {
+  it("各ページの rich_text 値を集め、空・properties 欠落は除外する", () => {
+    const pages = [
+      {
+        json: {
+          properties: { id: mkProp("rich_text", [{ plain_text: "a" }]) },
+        },
+      },
+      { json: { properties: { id: mkProp("rich_text", []) } } },
+      { json: {} },
+      {
+        json: {
+          properties: { id: mkProp("rich_text", [{ plain_text: "b" }]) },
+        },
+      },
+    ];
+    expect(notionRichTextSet(pages, "id")).toEqual(new Set(["a", "b"]));
   });
 });
 
