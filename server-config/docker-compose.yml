@@ -66,6 +66,10 @@ services:
       # 120s に延長して遅い起動でも JS runner が確実に接続できるようにする。
       # n8n v2.20.0+ で有効な env (それ以前は無視され fail-safe)。A1-flex 移行後は既定に戻す検討。
       N8N_RUNNERS_GRANT_TOKEN_TTL: "120"
+      # instance-ai モジュール (AI によるワークフロー作成) は n8n 2.35.0 から既定で有効。
+      # このサーバーでは使わず、512MB の container で余計なメモリを食わせないため止める
+      # (2.23.4 から 2.44.4 へ上げるとき、2.23.4 と同じく無効のままにする)。
+      N8N_DISABLED_MODULES: instance-ai
       # Healthchecks.io Slug ping key (A7 cron 実行欠落リアルタイム検知)。各 cron WF
       # 末尾の PingHealthchecks ノードが {{ $env.HC_PING_KEY }} で参照する。
       # 未設定時は ping URL が hc-ping.com//slug となり 404 → ping 不達 → 通知発火。
