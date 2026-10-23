@@ -1,4 +1,4 @@
-import { notionRichText } from "../_shared/notionProps";
+import { notionRichTextSet } from "../_shared/notionProps";
 
 /**
  * Gmail は messageId のみ突き合わせる単純な set difference だが、
@@ -6,14 +6,7 @@ import { notionRichText } from "../_shared/notionProps";
  */
 export default function (): CodeNodeReturn {
   const gmailItems = $("GmailGetMany").all();
-  const notionPages = $input.all();
-
-  const notionMessageIds = new Set<string>();
-  for (const page of notionPages) {
-    const props = (page.json?.properties as IDataObject | undefined) ?? {};
-    const text = notionRichText(props, "messageId");
-    if (text) notionMessageIds.add(text);
-  }
+  const notionMessageIds = notionRichTextSet($input.all(), "messageId");
 
   return gmailItems.filter((item) => {
     const id = item.json?.id as string | undefined;
