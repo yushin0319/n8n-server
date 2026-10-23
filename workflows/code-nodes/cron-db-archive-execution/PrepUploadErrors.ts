@@ -1,7 +1,13 @@
 /**
- * Phase 2: 失敗 execution の詳細スナップショット (includeData=true) を
- * YYYY-MM-DD-errors.jsonl に整形する。各 execution の data フィールド
- * (各ノードの input/output) を含むためバグ調査用。
+ * Phase 2: 失敗 execution の一覧を YYYY-MM-DD-errors.jsonl に整形する。
+ *
+ * 2026-10-23 変更: FetchErrors は includeData=false (メタデータのみ) で取る。
+ * includeData=true は「期間に関係なく新しい順 50 件を中身ごと」1 回で取るため、
+ * 取り込み系の失敗 (1 件約 0.9MB) や失敗した db-archive 自身が混ざると n8n 本体の
+ * V8 heap 256MB を超え、2026-10-19〜22 は毎晩 03:0x JST にコンテナごと落ちた。
+ * 失敗の要約 (止まったノード・エラー文・生データ) は system/error-handler が
+ * 観測性 DB に送っている。scripts/lint_execute_once.py が一覧の includeData=true を
+ * ERROR にする。下の data フィールドの扱いは、項目があれば残すだけ。
  *
  * pagination 対応: HTTP Request node の pagination 機能で複数 page 来るとき、
  * 各 page が個別 item として渡るため $input.all() で全 page を集約する。
