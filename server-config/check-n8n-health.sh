@@ -207,7 +207,7 @@ fi
 if [ "$restart_count" -ge "$MAX_RESTARTS" ]; then
   log "CRITICAL: n8n still down after ${restart_count} watchdog restarts — giving up auto-restart, manual intervention required"
   # obs-notify は n8n 経由で届かないため journal の CRITICAL 行に委ねる（promtail→Loki）。
-  # 並行して Healthchecks.io / Uptime Kuma が独立に DOWN を通知する。
+  # 並行して Healthchecks.io が独立に DOWN を通知する。
   save_state "$fail_count" "$last_restart_at" "$restart_count" "$ST_FAILING"
   exit 0
 fi

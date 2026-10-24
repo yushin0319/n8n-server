@@ -3,7 +3,6 @@
 [Oracle Cloud Always Free](https://www.oracle.com/cloud/free/) 上で動かす [n8n](https://n8n.io) のワークフロー管理リポジトリ。26 個のワークフローを Git で管理し、GitHub Actions の CI/CD で n8n API 経由デプロイする。image は `server-config/docker-compose.yml` で **`n8nio/n8n:2.23.4` に pin**（`:latest` は #614 で廃止）。
 
 - **本番**: https://yushin-n8n.duckdns.org/
-- **監視**: https://yushin-kuma.duckdns.org/ (Uptime Kuma)
 
 ## 構成
 
@@ -16,7 +15,6 @@
   - `extract_code.py` — JSON → `.ts` 抽出（ローカル編集用）
   - `lint_execute_once.py` — executeOnce / retryOnFail のリスク検査
   - `smoke_test.py` — デプロイ後の疎通確認
-  - `kuma_bootstrap_monitors.py` — Uptime Kuma の monitor 一括登録
   - `inject_healthchecks_ping.py` — cron WF の Schedule 直後に Healthchecks.io ping ノードを冪等に挿入
 - `tests/validate_workflows.py` — 孤立ノード検出・命名規則・credential 参照などの静的解析
 - `tests/test_*.py` — `embed_code.py` のバンドル・抽出/埋め戻し・TS ビルド、cron-health-check WF の retry 設定の pytest（CI では実行していない）
@@ -29,7 +27,7 @@
 監視・観測:
 - Sentry（`N8N_SENTRY_DSN` / EventLoopBlocked 自動捕捉）
 - Promtail → Grafana Cloud Loki（ログ集約）
-- Uptime Kuma（別サブドメインで公開）: push monitor 2 本（n8n heartbeat / crypto-ai-trader heartbeat とも 360s）+ HTTP monitor 5 本（300s）。定義は `scripts/kuma_bootstrap_monitors.py`
+- HTTP 監視: `cron/health-check`（10 分ごと、HistLink / shirankedo / worldpulse / n8n 公開 URL）。heartbeat は Healthchecks.io（n8n の `cron/system-heartbeat`、crypto-ai-trader の `crypto-ai-trader-heartbeat`）。Uptime Kuma は 2026-10-24 にメモリ不足対策で撤去
 - Healthchecks.io（fail ping）
 - Netdata Agent（host メトリクス）
 

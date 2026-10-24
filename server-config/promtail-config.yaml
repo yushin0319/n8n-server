@@ -1,6 +1,6 @@
 # Promtail config for n8n-server OCI (L14)
 # - journald (systemd)
-# - docker container logs (n8n / uptime-kuma)
+# - docker container logs (n8n)
 # 出力先: Grafana Cloud Loki（環境変数で LOKI_URL / LOKI_USER / LOKI_PASSWORD を渡す）
 
 server:
@@ -41,7 +41,7 @@ scrape_configs:
       - source_labels: ["__journal__hostname"]
         target_label: hostname
 
-  # docker container logs（n8n / uptime-kuma / promtail 自身）
+  # docker container logs（n8n / promtail 自身）
   - job_name: docker
     docker_sd_configs:
       - host: unix:///var/run/docker.sock

@@ -1,7 +1,7 @@
 {
   "id": "IK25QGZsOndDpBLX",
   "name": "api/obs-from-uptime-kuma",
-  "active": true,
+  "active": false,
   "nodes": [
     {
       "parameters": {
