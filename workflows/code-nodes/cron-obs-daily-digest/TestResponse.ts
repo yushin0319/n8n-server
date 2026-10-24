@@ -4,7 +4,10 @@
  */
 export default function (): CodeNodeReturn {
   const summary = $("AggregateAndFormat").first().json;
-  const isTest = $execution.customData.get("isTest") === "true";
+  // n8n 2.44.4 では前段の Code ノードが立てた customData を実行中に読めないので、
+  // CheckTestMode が受け取った webhook body を直接見る
+  const body = $("CheckTestMode").first().json.body as IDataObject | undefined;
+  const isTest = body?.test === true;
   return [
     {
       json: {

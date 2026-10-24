@@ -281,7 +281,7 @@
           "conditions": [
             {
               "id": "sw-cond-skip-post-llm-models",
-              "leftValue": "={{ $execution.customData.get('isTest') }}",
+              "leftValue": "={{ String(($('CheckTestMode').first().json.body || {}).test === true) }}",
               "rightValue": "true",
               "operator": {
                 "type": "string",
@@ -313,7 +313,7 @@
           "conditions": [
             {
               "id": "sw-cond-skip-post-exchange-rate",
-              "leftValue": "={{ $execution.customData.get('isTest') }}",
+              "leftValue": "={{ String(($('CheckTestMode').first().json.body || {}).test === true) }}",
               "rightValue": "true",
               "operator": {
                 "type": "string",
@@ -345,7 +345,7 @@
           "conditions": [
             {
               "id": "sw-cond-skip-discord-notify-llm",
-              "leftValue": "={{ $execution.customData.get('isTest') }}",
+              "leftValue": "={{ String(($('CheckTestMode').first().json.body || {}).test === true) }}",
               "rightValue": "true",
               "operator": {
                 "type": "string",
@@ -377,7 +377,7 @@
           "conditions": [
             {
               "id": "sw-cond-skip-fetch-aa-models",
-              "leftValue": "={{ $execution.customData.get('isTest') }}",
+              "leftValue": "={{ String(($('CheckTestMode').first().json.body || {}).test === true) }}",
               "rightValue": "true",
               "operator": {
                 "type": "string",
@@ -422,7 +422,7 @@
           "conditions": [
             {
               "id": "sw-cond-skip-fetch-exchange-rate",
-              "leftValue": "={{ $execution.customData.get('isTest') }}",
+              "leftValue": "={{ String(($('CheckTestMode').first().json.body || {}).test === true) }}",
               "rightValue": "true",
               "operator": {
                 "type": "string",
@@ -488,7 +488,7 @@
           "conditions": [
             {
               "id": "sw-cond-skip-fetch-deprecations",
-              "leftValue": "={{ $execution.customData.get('isTest') }}",
+              "leftValue": "={{ String(($('CheckTestMode').first().json.body || {}).test === true) }}",
               "rightValue": "true",
               "operator": {
                 "type": "string",

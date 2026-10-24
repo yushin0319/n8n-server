@@ -1,13 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import testResponse from "./TestResponse";
 
+// 試験は webhook body {"test": true}、本番 (Schedule) は body 無し
 function stub(isTest: string, summary: IDataObject) {
+  const checkTestModeItem = isTest === "true" ? { body: { test: true } } : {};
   vi.stubGlobal("$", (n: string) => {
     if (n === "AggregateAndFormat") return { first: () => ({ json: summary }) };
+    if (n === "CheckTestMode")
+      return { first: () => ({ json: checkTestModeItem }) };
     throw new Error(`unknown: ${n}`);
-  });
-  vi.stubGlobal("$execution", {
-    customData: { get: (k: string) => (k === "isTest" ? isTest : undefined) },
   });
 }
 

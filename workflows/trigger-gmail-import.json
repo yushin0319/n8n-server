@@ -100,7 +100,7 @@
           "conditions": [
             {
               "id": "gm-cond-skip-classify",
-              "leftValue": "={{ $execution.customData.get('isTest') }}",
+              "leftValue": "={{ String(($('CheckTestMode').first().json.body || {}).test === true) }}",
               "rightValue": "true",
               "operator": {
                 "type": "string",
@@ -343,7 +343,7 @@
           "conditions": [
             {
               "id": "gm-cond-skip-notion",
-              "leftValue": "={{ $execution.customData.get('isTest') }}",
+              "leftValue": "={{ String(($('CheckTestMode').first().json.body || {}).test === true) }}",
               "rightValue": "true",
               "operator": {
                 "type": "string",
@@ -421,7 +421,7 @@
           "conditions": [
             {
               "id": "gm-cond-skip-mark",
-              "leftValue": "={{ $execution.customData.get('isTest') }}",
+              "leftValue": "={{ String(($('CheckTestMode').first().json.body || {}).test === true) }}",
               "rightValue": "true",
               "operator": {
                 "type": "string",
