@@ -11,7 +11,7 @@
 # - 持続判定: 連続 SUSTAIN_SAMPLES サンプル (10分 × 2 = 約20分) 非 ok で初めて
 #   発火する。単発スパイク・boot 直後の一過性負荷を拾わない。
 # - severity 上限は warning。memory/swap pressure は「朝確認すべき」レベルであり、
-#   実際の停止 (OOM kill → container down) は HC.io / n8n-watchdog / uptime-kuma が
+#   実際の停止 (OOM kill → container down) は HC.io / n8n-watchdog が
 #   別途捕捉する。pressure 段階で「夜中に起こす critical」は撃たない。
 # - state file (level + started_at + streak) を /var/lib/oci-mem-watch/state.json に
 #   永続化。level 不変なら送信しない (連発抑制)。restart_detected で state リセット。

@@ -114,7 +114,7 @@ fi
 
 # ==========================================================================
 # 7b. uv (Python package manager) ユーザーローカルインストール
-#     scripts/kuma_bootstrap_monitors.py 等の Python スクリプト実行用。
+#     サーバー上で Python スクリプトを実行するとき用。
 #     ~/.local/bin に配置（apt 不要、OS layer 非変更）。
 # ==========================================================================
 if [ ! -x "$HOME/.local/bin/uv" ]; then
@@ -197,7 +197,7 @@ fi
 
 # ==========================================================================
 # 10. Netdata Agent (観測性強化 L13)
-#     host CPU/mem/disk/network/process と Docker cgroups (n8n / kuma) を
+#     host CPU/mem/disk/network/process と Docker cgroups (n8n) を
 #     agent 側 2秒粒度で収集し Netdata Cloud に送信。1GB RAM Micro かつ既に
 #     n8n が swap に食い込んでいる構成なので、ml/python.d/charts.d を無効化、
 #     db を ram モード + retention 3600 (= 直近1時間のみメモリ保持) に絞る。
