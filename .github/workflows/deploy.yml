@@ -10,6 +10,10 @@ on:
         description: 'Deploy all workflows (not just changed ones)'
         type: boolean
         default: false
+      deploy_files:
+        description: 'Deploy only these files (space separated, e.g. workflows/trigger-gmail-import.json)'
+        type: string
+        default: ''
 
 jobs:
   deploy:
@@ -44,6 +48,7 @@ jobs:
           N8N_API_KEY: ${{ secrets.N8N_API_KEY }}
           HEALTHCHECKS_UUID: ${{ secrets.HEALTHCHECKS_UUID }}
           DEPLOY_ALL: ${{ github.event.inputs.deploy_all || 'false' }}
+          DEPLOY_FILES: ${{ github.event.inputs.deploy_files || '' }}
           DEPLOYED_LIST: deployed_files.txt
         run: |
           chmod +x scripts/deploy.sh

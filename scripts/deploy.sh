@@ -163,7 +163,9 @@ if [ "${DEPLOY_ALL:-false}" = "true" ]; then
   CHANGED_FILES=$(find workflows/ -name '*.json' -type f)
 elif [ -n "${DEPLOY_FILES:-}" ]; then
   echo "Mode: Deploy specified files"
-  CHANGED_FILES="$DEPLOY_FILES"
+  # workflow_dispatch の入力は空白区切りの 1 行で来るので 1 行 1 ファイルに直し、
+  # workflows/*.json 以外（パス区切りの外し・余計な文字）は受け付けない
+  CHANGED_FILES=$(echo "$DEPLOY_FILES" | tr ' ,' '\n\n' | grep -E '^workflows/[A-Za-z0-9._-]+\.json$' || true)
 else
   echo "Mode: Deploy changed files (git diff)"
   # 変更された .json を取得
