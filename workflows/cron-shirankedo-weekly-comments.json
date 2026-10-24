@@ -300,7 +300,7 @@
           "conditions": [
             {
               "id": "sw-cond-skip-gemini-trend-comment",
-              "leftValue": "={{ $execution.customData.get('isTest') }}",
+              "leftValue": "={{ String(($('CheckTestMode').first().json.body || {}).test === true) }}",
               "rightValue": "true",
               "operator": {
                 "type": "string",
@@ -345,7 +345,7 @@
           "conditions": [
             {
               "id": "sw-cond-skip-post-page-comments",
-              "leftValue": "={{ $execution.customData.get('isTest') }}",
+              "leftValue": "={{ String(($('CheckTestMode').first().json.body || {}).test === true) }}",
               "rightValue": "true",
               "operator": {
                 "type": "string",
@@ -377,7 +377,7 @@
           "conditions": [
             {
               "id": "sw-cond-skip-discord-notify-comments",
-              "leftValue": "={{ $execution.customData.get('isTest') }}",
+              "leftValue": "={{ String(($('CheckTestMode').first().json.body || {}).test === true) }}",
               "rightValue": "true",
               "operator": {
                 "type": "string",

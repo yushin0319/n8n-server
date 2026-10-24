@@ -162,7 +162,7 @@
           "conditions": [
             {
               "id": "sm-cond-skip-notion",
-              "leftValue": "={{ $execution.customData.get('isTest') }}",
+              "leftValue": "={{ String(($('CheckTestMode').first().json.body || {}).test === true) }}",
               "rightValue": "true",
               "operator": {
                 "type": "string",

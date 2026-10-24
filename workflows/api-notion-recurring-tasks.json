@@ -167,7 +167,7 @@
           "conditions": [
             {
               "id": "rt-cond-skip-list",
-              "leftValue": "={{ $execution.customData.get('isTest') }}",
+              "leftValue": "={{ String(($('CheckTestMode').first().json.body || {}).test === true) }}",
               "rightValue": "true",
               "operator": {
                 "type": "string",
@@ -267,7 +267,7 @@
           "conditions": [
             {
               "id": "rt-cond-skip-create",
-              "leftValue": "={{ $execution.customData.get('isTest') }}",
+              "leftValue": "={{ String(($('CheckTestMode').first().json.body || {}).test === true) }}",
               "rightValue": "true",
               "operator": {
                 "type": "string",
@@ -377,7 +377,7 @@
           "conditions": [
             {
               "id": "rt-cond-skip-update",
-              "leftValue": "={{ $execution.customData.get('isTest') }}",
+              "leftValue": "={{ String(($('CheckTestMode').first().json.body || {}).test === true) }}",
               "rightValue": "true",
               "operator": {
                 "type": "string",
@@ -487,7 +487,7 @@
           "conditions": [
             {
               "id": "rt-cond-skip-delete",
-              "leftValue": "={{ $execution.customData.get('isTest') }}",
+              "leftValue": "={{ String(($('CheckTestMode').first().json.body || {}).test === true) }}",
               "rightValue": "true",
               "operator": {
                 "type": "string",
