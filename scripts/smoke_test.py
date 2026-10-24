@@ -465,6 +465,11 @@ def main() -> int:
         return ep.get("wf", "") in target_wfs
 
     cron_targets = [ep for ep in CRON_ENDPOINTS if should_test(ep)]
+    # 2026-10-24: {"test": true} を送っても試験モードにならず、本番の処理（Discord 投稿・
+    # shirankedo への書き込み・Notion 作成）が動いていた。直るまで既定では叩かない
+    if cron_targets and os.environ.get("SMOKE_CRON_TESTS") != "1":
+        print(f"=== Cron WF: {len(cron_targets)} 件スキップ（SMOKE_CRON_TESTS=1 で実行） ===")
+        cron_targets = []
     webhook_targets = [ep for ep in WEBHOOK_ENDPOINTS if should_test(ep)]
     run_gdrive = target_wfs is None or "api-gdrive.json" in target_wfs
 
