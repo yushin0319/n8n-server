@@ -55,36 +55,38 @@
     },
     {
       "parameters": {
+        "jsCode": "// @external cron-health-check/BuildTargets.ts"
+      },
+      "id": "hc-0006-4000-8000-000000000006",
+      "name": "BuildTargets",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        100
+      ]
+    },
+    {
+      "parameters": {
         "method": "GET",
-        "url": "https://histlink-backend.onrender.com/health",
+        "url": "={{ $json.url }}",
         "options": {
           "timeout": 30000,
           "allowUnauthorizedCerts": false
         },
-        "onError": "continueErrorOutput"
+        "onError": "continueRegularOutput"
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        440,
-        0
+        660,
+        100
       ],
-      "name": "CheckHistLink",
+      "name": "CheckTargets",
       "id": "hc-0002-4000-8000-000000000002",
       "retryOnFail": true,
       "maxTries": 3,
       "waitBetweenTries": 5000
-    },
-    {
-      "parameters": {},
-      "type": "n8n-nodes-base.noOp",
-      "typeVersion": 1,
-      "position": [
-        660,
-        -100
-      ],
-      "name": "OK",
-      "id": "hc-0005-4000-8000-000000000005"
     },
     {
       "parameters": {
@@ -93,11 +95,43 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        660,
+        880,
         100
       ],
       "name": "FormatDiscord",
       "id": "hc-0003-4000-8000-000000000003"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "hc-cond-all-ok",
+              "leftValue": "={{ String($json.allOk) }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "hc-0007-4000-8000-000000000007",
+      "name": "IfAllOk",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1100,
+        100
+      ]
     },
     {
       "parameters": {
@@ -125,8 +159,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        880,
-        100
+        1320,
+        200
       ],
       "name": "IfSkipDiscord",
       "id": "hc-0012-4000-8000-000000000012"
@@ -154,8 +188,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1100,
-        200
+        1540,
+        300
       ],
       "name": "SendToDiscord",
       "id": "hc-0004-4000-8000-000000000004"
@@ -167,7 +201,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1100,
+        1760,
         0
       ],
       "name": "TestResponse",
@@ -182,7 +216,7 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        1320,
+        1980,
         0
       ],
       "name": "RespondTest",
@@ -237,36 +271,7 @@
       "main": [
         [
           {
-            "node": "CheckHistLink",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "CheckHistLink": {
-      "main": [
-        [
-          {
-            "node": "OK",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "FormatDiscord",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "OK": {
-      "main": [
-        [
-          {
-            "node": "TestResponse",
+            "node": "BuildTargets",
             "type": "main",
             "index": 0
           }
@@ -277,7 +282,7 @@
       "main": [
         [
           {
-            "node": "IfSkipDiscord",
+            "node": "IfAllOk",
             "type": "main",
             "index": 0
           }
@@ -329,6 +334,46 @@
         [
           {
             "node": "CheckTestMode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "BuildTargets": {
+      "main": [
+        [
+          {
+            "node": "CheckTargets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CheckTargets": {
+      "main": [
+        [
+          {
+            "node": "FormatDiscord",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IfAllOk": {
+      "main": [
+        [
+          {
+            "node": "TestResponse",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "IfSkipDiscord",
             "type": "main",
             "index": 0
           }
