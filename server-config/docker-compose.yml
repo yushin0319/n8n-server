@@ -70,6 +70,13 @@ services:
       # このサーバーでは使わず、512MB の container で余計なメモリを食わせないため止める
       # (2.23.4 から 2.44.4 へ上げるとき、2.23.4 と同じく無効のままにする)。
       N8N_DISABLED_MODULES: instance-ai
+      # trigger の有効化を旧方式 (ActiveWorkflowManager) に戻す。既定の publication service は
+      # 有効化に一度失敗した trigger を DB に failed と記録し、起動時も 10 秒ごとの点検も
+      # status=activated しか拾わないため二度とやり直さない (n8n-io/n8n#41541、2.44.6 でも未修正)。
+      # 2026-10-24 に起動時の Gmail Trigger 有効化が 84 秒の期限を超えて failed になり、以後の
+      # 再起動 2 回で Gmail の取り込みが止まった。旧方式は失敗しても間隔を空けてやり直す。
+      # #41541 が直った版に上げるときに外す。
+      N8N_USE_WORKFLOW_PUBLICATION_SERVICE: "false"
       # Healthchecks.io Slug ping key (A7 cron 実行欠落リアルタイム検知)。各 cron WF
       # 末尾の PingHealthchecks ノードが {{ $env.HC_PING_KEY }} で参照する。
       # 未設定時は ping URL が hc-ping.com//slug となり 404 → ping 不達 → 通知発火。
