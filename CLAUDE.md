@@ -44,6 +44,7 @@ gh workflow run deploy.yml --repo yushin0319/n8n-server --field deploy_all=true
 - **手動デプロイ・API 直接更新は禁止**。必ず git push → CI 経由
 - 新規作成・更新は `n8n-workflow` skill の手順に従う
 - Windows curl 経由の API 更新は日本語文字化けで Notion プロパティ破損の危険あり
+- **`workflows/code-nodes/_shared/` を変えると、`@external` を含む WF がすべて再デプロイされ、smoke_test もその全部に走る**（deploy.sh の HAS_SHARED 分岐）。2026-10-23 に `_shared/notionProps.ts` を足した PR #319 で 26 本が一斉に入れ直され、n8n がメモリ不足で落ちた。共通化は WF ごとのファイルで済むなら `_shared` に置かない。どうしても `_shared` を変えるときは、squash マージのコミットメッセージに `[skip ci]` を入れて自動デプロイを止め、`deploy.yml` の手動実行 (`deploy_files` で対象 WF を指定) で数本ずつ入れる
 
 ## n8n v2 注意点
 
