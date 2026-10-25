@@ -477,10 +477,13 @@ fi
 #     まま残っていた n8n コンテナと空の volume、古い Kuma の volume も消す。
 #     名前は固定で列挙し、稼働中の n8n (n8n-docker-n8n-1 / n8n-docker_n8n_data) には
 #     触れない。docker rm は -f を付けないので、万一動いていれば失敗して止まる。
+#     image は版を上げた後に残った古い版も消す (2026-10-25 時点でディスク 81%)。
+#     n8n 2.23.4 と latest は同じ image (2.44.4 へ上げる前の版)。コンテナが使っている
+#     image は消さずに飛ばすので、版を戻したときに setup.sh が止まることはない。
 # ==========================================================================
 RETIRED_CONTAINERS=(n8n-docker-uptime-kuma-1 server-config-n8n-1)
 RETIRED_VOLUMES=(n8n-docker_uptime_kuma_data server-config_uptime_kuma_data server-config_n8n_data)
-RETIRED_IMAGES=(louislam/uptime-kuma:1)
+RETIRED_IMAGES=(louislam/uptime-kuma:1 n8nio/n8n:2.23.4 n8nio/n8n:latest grafana/promtail:3.5.5)
 retired_removed=0
 for c in "${RETIRED_CONTAINERS[@]}"; do
   if sudo docker container inspect "$c" >/dev/null 2>&1; then
@@ -504,6 +507,10 @@ for v in "${RETIRED_VOLUMES[@]}"; do
 done
 for i in "${RETIRED_IMAGES[@]}"; do
   if sudo docker image inspect "$i" >/dev/null 2>&1; then
+    if [ -n "$(sudo docker ps -a -q --filter "ancestor=$i")" ]; then
+      log "Keeping image used by a container: $i"
+      continue
+    fi
     log "Removing retired image: $i"
     if ! sudo docker image rm "$i" >/dev/null; then
       log "ERROR: docker image rm $i failed"
