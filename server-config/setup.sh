@@ -468,4 +468,52 @@ else
   log "pipx oci-cli already absent"
 fi
 
+# ==========================================================================
+# 15. 撤去済みコンテナ・volume・image の掃除
+#     Uptime Kuma は 2026-10-24 にメモリ不足対策で撤去した (PR #326)。compose から
+#     外しても停止済みのコンテナ・volume・image は残るため、ここで消す。Kuma の
+#     データは ~/kuma-backup-20261024/uptime-kuma-data.tgz に退避済み。
+#     あわせて 2026-04 に別 project 名 (server-config) で作られ、一度も起動しない
+#     まま残っていた n8n コンテナと空の volume、古い Kuma の volume も消す。
+#     名前は固定で列挙し、稼働中の n8n (n8n-docker-n8n-1 / n8n-docker_n8n_data) には
+#     触れない。docker rm は -f を付けないので、万一動いていれば失敗して止まる。
+# ==========================================================================
+RETIRED_CONTAINERS=(n8n-docker-uptime-kuma-1 server-config-n8n-1)
+RETIRED_VOLUMES=(n8n-docker_uptime_kuma_data server-config_uptime_kuma_data server-config_n8n_data)
+RETIRED_IMAGES=(louislam/uptime-kuma:1)
+retired_removed=0
+for c in "${RETIRED_CONTAINERS[@]}"; do
+  if sudo docker container inspect "$c" >/dev/null 2>&1; then
+    log "Removing retired container: $c"
+    if ! sudo docker rm "$c" >/dev/null; then
+      log "ERROR: docker rm $c failed"
+      exit 1
+    fi
+    retired_removed=$((retired_removed + 1))
+  fi
+done
+for v in "${RETIRED_VOLUMES[@]}"; do
+  if sudo docker volume inspect "$v" >/dev/null 2>&1; then
+    log "Removing retired volume: $v"
+    if ! sudo docker volume rm "$v" >/dev/null; then
+      log "ERROR: docker volume rm $v failed"
+      exit 1
+    fi
+    retired_removed=$((retired_removed + 1))
+  fi
+done
+for i in "${RETIRED_IMAGES[@]}"; do
+  if sudo docker image inspect "$i" >/dev/null 2>&1; then
+    log "Removing retired image: $i"
+    if ! sudo docker image rm "$i" >/dev/null; then
+      log "ERROR: docker image rm $i failed"
+      exit 1
+    fi
+    retired_removed=$((retired_removed + 1))
+  fi
+done
+if [ "$retired_removed" -eq 0 ]; then
+  log "retired containers/volumes/images already absent"
+fi
+
 log "setup.sh complete"
