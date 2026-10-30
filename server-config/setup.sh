@@ -174,19 +174,34 @@ fi
 COMPOSE_FILE="$SCRIPT_DIR/docker-compose.yml"
 PROJECT_ROOT=$(cd "$SCRIPT_DIR/.." && pwd)
 if [ -f "$COMPOSE_FILE" ]; then
-  # deploy マーカー (#567 C-lite): docker compose up の直前に、まだ旧 n8n が生きている
-  # うちに obs-notify へ info を 1 本投げる。image 更新で n8n が recreate されると起動時
-  # migration がイベントループを数分ブロックし、その窓で cron/adapter/HC が一過性に失敗
-  # してクラスタに見える (2026-06-06 実例)。deploy との相関を obs DB / Discord(info) に
-  # 残すことで「誤報ではなく deploy 由来」と一目で分かるようにする。
+  # deploy マーカー (#567 C-lite): docker compose up の直前に obs-notify へ info を 1 本投げる。
+  # image 更新で n8n が recreate されると起動時 migration がイベントループを数分ブロックし、
+  # その窓で cron/adapter/HC が一過性に失敗してクラスタに見える (2026-06-06 実例)。
+  # deploy との相関を観測性 DB に残すことで「誤報ではなく deploy 由来」と一目で分かるようにする。
+  # 送り先は observability-tail Worker の /obs-notify (n8n の状態に関係なく届く)。合言葉
+  # X-Webhook-Secret は nginx と同じ値なので webhook-secret.conf から読み、標準入力で curl に渡す。
   # jq の install は後続 section 11 なので printf で JSON 組立 (jq 非依存)。
-  # n8n 未起動時 / webhook 不達でも非致命 (|| true、--max-time 10)。
+  # 送れなくても非致命 (--max-time 10)。--fail で 403 (合言葉のずれ)・5xx も失敗とログに出す。
+  OBS_NOTIFY_URL="https://observability-tail.y-fudo.workers.dev/obs-notify"
+  WEBHOOK_SECRET_FILE=/etc/nginx/snippets/webhook-secret.conf
   marker_summary="docker compose up -d --pull always 実行。image 更新時は起動時 migration で約10分間 cron/adapter が一過性失敗しうる相関マーカー。host=$(hostname)"
   marker_payload=$(printf '{"severity":"info","service":"n8n","subject":"n8n-server redeploy 開始 (setup.sh)","summary":"%s","repo":"n8n-server"}' "$marker_summary")
-  curl -sS --max-time 10 -X POST -H "Content-Type: application/json" \
-    -d "$marker_payload" "http://localhost:5678/webhook/obs-notify" >/dev/null 2>&1 \
-    && log "deploy marker posted to obs-notify (info)" \
-    || log "deploy marker POST failed (non-fatal, n8n may be down)"
+  marker_secret=$(awk -F'"' '/^[[:space:]]*set[[:space:]]+\$webhook_secret[[:space:]]/ { print $2; exit }' \
+    "$WEBHOOK_SECRET_FILE" 2>/dev/null || true)
+  if [ -z "$marker_secret" ]; then
+    log "deploy marker POST failed (non-fatal): webhook secret not found in $WEBHOOK_SECRET_FILE"
+  else
+    marker_rc=0
+    printf 'X-Webhook-Secret: %s\n' "$marker_secret" | curl -sS --fail --max-time 10 -X POST -H @- \
+      -H "Content-Type: application/json" -d "$marker_payload" "$OBS_NOTIFY_URL" >/dev/null 2>&1 \
+      || marker_rc=$?
+    if [ "$marker_rc" -eq 0 ]; then
+      log "deploy marker posted to obs-notify (info)"
+    else
+      log "deploy marker POST failed (non-fatal, curl exit ${marker_rc}; 22 = HTTP 4xx/5xx)"
+    fi
+  fi
+  unset marker_secret
   log "docker compose up -d --pull always (project: $PROJECT_ROOT, file: $COMPOSE_FILE)"
   # set -e で失敗時に即 exit するが、ログで明示的に失敗を示すため明示チェック。
   if ! sudo docker compose --project-directory "$PROJECT_ROOT" -f "$COMPOSE_FILE" up -d --pull always; then
@@ -241,8 +256,8 @@ if command -v netdata >/dev/null 2>&1 && [ -f "$NETDATA_SRC" ]; then
   fi
 fi
 
-# health_alarm_notify.conf の同期 (#586): agent custom_sender → obs-from-netdata
-# 重要 alarm (memory/swap/OOM/disk/reboot 系) のみ allowlist で adapter WF に POST。
+# health_alarm_notify.conf の同期 (#586): agent custom_sender → observability-tail Worker の
+# /obs-from/netdata。重要 alarm (memory/swap/OOM/disk/reboot 系) のみ allowlist で POST。
 # netdata は user override (/etc/netdata/) を template (/usr/lib/netdata/conf.d/) の
 # 後に source するため、差分のみで上書き可能 (テンプレ全体コピー不要)。
 HEALTH_NOTIFY_SRC="$SCRIPT_DIR/health_alarm_notify.conf"
@@ -264,10 +279,29 @@ if command -v netdata >/dev/null 2>&1 && [ -f "$HEALTH_NOTIFY_SRC" ]; then
   fi
 fi
 
+# custom_sender が送る合言葉 X-Adapter-Token。値はリポに置かず、README「サーバーに置く合言葉」の
+# 手順で /etc/netdata/obs-adapter-token に置く。setup.sh は値を書かず、有無と権限だけ見る。
+# custom_sender は netdata ユーザーで動くので root:netdata 0640 にそろえる。
+OBS_ADAPTER_TOKEN_FILE=/etc/netdata/obs-adapter-token
+if command -v netdata >/dev/null 2>&1; then
+  if sudo test -s "$OBS_ADAPTER_TOKEN_FILE"; then
+    if [ "$(sudo stat -c '%U:%G %a' "$OBS_ADAPTER_TOKEN_FILE")" != "root:netdata 640" ]; then
+      log "Fixing owner/mode of $OBS_ADAPTER_TOKEN_FILE (root:netdata 0640)"
+      sudo chown root:netdata "$OBS_ADAPTER_TOKEN_FILE"
+      sudo chmod 0640 "$OBS_ADAPTER_TOKEN_FILE"
+    else
+      log "$OBS_ADAPTER_TOKEN_FILE present"
+    fi
+  else
+    log "WARNING: $OBS_ADAPTER_TOKEN_FILE missing or empty — Netdata alarms are not sent to observability-tail (see README)"
+  fi
+fi
+
 # ==========================================================================
 # 11. OCI host memory watch (#567 Phase 4): systemd timer で 10 分間隔に
 #     check-host-mem.sh を実行し、container.memory.current (ライブ値) / host swap が
-#     閾値を連続 2 サンプル (約20分) 超え、かつ level 変化があれば obs-notify に POST。
+#     閾値を連続 2 サンプル (約20分) 超え、かつ level 変化があれば observability-tail
+#     Worker の obs-notify に POST。
 #     peak (累計値) は boot スパイク誤発火するため判定に使わない (#567 改修 2026-06-06)。
 #     n8n container 内から host cgroup を読めないため、host 側の systemd で実装。
 #     負荷見積: 1 回 100-300ms / transient ~10-20MB。既存 cron より軽い。
@@ -330,9 +364,10 @@ fi
 # ==========================================================================
 # 12. n8n healthz watchdog (2026-05-19 障害対策): systemd timer で 5 分間隔に
 #     check-n8n-health.sh を実行し、localhost:5678/healthz が連続 4 回失敗
-#     (= 約20分の継続ダウン) したら docker restart で復旧、復旧後に obs-notify へ
-#     POST する。コンテナは Up のままイベントループ閉塞する「ゾンビ化」は docker の
-#     restart: unless-stopped では復旧しないため、healthz ベースの監視で補う。
+#     (= 約20分の継続ダウン) したら docker restart で復旧、復旧後に observability-tail
+#     Worker の obs-notify へ POST する。コンテナは Up のままイベントループ閉塞する
+#     「ゾンビ化」は docker の restart: unless-stopped では復旧しないため、healthz
+#     ベースの監視で補う。
 #     起動時 VACUUM 窓を誤検知しないよう grace 20分を state file
 #     (/var/lib/n8n-watchdog/state.json) で管理する。
 # ==========================================================================

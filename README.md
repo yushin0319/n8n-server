@@ -24,7 +24,7 @@
   - `docker-compose.yml` / `nginx-n8n.conf` / `setup.sh`（後述）
   - `n8n-watchdog.{service,timer}` / `oci-mem-watch.{service,timer}` / `n8n-wal-checkpoint.{service,timer}` — systemd timer（監視 + 日次メンテ）
   - `check-host-mem.sh` / `check-n8n-health.sh` / `checkpoint-n8n-wal.sh` — health-check・メンテスクリプト
-  - `promtail-config.yaml` / `netdata.conf` / `health_alarm_notify.conf` — 観測エージェント設定（`health_alarm_notify.conf` は Netdata のアラートを `api/obs-from-netdata` WF へ送る上書き設定）
+  - `promtail-config.yaml` / `netdata.conf` / `health_alarm_notify.conf` — 観測エージェント設定（`health_alarm_notify.conf` は Netdata のアラートを observability-tail Worker の `/obs-from/netdata` へ送る上書き設定）
 
 監視・観測:
 - Sentry（`N8N_SENTRY_DSN` / EventLoopBlocked 自動捕捉）
@@ -33,7 +33,11 @@
 - Healthchecks.io（cron WF 9 本が Schedule 直後に WF ごとの slug へ ping して実行欠落を検知。`System/error-handler` は `n8n-error-handler/fail` へ fail ping）
 - Netdata Agent（host メトリクス）
 
-通知経路（`api/obs-notify`）: 全件を Notion 観測性 DB に記録する。Discord へは **critical のみ即時**（#obs-critical、@here）。warning と crypto-ai-trader の約定は `cron/obs-daily-digest` が毎日 23:00 JST に #obs-warning へ 1 通にまとめる（対象 0 件の日は送らない）。info は Discord に送らない。`smoke_test.py` の Discord 通知も失敗時のみ。
+通知経路: 受け口は 2 つあり、どちらも全件を Notion 観測性 DB に記録する。
+- n8n の WF（`System/error-handler`・各 cron など）→ n8n の `api/obs-notify`
+- サーバーの監視（`check-n8n-health.sh` / `check-host-mem.sh` / `setup.sh` の deploy マーカー → `/obs-notify`、Netdata の `health_alarm_notify.conf` → `/obs-from/netdata`）→ Cloudflare Workers の [observability-tail](https://github.com/yushin0319/observability-tail)。n8n の外にあるので、n8n が止まっていても記録が残る。合言葉は後述の「サーバーに置く合言葉」
+
+Discord へは **critical のみ即時**（#obs-critical、@here）。warning と crypto-ai-trader の約定は `cron/obs-daily-digest` が毎日 23:00 JST に観測性 DB から拾い、#obs-warning へ 1 通にまとめる（対象 0 件の日は送らない）。info は Discord に送らない。`smoke_test.py` の Discord 通知も失敗時のみ。
 
 定期メンテ・自己防衛（systemd timer）:
 - `n8n-wal-checkpoint.timer` — 毎日 03:00 JST（自動 reboot の直前窓）に n8n SQLite の WAL を `TRUNCATE` して肥大を防ぐ
@@ -64,11 +68,32 @@ gh workflow run deploy.yml --repo yushin0319/n8n-server --field deploy_files="wo
 
 `_shared/` を変えると 25 本が一斉に入れ直されて n8n がメモリ不足で落ちることがある。手順は [CLAUDE.md](CLAUDE.md) のワークフロー管理ルールを参照。
 
-`server-config/setup.sh` は OCI 上の OS 構成（`rpcbind` 削除 / fail2ban / sshd ハードニング / unattended-upgrades + 04:00 JST 自動 reboot / TZ=JST / uv のユーザーローカル導入 / nginx 同期 / `docker compose up -d --pull always` / Netdata Agent / systemd timer 3 種の配置 / pipx の oci-cli 撤去 / 撤去済みコンテナ・volume・古い image の削除）を冪等に適用するスクリプト。iptables は初期構築時の設定をそのまま使い、setup.sh では変更しない。`docker compose up` の直前に obs-notify へ **deploy マーカー（severity=info）** を 1 本投げるので、image 更新後 10 分ほど cron/adapter が一過性失敗しても「誤報ではなく deploy 由来」と観測性 DB から判別できる（info は Discord には送らない）。OS 変更を伴う PR をマージしたら OCI に SSH してから:
+`server-config/setup.sh` は OCI 上の OS 構成（`rpcbind` 削除 / fail2ban / sshd ハードニング / unattended-upgrades + 04:00 JST 自動 reboot / TZ=JST / uv のユーザーローカル導入 / nginx 同期 / `docker compose up -d --pull always` / Netdata Agent / systemd timer 3 種の配置 / pipx の oci-cli 撤去 / 撤去済みコンテナ・volume・古い image の削除）を冪等に適用するスクリプト。iptables は初期構築時の設定をそのまま使い、setup.sh では変更しない。`docker compose up` の直前に observability-tail の obs-notify へ **deploy マーカー（severity=info）** を 1 本投げるので、image 更新後 10 分ほど cron/adapter が一過性失敗しても「誤報ではなく deploy 由来」と観測性 DB から判別できる（info は Discord には送らない）。OS 変更を伴う PR をマージしたら OCI に SSH してから:
 
 ```bash
 bash server-config/setup.sh
 ```
+
+### サーバーに置く合言葉
+
+値はリポに置かず、サーバーに手で置く（setup.sh は値を書かない）。
+
+| 合言葉 | 置き場所 | 読むもの |
+|---|---|---|
+| `X-Webhook-Secret`（nginx の `/webhook/` と observability-tail の `/obs-notify` で同じ値） | `/etc/nginx/snippets/webhook-secret.conf`（`set $webhook_secret "<値>";`）。監視スクリプトは `ubuntu` ユーザーで動くので、`ubuntu` が読める権限のままにする | nginx / `check-n8n-health.sh` / `check-host-mem.sh` / `setup.sh` |
+| `X-Adapter-Token`（observability-tail の `/obs-from/netdata`。Worker の `ADAPTER_TOKEN` と同じ値で、bws の infra project の `OBS_ADAPTER_TOKEN`） | `/etc/netdata/obs-adapter-token`（値だけ 1 行、`root:netdata` 0640。setup.sh が権限をそろえ、無ければ WARNING を出す） | `health_alarm_notify.conf` の `custom_sender`（`netdata` ユーザー） |
+| compose の環境変数（`N8N_SENTRY_DSN` / `LOKI_*` / `HC_PING_KEY` / `OBS_WEBHOOK_*_URL`） | `~/n8n-server/.env`（`ubuntu` 0600） | docker compose |
+
+`/etc/netdata/obs-adapter-token` の置き方（手元の Git Bash で `BWS_ACCESS_TOKEN` を設定した状態から。値はコマンドラインに出さず標準入力で渡す）:
+
+```bash
+bws secret list --output json \
+  | python -c "import json,sys; print(next(s['value'] for s in json.load(sys.stdin) if s['key'] == 'OBS_ADAPTER_TOKEN'))" \
+  | ssh -i ~/.ssh/oracle-n8n.key ubuntu@161.33.22.52 \
+      'sudo install -m 0640 -o root -g netdata /dev/stdin /etc/netdata/obs-adapter-token'
+```
+
+値を変えるときは、Worker の secret（`ADAPTER_TOKEN` / `WEBHOOK_SECRET`）とサーバーのファイルを両方変える。
 
 ## 運用ルール
 

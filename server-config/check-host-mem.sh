@@ -2,7 +2,9 @@
 # OCI n8n-server の memory / swap 監視 (#567 Phase 4)
 #
 # 10 分間隔で systemd timer から実行され、container memory.current と host swap を
-# 取得して閾値判定、level 変化時のみ obs-notify webhook に POST する。
+# 取得して閾値判定、level 変化時のみ Cloudflare Workers の observability-tail（/obs-notify）に
+# POST する。n8n の外にあるので、n8n が落ちていても届く。合言葉 X-Webhook-Secret は n8n の
+# nginx と同じ値を Worker に登録してあるので、nginx の webhook-secret.conf から読む。
 #
 # 設計方針 (2026-06-06 改修 / #567):
 # - severity 判定は container memory.current (ライブ値) で行う。
@@ -24,7 +26,8 @@ set -euo pipefail
 CONTAINER="n8n-docker-n8n-1"
 STATE_DIR="/var/lib/oci-mem-watch"
 STATE_FILE="${STATE_DIR}/state.json"
-WEBHOOK_URL="http://localhost:5678/webhook/obs-notify"
+OBS_NOTIFY_URL="https://observability-tail.y-fudo.workers.dev/obs-notify"
+WEBHOOK_SECRET_FILE="/etc/nginx/snippets/webhook-secret.conf"
 
 # 閾値 (warning のみ。critical は撤廃 — 停止系は別監視が捕捉する)
 CURRENT_WARN=85   # container memory.current / memory.max のライブ使用率 (%)
@@ -159,11 +162,23 @@ payload=$(jq -n \
 log "level transition ${prev_level} → ${effective_level}, posting to obs-notify"
 
 # ---- POST (failure non-fatal: timer 自体は止めない) ----
-if ! curl -sS --max-time 10 -X POST \
+# X-Webhook-Secret の値: nginx の `set $webhook_secret "<値>";` の <値>（読めなければ空）
+secret=$(awk -F'"' '/^[[:space:]]*set[[:space:]]+\$webhook_secret[[:space:]]/ { print $2; exit }' \
+  "$WEBHOOK_SECRET_FILE" 2>/dev/null || true)
+if [ -z "$secret" ]; then
+  log "obs-notify POST failed (non-fatal): webhook secret not found in ${WEBHOOK_SECRET_FILE}"
+  exit 0
+fi
+# 合言葉はコマンドライン（ps で見える）に出さず、標準入力からヘッダとして渡す。
+# --fail: 403（合言葉のずれ）・5xx も失敗としてログに残す
+rc=0
+printf 'X-Webhook-Secret: %s\n' "$secret" | curl -sS --fail --max-time 10 -X POST \
+  -H @- \
   -H "Content-Type: application/json" \
   -d "$payload" \
-  "$WEBHOOK_URL" >/dev/null; then
-  log "obs-notify POST failed (non-fatal)"
+  "$OBS_NOTIFY_URL" >/dev/null || rc=$?
+if [ "$rc" -ne 0 ]; then
+  log "obs-notify POST failed (non-fatal, curl exit ${rc}; 22 = HTTP 4xx/5xx)"
   exit 0
 fi
 
