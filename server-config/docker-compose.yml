@@ -70,6 +70,12 @@ services:
       # このサーバーでは使わず、512MB の container で余計なメモリを食わせないため止める
       # (2.23.4 から 2.44.4 へ上げるとき、2.23.4 と同じく無効のままにする)。
       N8N_DISABLED_MODULES: instance-ai
+      # n8n 本体の V8 heap 上限。指定しないと Node.js がコンテナ上限から 268MB に決めるが、
+      # n8n は何もしていない状態で 216MB を使う (2026-10-31 に /metrics で計測)。残り約 50MB では
+      # Gmail の取り込み・0 時の cron の集中・03 時の退避処理・起動時の WF 有効化で溢れ、
+      # 'JavaScript heap out of memory' で落ちる。下のコンテナ上限 640M のうち、heap 以外
+      # (Node.js 本体・Task Runner・SQLite) に約 250MB を残す値にしている。
+      NODE_OPTIONS: --max-old-space-size=384
       # trigger の有効化を旧方式 (ActiveWorkflowManager) に戻す。既定の publication service は
       # 有効化に一度失敗した trigger を DB に failed と記録し、起動時も 10 秒ごとの点検も
       # status=activated しか拾わないため二度とやり直さない (n8n-io/n8n#41541、2.44.6 でも未修正)。
@@ -100,7 +106,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 512M
+          memory: 640M
 
   # Promtail: journald + docker container logs + n8n_data の WF 系 log を Grafana
   # Cloud Loki に転送する（L14 観測性強化）。
