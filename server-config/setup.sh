@@ -181,7 +181,7 @@ if [ -f "$COMPOSE_FILE" ]; then
   # 送り先は observability-tail Worker の /obs-notify (n8n の状態に関係なく届く)。合言葉
   # X-Webhook-Secret は nginx と同じ値なので webhook-secret.conf から読み、標準入力で curl に渡す。
   # jq の install は後続 section 11 なので printf で JSON 組立 (jq 非依存)。
-  # 送れなくても非致命 (--max-time 10)。
+  # 送れなくても非致命 (--max-time 10)。--fail で 403 (合言葉のずれ)・5xx も失敗とログに出す。
   OBS_NOTIFY_URL="https://observability-tail.y-fudo.workers.dev/obs-notify"
   WEBHOOK_SECRET_FILE=/etc/nginx/snippets/webhook-secret.conf
   marker_summary="docker compose up -d --pull always 実行。image 更新時は起動時 migration で約10分間 cron/adapter が一過性失敗しうる相関マーカー。host=$(hostname)"
@@ -190,11 +190,16 @@ if [ -f "$COMPOSE_FILE" ]; then
     "$WEBHOOK_SECRET_FILE" 2>/dev/null || true)
   if [ -z "$marker_secret" ]; then
     log "deploy marker POST failed (non-fatal): webhook secret not found in $WEBHOOK_SECRET_FILE"
-  elif printf 'X-Webhook-Secret: %s\n' "$marker_secret" | curl -sS --max-time 10 -X POST -H @- \
-    -H "Content-Type: application/json" -d "$marker_payload" "$OBS_NOTIFY_URL" >/dev/null 2>&1; then
-    log "deploy marker posted to obs-notify (info)"
   else
-    log "deploy marker POST failed (non-fatal)"
+    marker_rc=0
+    printf 'X-Webhook-Secret: %s\n' "$marker_secret" | curl -sS --fail --max-time 10 -X POST -H @- \
+      -H "Content-Type: application/json" -d "$marker_payload" "$OBS_NOTIFY_URL" >/dev/null 2>&1 \
+      || marker_rc=$?
+    if [ "$marker_rc" -eq 0 ]; then
+      log "deploy marker posted to obs-notify (info)"
+    else
+      log "deploy marker POST failed (non-fatal, curl exit ${marker_rc}; 22 = HTTP 4xx/5xx)"
+    fi
   fi
   unset marker_secret
   log "docker compose up -d --pull always (project: $PROJECT_ROOT, file: $COMPOSE_FILE)"

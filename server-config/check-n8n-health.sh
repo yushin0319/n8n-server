@@ -122,16 +122,19 @@ notify() {
     log "obs-notify POST failed (non-fatal): webhook secret not found in ${WEBHOOK_SECRET_FILE}"
     return 1
   fi
-  # 合言葉はコマンドライン（ps で見える）に出さず、標準入力からヘッダとして渡す
-  if printf 'X-Webhook-Secret: %s\n' "$secret" | curl -sS --max-time 10 -X POST \
+  # 合言葉はコマンドライン（ps で見える）に出さず、標準入力からヘッダとして渡す。
+  # --fail: 403（合言葉のずれ）・5xx も失敗として返し、呼び出し側の再送を効かせる
+  local rc=0
+  printf 'X-Webhook-Secret: %s\n' "$secret" | curl -sS --fail --max-time 10 -X POST \
     -H @- \
     -H "Content-Type: application/json" \
     -d "$payload" \
-    "$OBS_NOTIFY_URL" >/dev/null 2>&1; then
+    "$OBS_NOTIFY_URL" >/dev/null 2>&1 || rc=$?
+  if [ "$rc" -eq 0 ]; then
     log "obs-notify POST ok ($1)"
     return 0
   fi
-  log "obs-notify POST failed (non-fatal)"
+  log "obs-notify POST failed (non-fatal, curl exit ${rc}; 22 = HTTP 4xx/5xx)"
   return 1
 }
 
