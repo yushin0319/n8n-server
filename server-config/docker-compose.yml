@@ -66,10 +66,12 @@ services:
       # 120s に延長して遅い起動でも JS runner が確実に接続できるようにする。
       # n8n v2.20.0+ で有効な env (それ以前は無視され fail-safe)。A1-flex 移行後は既定に戻す検討。
       N8N_RUNNERS_GRANT_TOKEN_TTL: "120"
-      # instance-ai モジュール (AI によるワークフロー作成) は n8n 2.35.0 から既定で有効。
-      # このサーバーでは使わず、512MB の container で余計なメモリを食わせないため止める
-      # (2.23.4 から 2.44.4 へ上げるとき、2.23.4 と同じく無効のままにする)。
-      N8N_DISABLED_MODULES: instance-ai
+      # n8n は既定で約 40 の backend module を全部読み込み、何もしていない状態で heap を
+      # 240MB 使う。このサーバーの WF が使わない機能 (AI エージェント・MCP・企業向けの認証と
+      # 管理・チャット・データテーブル・community nodes・統計画面・OpenTelemetry) は止める。
+      # WF が使うノードは n8n-nodes-base の code / httpRequest / notion / gmail / googleDrive /
+      # webhook 等だけ。名前は @n8n/backend-common の module-registry.js の defaultModules と同じ。
+      N8N_DISABLED_MODULES: instance-ai,agents,agent-evals,workflow-builder,chat-hub,mcp,mcp-discovery,mcp-registry,sso-oidc,sso-saml,ldap,scim,provisioning,log-streaming,source-control,external-secrets,workflow-reviews,inbox,data-table,community-packages,insights,otel
       # n8n 本体の V8 heap 上限。指定しないと Node.js がコンテナ上限から 268MB に決めるが、
       # n8n は何もしていない状態で 216MB を使う (2026-10-31 に /metrics で計測)。残り約 50MB では
       # Gmail の取り込み・0 時の cron の集中・03 時の退避処理・起動時の WF 有効化で溢れ、
