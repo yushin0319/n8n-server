@@ -26,16 +26,18 @@
 #   - Running 判定: 停止／終了したコンテナはゾンビではない（人手や docker の
 #     restart: unless-stopped の領分）。Running=true のときだけ restart 対象にする。
 #
-# obs-notify の循環依存回避:
-#   通知先 webhook は n8n 自身（localhost:5678/webhook/obs-notify）。ゾンビ化中の
-#   n8n に通知しても届かないため、restart 時点では通知せず state を "restarted" にし、
-#   healthz 回復を確認できたサイクルで「再起動した→復旧した」を 1 回通知する。
+# 通知:
+#   送り先は Cloudflare Workers の observability-tail（/obs-notify）。n8n の外にあるので、
+#   n8n がゾンビ化・停止していても届く。合言葉 X-Webhook-Secret は n8n の nginx と同じ値を
+#   Worker に登録してあるので、nginx の /etc/nginx/snippets/webhook-secret.conf から読む。
+#   通知は restart 後に healthz の回復を確認できたサイクルで「再起動した→復旧した」を 1 回送る。
 
 set -euo pipefail
 
 CONTAINER="n8n-docker-n8n-1"
 HEALTHZ_URL="http://localhost:5678/healthz"
-WEBHOOK_URL="http://localhost:5678/webhook/obs-notify"
+OBS_NOTIFY_URL="https://observability-tail.y-fudo.workers.dev/obs-notify"
+WEBHOOK_SECRET_FILE="/etc/nginx/snippets/webhook-secret.conf"
 STATE_DIR="/var/lib/n8n-watchdog"
 STATE_FILE="${STATE_DIR}/state.json"
 
@@ -100,19 +102,32 @@ save_state() {
   return 0
 }
 
+# ---- X-Webhook-Secret の値: nginx の `set $webhook_secret "<値>";` の <値>（読めなければ空）----
+read_webhook_secret() {
+  awk -F'"' '/^[[:space:]]*set[[:space:]]+\$webhook_secret[[:space:]]/ { print $2; exit }' \
+    "$WEBHOOK_SECRET_FILE" 2>/dev/null || true
+}
+
 # ---- obs-notify POST（curl の終了コードを返す。POST 失敗は non-fatal）----
 notify() {
   # $1=severity $2=subject $3=summary  → return 0=POST成功 / 非0=失敗
-  local payload
+  local payload secret
   payload=$(jq -n \
     --arg severity "$1" \
     --arg subject "$2" \
     --arg summary "$3" \
     '{severity: $severity, service: "n8n", subject: $subject, summary: $summary, repo: "n8n-server"}')
-  if curl -sS --max-time 10 -X POST \
+  secret=$(read_webhook_secret)
+  if [ -z "$secret" ]; then
+    log "obs-notify POST failed (non-fatal): webhook secret not found in ${WEBHOOK_SECRET_FILE}"
+    return 1
+  fi
+  # 合言葉はコマンドライン（ps で見える）に出さず、標準入力からヘッダとして渡す
+  if printf 'X-Webhook-Secret: %s\n' "$secret" | curl -sS --max-time 10 -X POST \
+    -H @- \
     -H "Content-Type: application/json" \
     -d "$payload" \
-    "$WEBHOOK_URL" >/dev/null 2>&1; then
+    "$OBS_NOTIFY_URL" >/dev/null 2>&1; then
     log "obs-notify POST ok ($1)"
     return 0
   fi
@@ -131,10 +146,9 @@ fi
 # ==========================================================================
 if [ "$healthz_ok" = true ]; then
   if [ "$last_status" = "$ST_RESTARTED" ]; then
-    # watchdog の restart 後に n8n が復帰 → ここで初めて通知（復旧後の n8n 経由なので届く）。
-    # ただし healthz 200 でも obs-notify WF が register 済みとは限らない（n8n は HTTP
-    # bind 後に WF を非同期ロードする）。notify 失敗時は state を restarted のまま残し、
-    # 次サイクルで再通知させる（この watchdog 唯一の通知を取りこぼさないため）。
+    # watchdog の restart 後に n8n が復帰 → 「再起動した→復旧した」を通知する。
+    # notify 失敗時は state を restarted のまま残し、次サイクルで再通知させる
+    # （この watchdog 唯一の通知を取りこぼさないため）。
     down_min=$(( (now - last_restart_at) / 60 ))
     summary=$(printf '%s\n' \
       "healthz 連続失敗を検知し docker restart を実行、n8n が復旧しました。" \
@@ -206,7 +220,7 @@ fi
 # 「restart では直らない hard-down」とみなし、自動 restart を止めてエスカレーション。
 if [ "$restart_count" -ge "$MAX_RESTARTS" ]; then
   log "CRITICAL: n8n still down after ${restart_count} watchdog restarts — giving up auto-restart, manual intervention required"
-  # obs-notify は n8n 経由で届かないため journal の CRITICAL 行に委ねる（promtail→Loki）。
+  # ここでは obs-notify に送らず、journal の CRITICAL 行（promtail→Loki）に残す。
   # 並行して Healthchecks.io が独立に DOWN を通知する。
   save_state "$fail_count" "$last_restart_at" "$restart_count" "$ST_FAILING"
   exit 0
