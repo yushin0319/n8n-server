@@ -10,7 +10,7 @@
             {
               "field": "days",
               "triggerAtHour": 8,
-              "triggerAtMinute": 0
+              "triggerAtMinute": 12
             }
           ]
         }
