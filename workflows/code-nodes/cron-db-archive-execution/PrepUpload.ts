@@ -5,9 +5,9 @@
  * pagination 対応: HTTP Request node の pagination 機能で複数 page 来るとき、
  * 各 page が個別 item として渡るため $input.all() で全 page を集約する。
  *
- * range filter: n8n REST API の /executions は startedAfter クエリを未対応のため
- * (v2.6.3 で "Unknown query parameter" エラー)、API 側は startedBefore のみで取得し、
- * Code Node 側で startedAt >= from の execution のみ残す。
+ * range filter: n8n REST API の /executions は時刻で絞るクエリを受けない (startedAfter /
+ * startedBefore とも v2.6.3 で "Unknown query parameter" エラー)。API 側は limit と
+ * ページ送りで新しい順に取り、Code Node 側で startedAt >= from の execution のみ残す。
  *
  * 1 行目に {"_meta":{"from":..., "to":...}} を入れて実際のスライディング範囲を
  * 明示する (Notion #561)。ファイル名は PrepRange.file_date を使用。
