@@ -90,4 +90,42 @@ describe("FormatResponse", () => {
     expect(out.count).toBe(0);
     expect(out.results).toEqual([]);
   });
+
+  it("Notion の 1 万件の上限で切れた問い合わせは incomplete=true と request_status を返す", () => {
+    vi.stubGlobal("$input", {
+      first: () => ({
+        json: {
+          object: "list",
+          results: [],
+          has_more: false,
+          next_cursor: null,
+          request_status: {
+            type: "incomplete",
+            incomplete_reason: "query_result_limit_reached",
+          },
+        },
+      }),
+    });
+    const out = callAndGetItems()[0].json;
+    expect(out.has_more).toBe(false);
+    expect(out.incomplete).toBe(true);
+    expect(out.request_status).toEqual({
+      type: "incomplete",
+      incomplete_reason: "query_result_limit_reached",
+    });
+  });
+
+  it("切れていない問い合わせは incomplete=false", () => {
+    vi.stubGlobal("$input", {
+      first: () => ({
+        json: {
+          object: "list",
+          results: [],
+          has_more: false,
+          next_cursor: null,
+        },
+      }),
+    });
+    expect(callAndGetItems()[0].json.incomplete).toBe(false);
+  });
 });

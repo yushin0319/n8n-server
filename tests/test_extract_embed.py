@@ -152,7 +152,6 @@ class TestExtractFunctionBody:
         # デデント済み
         assert body.split("\n")[0] == "const x = 1;"
 
-
     def test_handles_bundle_with_helpers(self):
         """バンドルモードでヘルパー関数がある場合、ヘルパーを残し_defaultのボディだけアンラップする."""
         # _shared をインポートした .ts のバンドル出力を再現
@@ -292,9 +291,7 @@ class TestExtract:
         no_code_wf = {
             "id": "no-code",
             "name": "No Code",
-            "nodes": [
-                {"type": "n8n-nodes-base.httpRequest", "name": "HTTP", "parameters": {}}
-            ],
+            "nodes": [{"type": "n8n-nodes-base.httpRequest", "name": "HTTP", "parameters": {}}],
             "connections": {},
         }
         no_code_path = wf_dir / "no-code.json"
@@ -316,10 +313,10 @@ class TestEmbed:
         ts_dir = code_dir / "test-wf"
         ts_dir.mkdir()
         (ts_dir / "FormatTest.ts").write_text(
-            'export default function (): CodeNodeReturn {\n'
-            '  const x: number = 42;\n'
-            '  return [{ json: { x } }];\n'
-            '}\n',
+            "export default function (): CodeNodeReturn {\n"
+            "  const x: number = 42;\n"
+            "  return [{ json: { x } }];\n"
+            "}\n",
             encoding="utf-8",
         )
 
@@ -419,13 +416,15 @@ class TestRoundTrip:
 
         wf = json.loads(json.dumps(SAMPLE_WF))
         wf["nodes"][0]["parameters"]["jsCode"] = code_a
-        wf["nodes"].append({
-            "parameters": {"jsCode": code_b},
-            "type": "n8n-nodes-base.code",
-            "typeVersion": 2,
-            "name": "SecondCode",
-            "id": "test-node-003",
-        })
+        wf["nodes"].append(
+            {
+                "parameters": {"jsCode": code_b},
+                "type": "n8n-nodes-base.code",
+                "typeVersion": 2,
+                "name": "SecondCode",
+                "id": "test-node-003",
+            }
+        )
         with open(wf_path, "w", encoding="utf-8", newline="\n") as f:
             json.dump(wf, f, indent=2, ensure_ascii=False)
             f.write("\n")
