@@ -40,9 +40,9 @@ describe("FormatList", () => {
     expect(tasks[0].url).toBe("https://notion.so/page-1");
   });
 
-  it("空の results を処理する", () => {
+  it("該当 0 件 (前の Notion ノードが alwaysOutputData で流す空の 1 件) は count 0 を返す", () => {
     vi.stubGlobal("$input", {
-      all: () => [],
+      all: () => [{ json: {} }],
     });
 
     const result = formatList() as INodeExecutionData[];

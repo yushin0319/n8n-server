@@ -203,6 +203,7 @@
       ],
       "id": "7a3ea2de-3237-4992-a066-62f8743e0644",
       "name": "ListQuery",
+      "alwaysOutputData": true,
       "credentials": {
         "notionApi": {
           "id": "StdChbKZz3co4jDO",
@@ -414,6 +415,7 @@
       ],
       "id": "s2",
       "name": "SearchQuery",
+      "alwaysOutputData": true,
       "credentials": {
         "notionApi": {
           "id": "StdChbKZz3co4jDO",

@@ -27,8 +27,8 @@ function run(): LatestOutput {
 }
 
 describe("FormatLatest", () => {
-  it("空入力で count=0 を返す", () => {
-    setup([]);
+  it("DB が空 (ListLatest の alwaysOutputData が流す空の 1 件) なら count=0 を返す", () => {
+    setup([{}]);
     const out = run();
     expect(out.count).toBe(0);
     expect(out.row).toBeNull();

@@ -52,9 +52,9 @@ describe("FormatSearch (notion-emails)", () => {
     expect(emails[0].subject).toBe("(無題)");
   });
 
-  it("結果が空の場合、空配列とcount=0を返す", () => {
+  it("該当 0 件 (前の Notion ノードが alwaysOutputData で流す空の 1 件) は count 0 を返す", () => {
     vi.stubGlobal("$input", {
-      all: () => [],
+      all: () => [{ json: {} }],
     });
 
     const result = formatSearch() as INodeExecutionData[];

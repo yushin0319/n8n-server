@@ -94,4 +94,35 @@ describe("BuildNotionBody", () => {
     const body = JSON.parse(result[0].json.requestBody as string);
     expect(body.properties.importance.select.name).toBe("確認");
   });
+
+  it("重要度の前後の空白を削り、重要・確認・不要以外は確認にする", () => {
+    const emails = [1, 2, 3].map((n) => ({
+      subject: `件名${n}`,
+      from: "a@example.com",
+      snippet: "",
+      messageId: `msg-${n}`,
+      dateISO: "2024-01-01T00:00:00.000Z",
+    }));
+    vi.stubGlobal("$input", {
+      first: () => ({
+        json: {
+          classifications: [
+            { index: 1, importance: "  不要 " },
+            { index: 2, importance: "要確認" },
+            { index: 3, importance: "重要" },
+          ],
+        },
+      }),
+    });
+    vi.stubGlobal("$", (_name: string) => ({
+      first: () => ({ json: { emails } }),
+    }));
+
+    const names = (buildNotionBody() as INodeExecutionData[]).map(
+      (r) =>
+        JSON.parse(r.json.requestBody as string).properties.importance.select
+          .name,
+    );
+    expect(names).toEqual(["不要", "確認", "重要"]);
+  });
 });

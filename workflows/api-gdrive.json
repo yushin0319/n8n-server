@@ -1629,6 +1629,7 @@
       ],
       "id": "b46043e7-9935-4255-a262-46e2af4b7294",
       "name": "SearchFiles",
+      "alwaysOutputData": true,
       "credentials": {
         "googleDriveOAuth2Api": {
           "id": "AeFJzyeByGcfTH8r",

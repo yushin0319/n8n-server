@@ -1,5 +1,7 @@
 export default function (): CodeNodeReturn {
-  const tasks = $input.all().map((item) => {
+  // 0 件のとき前の Notion ノードが alwaysOutputData で流す空の 1 件を除く
+  const pages = $input.all().filter((item) => item.json.id);
+  const tasks = pages.map((item) => {
     // biome-ignore lint/suspicious/noExplicitAny: Notion API レスポンス構造は複雑なため
     const p = item.json as any;
     const props = p.properties;

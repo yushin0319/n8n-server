@@ -11,6 +11,7 @@
 8. continueErrorOutput のエラー出力未接続 (サイレント失敗)
 9. 接続グラフに含まれない孤立ノード (不要ノード残存)
 10. WF名がカテゴリ/ケバブケース命名規則に違反 (整理)
+11. 応答ノードまでの途中の一覧取得に alwaysOutputData が無い (0 件で中身の空の応答になる)
 """
 
 import glob
@@ -37,6 +38,9 @@ HTTP_REQUEST_TYPES = {
 RESPOND_TYPES = {
     "n8n-nodes-base.respondToWebhook",
 }
+
+# 一覧取得の操作 (0 件だと次のノードへ何も流さない)
+LIST_OPERATIONS = {"getAll", "search"}
 
 # トリガーノードタイプ（errorWorkflow 必須判定用）
 TRIGGER_TYPES = {
@@ -145,6 +149,49 @@ def check_http_to_respond_direct(wf, errors):
                         f" Respond to Webhook に直結しています。"
                         f" $json 式が空になるため、間に Code ノードを挟んでください。"
                     )
+
+
+def check_list_without_output(wf, errors):
+    """応答ノードまでの途中の一覧取得に alwaysOutputData があるか.
+
+    対象は応答を応答ノードに任せる Webhook (responseMode=responseNode) の経路。
+    一覧取得は 0 件だと次へ何も流さないので応答ノードまで届かず、
+    HTTP 200 のまま中身の空の応答になる (n8n では成功扱いで、エラーの通知も出ない).
+    """
+    nodes = {n["name"]: n for n in wf.get("nodes", [])}
+    nexts = {
+        src: [c.get("node", "") for group in conn_data.get("main", []) for c in (group or [])]
+        for src, conn_data in wf.get("connections", {}).items()
+    }
+
+    def reachable(starts):
+        seen, stack = set(), list(starts)
+        while stack:
+            name = stack.pop()
+            if name not in seen:
+                seen.add(name)
+                stack.extend(nexts.get(name, []))
+        return seen
+
+    webhooks = [
+        name
+        for name, n in nodes.items()
+        if n.get("type") == "n8n-nodes-base.webhook"
+        and n.get("parameters", {}).get("responseMode") == "responseNode"
+    ]
+    for name in sorted(reachable(webhooks)):
+        node = nodes.get(name, {})
+        operation = node.get("parameters", {}).get("operation")
+        if operation not in LIST_OPERATIONS or node.get("alwaysOutputData"):
+            continue
+        downstream = reachable(nexts.get(name, []))
+        if not any(nodes.get(r, {}).get("type") in RESPOND_TYPES for r in downstream):
+            continue
+        errors.append(
+            f"[{name}] 一覧取得 ({operation}) に alwaysOutputData がありません。"
+            " 0 件のとき応答ノードまで届かず、中身の空の応答になります。"
+            " alwaysOutputData: true を付け、後ろの整形で id の無い空の 1 件を除いてください。"
+        )
 
 
 def check_error_workflow(wf, errors):
@@ -280,6 +327,7 @@ def validate_workflow(path):
     check_reserved_variable_names(wf, errors)
     check_newline_encoding(wf, errors)
     check_http_to_respond_direct(wf, errors)
+    check_list_without_output(wf, errors)
     check_error_workflow(wf, errors)
     check_continue_on_fail(wf, errors)
     check_empty_catch(wf, errors)

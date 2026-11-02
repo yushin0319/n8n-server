@@ -1,7 +1,8 @@
 // fileFolder.search ネイティブノードは複数アイテムを返す（1ファイル=1アイテム）
 // $input.all() で全件取得し、統一フォーマットに変換
 export default function (): CodeNodeReturn {
-  const items = $input.all();
+  // 0 件のとき前のノードが alwaysOutputData で流す空の 1 件を除く
+  const items = $input.all().filter((item) => item.json.id);
   const files = items.map((item: INodeExecutionData) => {
     const f = item.json;
     return {

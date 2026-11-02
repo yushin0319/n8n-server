@@ -24,7 +24,8 @@ function getRichText(props: IDataObject | undefined, key: string): string {
 }
 
 export default function (): CodeNodeReturn {
-  const items = $input.all();
+  // DB が空のとき ListLatest が alwaysOutputData で流す空の 1 件を除く
+  const items = $input.all().filter((item) => item.json.id);
   const count = items.length;
   if (count === 0) {
     return [

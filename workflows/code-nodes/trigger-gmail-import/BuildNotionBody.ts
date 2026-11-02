@@ -5,8 +5,11 @@
  *
  * classify のパース失敗は ValidateClassify 側で検知し、
  * そこで continueErrorOutput → 次段 classify にフォールバックする設計.
- * BuildNotionBody は classifications が無い / 空ならデフォルト「確認」を使う.
+ * 重要度は前後の空白を削り、重要・確認・不要以外（無い・空を含む）は「確認」にする
+ * (Notion は知らない名前を渡されると新しい選択肢を作り、ブリーフィングの「重要・確認」から漏れるため).
  */
+const IMPORTANCE = ["重要", "確認", "不要"];
+
 export default function (): CodeNodeReturn {
   const classifications =
     ($input.first().json.classifications as IDataObject[]) || [];
@@ -14,11 +17,12 @@ export default function (): CodeNodeReturn {
 
   const classMap: Record<number, string> = {};
   for (const c of classifications) {
-    classMap[c.index as number] = c.importance as string;
+    classMap[c.index as number] = String(c.importance ?? "").trim();
   }
 
   return emailData.map((email, i) => {
-    const importance = classMap[i + 1] || "確認";
+    const raw = classMap[i + 1];
+    const importance = IMPORTANCE.includes(raw) ? raw : "確認";
     const body = {
       parent: { database_id: "2ff2570f-e49f-8119-aaaf-f688605e5aa3" },
       properties: {
