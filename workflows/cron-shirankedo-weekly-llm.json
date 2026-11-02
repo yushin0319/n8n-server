@@ -753,6 +753,20 @@
         2000
       ],
       "id": "995536f2-b626-4929-ab63-13de96945821"
+    },
+    {
+      "parameters": {
+        "mode": "append",
+        "options": {}
+      },
+      "id": "740251c9-6053-4cb5-8986-676d495fa437",
+      "name": "MergePostResults",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        1320,
+        1300
+      ]
     }
   ],
   "connections": {
@@ -833,14 +847,14 @@
       "main": [
         [
           {
-            "node": "PrepareDiscordLLM",
+            "node": "MergePostResults",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "PrepareDiscordLLM",
+            "node": "MergePostResults",
             "type": "main",
             "index": 0
           }
@@ -851,16 +865,16 @@
       "main": [
         [
           {
-            "node": "PrepareDiscordLLM",
+            "node": "MergePostResults",
             "type": "main",
-            "index": 0
+            "index": 1
           }
         ],
         [
           {
-            "node": "PrepareDiscordLLM",
+            "node": "MergePostResults",
             "type": "main",
-            "index": 0
+            "index": 1
           }
         ]
       ]
@@ -923,7 +937,7 @@
       "main": [
         [
           {
-            "node": "PrepareDiscordLLM",
+            "node": "MergePostResults",
             "type": "main",
             "index": 0
           }
@@ -941,9 +955,9 @@
       "main": [
         [
           {
-            "node": "PrepareDiscordLLM",
+            "node": "MergePostResults",
             "type": "main",
-            "index": 0
+            "index": 1
           }
         ],
         [
@@ -1231,6 +1245,17 @@
         [
           {
             "node": "FetchXaiGuides",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MergePostResults": {
+      "main": [
+        [
+          {
+            "node": "PrepareDiscordLLM",
             "type": "main",
             "index": 0
           }
