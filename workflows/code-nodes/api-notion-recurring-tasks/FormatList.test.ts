@@ -81,4 +81,14 @@ describe("FormatList", () => {
     const result = formatList() as INodeExecutionData[];
     expect(result[0].json.count).toBe(3);
   });
+
+  it("入力が空の場合 空配列として処理", () => {
+    vi.stubGlobal("$input", {
+      all: () => [],
+    });
+
+    const result = formatList() as INodeExecutionData[];
+    expect(result[0].json.count).toBe(0);
+    expect(result[0].json.tasks).toEqual([]);
+  });
 });
