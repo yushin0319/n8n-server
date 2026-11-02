@@ -30,7 +30,7 @@ describe("PrepCreate", () => {
     expect(body.parent.database_id).toBe(
       "34d2570f-e49f-800e-82f8-dca2c6b1f1d3",
     );
-    expect((body.properties["日付"].title as IDataObject[])[0]).toMatchObject({
+    expect((body.properties.日付.title as IDataObject[])[0]).toMatchObject({
       text: { content: expect.any(String) },
     });
   });
@@ -38,11 +38,11 @@ describe("PrepCreate", () => {
   it("date を指定すれば反映される", () => {
     setup({ date: "2026-04-25" });
     const body = run();
-    expect(
-      (body.properties["日付"].title as IDataObject[])[0].text,
-    ).toMatchObject({
-      content: "2026-04-25",
-    });
+    expect((body.properties.日付.title as IDataObject[])[0].text).toMatchObject(
+      {
+        content: "2026-04-25",
+      },
+    );
   });
 
   it("数値プロパティを number 型で組む", () => {

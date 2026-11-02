@@ -63,8 +63,11 @@ class TestEsbuildCompile:
         )
 
         result = run_npx(
-            "esbuild", str(ts_file),
-            "--bundle=false", "--format=esm", "--target=es2022",
+            "esbuild",
+            str(ts_file),
+            "--bundle=false",
+            "--format=esm",
+            "--target=es2022",
         )
         assert result.returncode == 0, f"esbuild failed:\n{result.stderr}"
         assert ": string" not in result.stdout
@@ -81,8 +84,11 @@ class TestEsbuildCompile:
         )
 
         result = run_npx(
-            "esbuild", str(ts_file),
-            "--bundle=false", "--format=esm", "--target=es2022",
+            "esbuild",
+            str(ts_file),
+            "--bundle=false",
+            "--format=esm",
+            "--target=es2022",
         )
         assert result.returncode == 0
         output = result.stdout

@@ -66,6 +66,10 @@ export default function (): CodeNodeReturn {
     return out;
   });
 
+  // Notion は 1 回の問い合わせ (同じ絞り込み・並び順) で 1 万件までしか返さず、上限に達すると
+  // has_more=false のまま全ページに request_status.type="incomplete" を付ける。捨てると黙って欠ける
+  const requestStatus =
+    (resp.request_status as IDataObject | undefined) ?? null;
   return [
     {
       json: {
@@ -73,6 +77,8 @@ export default function (): CodeNodeReturn {
         count: flat.length,
         next_cursor: resp.next_cursor,
         has_more: resp.has_more,
+        incomplete: requestStatus?.type === "incomplete",
+        request_status: requestStatus,
         results: flat,
       },
     },

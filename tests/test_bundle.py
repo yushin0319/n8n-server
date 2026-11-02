@@ -39,30 +39,30 @@ class TestBundleImport:
 
         # 共通モジュール
         (shared_dir / "greet.ts").write_text(
-            'export function greet(name: string): string {\n'
-            '  return `Hello, ${name}!`;\n'
-            '}\n',
+            "export function greet(name: string): string {\n  return `Hello, ${name}!`;\n}\n",
             encoding="utf-8",
         )
 
         # Code Node（共通モジュールを import）
         (wf_dir / "TestNode.ts").write_text(
             'import { greet } from "../_shared/greet";\n'
-            '\n'
-            'export default function (): CodeNodeReturn {\n'
+            "\n"
+            "export default function (): CodeNodeReturn {\n"
             '  const msg = greet("n8n");\n'
-            '  return [{ json: { msg } }];\n'
-            '}\n',
+            "  return [{ json: { msg } }];\n"
+            "}\n",
             encoding="utf-8",
         )
 
         wf = {
-            "nodes": [{
-                "parameters": {"jsCode": "// @external test-wf/TestNode.ts"},
-                "type": "n8n-nodes-base.code",
-                "typeVersion": 2,
-                "name": "TestNode",
-            }],
+            "nodes": [
+                {
+                    "parameters": {"jsCode": "// @external test-wf/TestNode.ts"},
+                    "type": "n8n-nodes-base.code",
+                    "typeVersion": 2,
+                    "name": "TestNode",
+                }
+            ],
         }
 
         embed_workflow(wf)
@@ -83,19 +83,19 @@ class TestBundleImport:
         monkeypatch.setattr("scripts.embed_code.CODE_NODES_DIR", str(code_dir))
 
         (wf_dir / "Simple.ts").write_text(
-            'export default function (): CodeNodeReturn {\n'
-            '  return [{ json: { x: 42 } }];\n'
-            '}\n',
+            "export default function (): CodeNodeReturn {\n  return [{ json: { x: 42 } }];\n}\n",
             encoding="utf-8",
         )
 
         wf = {
-            "nodes": [{
-                "parameters": {"jsCode": "// @external test-wf/Simple.ts"},
-                "type": "n8n-nodes-base.code",
-                "typeVersion": 2,
-                "name": "Simple",
-            }],
+            "nodes": [
+                {
+                    "parameters": {"jsCode": "// @external test-wf/Simple.ts"},
+                    "type": "n8n-nodes-base.code",
+                    "typeVersion": 2,
+                    "name": "Simple",
+                }
+            ],
         }
 
         embed_workflow(wf)
@@ -110,29 +110,29 @@ class TestBundleImport:
         monkeypatch.setattr("scripts.embed_code.CODE_NODES_DIR", str(code_dir))
 
         (shared_dir / "utils.ts").write_text(
-            'export function double(n: number): number {\n'
-            '  return n * 2;\n'
-            '}\n',
+            "export function double(n: number): number {\n  return n * 2;\n}\n",
             encoding="utf-8",
         )
 
         (wf_dir / "TypedNode.ts").write_text(
             'import { double } from "../_shared/utils";\n'
-            '\n'
-            'export default function (): CodeNodeReturn {\n'
-            '  const result: number = double(21);\n'
-            '  return [{ json: { result } }];\n'
-            '}\n',
+            "\n"
+            "export default function (): CodeNodeReturn {\n"
+            "  const result: number = double(21);\n"
+            "  return [{ json: { result } }];\n"
+            "}\n",
             encoding="utf-8",
         )
 
         wf = {
-            "nodes": [{
-                "parameters": {"jsCode": "// @external test-wf/TypedNode.ts"},
-                "type": "n8n-nodes-base.code",
-                "typeVersion": 2,
-                "name": "TypedNode",
-            }],
+            "nodes": [
+                {
+                    "parameters": {"jsCode": "// @external test-wf/TypedNode.ts"},
+                    "type": "n8n-nodes-base.code",
+                    "typeVersion": 2,
+                    "name": "TypedNode",
+                }
+            ],
         }
 
         embed_workflow(wf)
