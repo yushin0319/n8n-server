@@ -51,12 +51,38 @@ describe("PrepareUpdate (notion-emails)", () => {
   it("bodyラッパーなしでも動作する", () => {
     vi.stubGlobal("$input", {
       first: () => ({
-        json: { page_id: "page-1", importance: "通常" },
+        json: { page_id: "page-1", importance: "確認" },
       }),
     });
 
     const result = prepareUpdate() as INodeExecutionData[];
     expect(result[0].json.pageId).toBe("page-1");
-    expect(result[0].json.importance).toBe("通常");
+    expect(result[0].json.importance).toBe("確認");
+  });
+
+  it("importance と status は前後の空白を削る", () => {
+    vi.stubGlobal("$input", {
+      first: () => ({
+        json: {
+          body: { page_id: "p", importance: " 重要 ", status: "既読  " },
+        },
+      }),
+    });
+
+    const result = prepareUpdate() as INodeExecutionData[];
+    expect(result[0].json.importance).toBe("重要");
+    expect(result[0].json.emailStatus).toBe("既読");
+  });
+
+  it("選択肢に無い importance・status はエラーにする (Notion が新しい選択肢を作るため)", () => {
+    vi.stubGlobal("$input", {
+      first: () => ({ json: { body: { page_id: "p", importance: "要確認" } } }),
+    });
+    expect(() => prepareUpdate()).toThrow("importance");
+
+    vi.stubGlobal("$input", {
+      first: () => ({ json: { body: { page_id: "p", status: "確認" } } }),
+    });
+    expect(() => prepareUpdate()).toThrow("status");
   });
 });

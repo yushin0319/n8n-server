@@ -49,8 +49,8 @@ describe("gdrive/FormatSearch", () => {
     });
   });
 
-  it("結果が空の場合は空配列を返す", () => {
-    vi.stubGlobal("$input", { all: () => [] });
+  it("該当 0 件 (前のノードが alwaysOutputData で流す空の 1 件) は count 0 を返す", () => {
+    vi.stubGlobal("$input", { all: () => [{ json: {} }] });
 
     const result = formatSearch() as INodeExecutionData[];
     expect(result[0].json.count).toBe(0);

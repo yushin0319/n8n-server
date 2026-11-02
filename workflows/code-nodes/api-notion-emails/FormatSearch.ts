@@ -6,7 +6,9 @@ import {
 } from "../_shared/notionProps";
 
 export default function (): CodeNodeReturn {
-  const emails = $input.all().map((item) => {
+  // 0 件のとき前の Notion ノードが alwaysOutputData で流す空の 1 件を除く
+  const pages = $input.all().filter((item) => item.json.id);
+  const emails = pages.map((item) => {
     const page = item.json as IDataObject;
     const props = page.properties as IDataObject;
     const subject = notionTitle(props, "subject", "(無題)");

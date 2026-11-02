@@ -234,6 +234,7 @@
       ],
       "id": "b-search-query",
       "name": "SearchQuery",
+      "alwaysOutputData": true,
       "credentials": {
         "notionApi": {
           "id": "StdChbKZz3co4jDO",

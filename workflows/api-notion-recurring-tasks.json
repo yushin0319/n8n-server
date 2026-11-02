@@ -220,6 +220,7 @@
       ],
       "id": "rt-0006-0000-0000-000000000006",
       "name": "ListQuery",
+      "alwaysOutputData": true,
       "credentials": {
         "notionApi": {
           "id": "StdChbKZz3co4jDO",
