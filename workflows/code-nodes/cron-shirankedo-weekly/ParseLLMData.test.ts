@@ -230,6 +230,85 @@ describe("ParseLLMData", () => {
     const models = JSON.parse(items[0].json.requestBody as string);
     expect(models.length).toBe(0);
   });
+
+  describe("Free API のページ分け (1 ページ = 1 item)", () => {
+    /** HTTP Request のページ分け → combineAll 2 段の出力: ページごとに為替・廃止一覧が付いた item */
+    function stubPages(
+      pages: { page: number; totalPages: number; data: IDataObject[] }[],
+      rates: Record<string, number> = { JPY: 150 },
+    ) {
+      vi.stubGlobal("$input", {
+        all: () =>
+          pages.map((p) => ({
+            json: {
+              tier: "free",
+              pagination: {
+                page: p.page,
+                page_size: 200,
+                total_pages: p.totalPages,
+                has_more: p.page < p.totalPages,
+              },
+              data: p.data,
+              rates,
+              deprecations: [],
+            },
+          })),
+      });
+    }
+
+    it("全ページの data をつないで送る", () => {
+      stubPages([
+        {
+          page: 1,
+          totalPages: 2,
+          data: [makeModel({ name: "Claude Opus 5.5", score: 70 })],
+        },
+        {
+          page: 2,
+          totalPages: 2,
+          data: [makeModel({ name: "GPT-6.1 Sol", creator: "OpenAI" })],
+        },
+      ]);
+
+      const names = JSON.parse(
+        callAndGetItems()[0].json.requestBody as string,
+      ).map((m: IDataObject) => m.modelName);
+      expect(names).toEqual(["GPT-6.1 Sol", "Claude Opus 5.5"]);
+    });
+
+    it("ページの境目で同じモデルが 2 回来ても 1 件にする", () => {
+      const dup = { ...makeModel({ name: "Claude Opus 5.5" }), id: "m-1" };
+      stubPages([
+        { page: 1, totalPages: 2, data: [dup] },
+        { page: 2, totalPages: 2, data: [dup] },
+      ]);
+
+      const items = callAndGetItems();
+      expect(items[0].json.count).toBe(1);
+    });
+
+    it("ページが欠けていたら送らずに止める (一覧外の行が消されるのを防ぐ)", () => {
+      stubPages([
+        { page: 1, totalPages: 3, data: [makeModel()] },
+        { page: 2, totalPages: 3, data: [makeModel({ name: "GPT-6.1 Sol" })] },
+      ]);
+
+      expect(() => parseLLMData()).toThrow(/全 3 ページ中 3/);
+    });
+
+    it("為替は 1 ページ目の item から読む", () => {
+      stubPages(
+        [
+          { page: 1, totalPages: 2, data: [makeModel()] },
+          { page: 2, totalPages: 2, data: [] },
+        ],
+        { JPY: 152.5, EUR: 0.9 },
+      );
+
+      const rate = JSON.parse(callAndGetItems()[1].json.requestBody as string);
+      expect(rate.jpyPerUsd).toBe(152.5);
+    });
+  });
 });
 
 describe("shouldSkip", () => {
