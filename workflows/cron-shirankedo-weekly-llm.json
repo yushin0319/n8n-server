@@ -30,10 +30,26 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "https://artificialanalysis.ai/api/v2/data/llms/models",
+        "url": "https://artificialanalysis.ai/api/v2/language/models/free",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "httpHeaderAuth",
-        "options": {}
+        "options": {
+          "pagination": {
+            "pagination": {
+              "parameters": {
+                "parameters": [
+                  {
+                    "name": "page",
+                    "value": "={{ $pageCount + 1 }}"
+                  }
+                ]
+              },
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ $pageCount >= 10 || !$response.body.pagination || $response.body.pagination.has_more !== true }}",
+              "limitPagesFetched": false
+            }
+          }
+        }
       },
       "id": "80e7ac11-2909-4382-96d8-676b7aad8fe0",
       "name": "FetchAAModels",

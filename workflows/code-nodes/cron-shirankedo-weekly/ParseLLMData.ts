@@ -145,16 +145,54 @@ function dropSuperseded<T extends { name: string }>(models: T[]): T[] {
   });
 }
 
+/**
+ * AA の Free API (/api/v2/language/models/free) は 200 件ずつのページで返り、
+ * HTTP Request ノードのページ分けで 1 ページが 1 item として届く。全ページの data をつなぐ。
+ * ページが欠けたまま送ると shirankedo 側が一覧に無い行を消すので、欠けていたら止める。
+ */
+function collectAAModels(items: INodeExecutionData[]): IDataObject[] {
+  const pages = new Set<number>();
+  let totalPages: number | null = null;
+  const seen = new Set<string>();
+  const models: IDataObject[] = [];
+  for (const item of items) {
+    const json = item.json ?? {};
+    const pagination = json.pagination as IDataObject | undefined;
+    if (pagination) {
+      pages.add(Number(pagination.page));
+      totalPages = Number(pagination.total_pages);
+    }
+    for (const m of (json.data || []) as IDataObject[]) {
+      const key = (m.id ?? m.slug ?? m.name) as string | undefined;
+      if (key !== undefined) {
+        if (seen.has(key)) continue;
+        seen.add(key);
+      }
+      models.push(m);
+    }
+  }
+  if (totalPages !== null) {
+    const missing: number[] = [];
+    for (let p = 1; p <= totalPages; p++) if (!pages.has(p)) missing.push(p);
+    if (missing.length > 0) {
+      throw new Error(
+        `AA のモデル一覧のページが欠けている: 全 ${totalPages} ページ中 ${missing.join(", ")} が無い`,
+      );
+    }
+  }
+  return models;
+}
+
 export type { FilteredModel };
-export { dropSuperseded, familyKey, seriesOf, shouldSkip };
+export { collectAAModels, dropSuperseded, familyKey, seriesOf, shouldSkip };
 
 export default function (): CodeNodeReturn {
   // AA APIデータからモデルをフィルタ・デデュプ
-  // MergeLLMInputs(combineAll)経由で$inputから取得（Mock経由でも動作する）
+  // MergeLLMInputs / MergeWithDeprecations (combineAll) 経由で、ページごとの item に為替・廃止一覧が付いて届く
   const items = $input.all();
   const aaResp = items[0]?.json ?? {};
   const rateResp = items[0]?.json ?? {};
-  const aaData = (aaResp.data || []) as IDataObject[];
+  const aaData = collectAAModels(items);
   const rates = (rateResp?.rates || {}) as IDataObject;
   const jpyRate = (rates.JPY as number) || 150;
   const eurRate = (rates.EUR as number) || 1;
