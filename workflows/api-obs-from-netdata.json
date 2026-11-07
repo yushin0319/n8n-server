@@ -1,7 +1,7 @@
 {
   "id": "PY5ynS0MsMDS4LLQ",
   "name": "api/obs-from-netdata",
-  "active": true,
+  "active": false,
   "nodes": [
     {
       "parameters": {

@@ -1,7 +1,7 @@
 {
   "id": "7iyS1QEB6ZdnA1xz",
   "name": "api/obs-from-grafana",
-  "active": true,
+  "active": false,
   "nodes": [
     {
       "parameters": {

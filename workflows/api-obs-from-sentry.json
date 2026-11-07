@@ -1,7 +1,7 @@
 {
   "id": "dzyhl1XzIe9OX6aN",
   "name": "api/obs-from-sentry",
-  "active": true,
+  "active": false,
   "nodes": [
     {
       "parameters": {
