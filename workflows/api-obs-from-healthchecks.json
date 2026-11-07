@@ -1,7 +1,7 @@
 {
   "id": "DsDdKEu58in8sj2a",
   "name": "api/obs-from-healthchecks",
-  "active": true,
+  "active": false,
   "nodes": [
     {
       "parameters": {

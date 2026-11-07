@@ -71,9 +71,12 @@ _EXCLUDE_WFS = {
     "api-notion-db-update",
     "api-notion-db-query",
     "api-obs-notify",
-    "api-obs-from-sentry",
-    "api-obs-from-healthchecks",
     "api-n8n-api-get",  # body.action 必須 (n8n REST API endpoint), 空 body で 'action は必須' throw
+    # 受け口を observability-tail Worker の /obs-from/* に移したので deactivate → テスト不要
+    "api-obs-from-grafana",
+    "api-obs-from-healthchecks",
+    "api-obs-from-netdata",
+    "api-obs-from-sentry",
     # CF Workers に移植済みのため n8n 側は deactivate → テスト不要
     "cron-shirankedo-daily-articles",
     "cron-shirankedo-daily-releases",
