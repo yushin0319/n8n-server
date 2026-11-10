@@ -7,6 +7,8 @@
  * - 日付を読めないエントリは除外しない
  * - 「最短でこの日以降に停止」（Google の Shutdown date、"at earliest"、"Not sooner than"）では除外しない。
  *   Google は models ページで "(Shut down)" と表示されたモデルだけを停止済みとする
+ * - Kimi は停止日の告知文が無い行のうち、表に「Deprecated」とだけあるものを停止済みとする（2026-11-10 決定）。
+ *   提供を終える予定の行は "Deprecation expected ..." と書き分けられている
  */
 
 /** 廃止一覧を持つベンダー（Alibaba は告知が JS 描画・画像のため対象外） */
@@ -42,7 +44,7 @@ export const DEPRECATION_SOURCES: DeprecationSource[] = [
     vendor: "google",
     // deprecations ページの Shutdown date は「最短の停止日」なので使わない。
     // models ページで "(Shut down)" と表示されたものだけを停止済みとする
-    url: "https://ai.google.dev/gemini-api/docs/models.md.txt",
+    url: "https://aistudio.google.com/docs/models.md",
   },
   { vendor: "xai-index", url: XAI_INDEX_URL },
   { vendor: "kimi", url: "https://platform.kimi.ai/docs/models.md" },
@@ -236,6 +238,56 @@ function backticked(text: string): string[] {
   return [...text.matchAll(/`([^`]+)`/g)].map((m) => m[1].trim());
 }
 
+/** 表 1 つ = 行ごとのセルの配列。先頭の行が見出し */
+type Table = string[][];
+
+/** Markdown の表（"|" 区切り）。見出し行と区切り行（|---|）に続く "|" の行を集める */
+function pipeTables(md: string): Table[] {
+  const lines = md.split(/\r?\n/);
+  const tables: Table[] = [];
+  for (let i = 0; i < lines.length - 1; i++) {
+    if (
+      !lines[i].trim().startsWith("|") ||
+      !/^\s*\|[\s:|-]+\|\s*$/.test(lines[i + 1])
+    )
+      continue;
+    const rows = [splitRow(lines[i])];
+    for (
+      let j = i + 2;
+      j < lines.length && lines[j].trim().startsWith("|");
+      j++
+    )
+      rows.push(splitRow(lines[j]));
+    tables.push(rows);
+  }
+  return tables;
+}
+
+/**
+ * Markdoc の表（{% table %} 〜 {% /table %}）。行は "---" の行で区切られ、セルは字下げ 3 字以内の "* " で始まる。
+ * それより深く字下げした行は前のセルの続き（折り返した "(Shut down)" や 2 つ目の Endpoint）
+ */
+function markdocTables(md: string): Table[] {
+  const tables: Table[] = [];
+  for (const m of md.matchAll(
+    /\{%\s*table\b[^%]*%\}([\s\S]*?)\{%\s*\/table\s*%\}/g,
+  )) {
+    const rows: Table = [];
+    for (const block of m[1].split(/^\s*---\s*$/m)) {
+      const cells: string[] = [];
+      for (const line of block.split(/\r?\n/)) {
+        const cell = /^ {0,3}\* (.*)$/.exec(line);
+        if (cell) cells.push(cell[1].trim());
+        else if (line.trim() && cells.length > 0)
+          cells[cells.length - 1] += ` ${line.trim()}`;
+      }
+      if (cells.length > 0) rows.push(cells);
+    }
+    if (rows.length > 0) tables.push(rows);
+  }
+  return tables;
+}
+
 const MODEL_ID = /^[a-z0-9][a-z0-9.\-_]*$/i;
 
 /**
@@ -316,17 +368,10 @@ function dedupe(entries: DeprecationEntry[]): DeprecationEntry[] {
  * 日付列 = "shutdown" か "retirement" を含む列、状態列 = "state"（あれば Deprecated/Retired の行のみ）
  */
 export function parseMarkdownTables(md: string, vendor: Vendor): ParseResult {
-  const lines = md.split(/\r?\n/);
   const entries: DeprecationEntry[] = [];
   let markerFound = false;
-  for (let i = 0; i < lines.length - 1; i++) {
-    const header = lines[i];
-    const sep = lines[i + 1];
-    if (!header.trim().startsWith("|") || !/^\s*\|[\s:|-]+\|\s*$/.test(sep))
-      continue;
-    const heads = splitRow(header).map((h) =>
-      h.replace(/\*/g, "").toLowerCase(),
-    );
+  for (const [header, ...rows] of pipeTables(md)) {
+    const heads = header.map((h) => h.replace(/\*/g, "").toLowerCase());
     const modelCol = heads.findIndex(
       (h) => h.includes("model") && !/replacement|substitute/.test(h),
     );
@@ -334,12 +379,7 @@ export function parseMarkdownTables(md: string, vendor: Vendor): ParseResult {
     const stateCol = heads.findIndex((h) => h.includes("state"));
     if (modelCol < 0 || dateCol < 0) continue;
     markerFound = true;
-    for (
-      let j = i + 2;
-      j < lines.length && lines[j].trim().startsWith("|");
-      j++
-    ) {
-      const cells = splitRow(lines[j]);
+    for (const cells of rows) {
       if (stateCol >= 0 && !/deprecated|retired/i.test(cells[stateCol] ?? ""))
         continue;
       const modelCell = cells[modelCol] ?? "";
@@ -369,29 +409,17 @@ export function parseMarkdownTables(md: string, vendor: Vendor): ParseResult {
 }
 
 /**
- * Google の models ページ（Markdown）。"Endpoint" 列のある表で、モデル名のセルに
- * "(Shut down)" が付いた行を停止済みとする（停止日は書かれていない）
+ * Google の models ページ。"Endpoint" 列のある表（Markdown の "|" の表か Markdoc の {% table %}）で、
+ * モデル名のセルに "(Shut down)" が付いた行を停止済みとする（停止日は書かれていない）
  */
 export function parseGoogleModels(md: string): ParseResult {
-  const lines = md.split(/\r?\n/);
   const entries: DeprecationEntry[] = [];
   let markerFound = false;
-  for (let i = 0; i < lines.length - 1; i++) {
-    if (
-      !lines[i].trim().startsWith("|") ||
-      !/^\s*\|[\s:|-]+\|\s*$/.test(lines[i + 1])
-    )
-      continue;
-    const heads = splitRow(lines[i]).map((h) => h.toLowerCase());
-    const endpointCol = heads.indexOf("endpoint");
+  for (const [header, ...rows] of [...pipeTables(md), ...markdocTables(md)]) {
+    const endpointCol = header.findIndex((h) => h.toLowerCase() === "endpoint");
     if (endpointCol < 0) continue;
     markerFound = true;
-    for (
-      let j = i + 2;
-      j < lines.length && lines[j].trim().startsWith("|");
-      j++
-    ) {
-      const cells = splitRow(lines[j]);
+    for (const cells of rows) {
       if (!/\(shut down\)/i.test(cells[0] ?? "")) continue;
       for (const id of backticked(cells[endpointCol] ?? "")) {
         if (MODEL_ID.test(id))
@@ -450,7 +478,8 @@ export function parseXaiGuide(md: string): ParseResult {
  * Kimi のモデル一覧（## Deprecated Models 節）。
  * 引用文 "`kimi-k2.5` was officially discontinued on **August 31, 2026**" から日付を取り、
  * "The `kimi-k2` series models ..." は kimi-k2-* の表の行に日付を当てる（ベンダー自身の「シリーズ」宣言）。
- * 引用文の日付が読めない行と、引用文が見つからない Deprecated 行は unreadable にする
+ * 引用文が見つからない行は、表に「Deprecated」とだけあれば停止済み、ほかの文が付いていれば unreadable にする。
+ * 引用文の日付が読めない行も unreadable
  */
 export function parseKimi(md: string): ParseResult {
   const start = md.indexOf("## Deprecated Models");
@@ -475,13 +504,20 @@ export function parseKimi(md: string): ParseResult {
   for (const line of body.split(/\r?\n/)) {
     if (!line.trim().startsWith("|")) continue;
     const cells = splitRow(line);
-    if (!/deprecated/i.test(cells[1] ?? "")) continue;
+    const status = cells[1] ?? "";
+    if (!/deprecated/i.test(status)) continue;
+    const stoppedRow = /^deprecated$/i.test(status.replace(/\*/g, "").trim());
     for (const id of backticked(cells[0] ?? "")) {
       if (direct.has(id)) continue;
       const s = series.find(
         (x) => id === x.prefix || id.startsWith(`${x.prefix}-`),
       );
-      entries.push({ vendor: "kimi", id, ...(s ? s.date : datePart(null)) });
+      const date = s
+        ? s.date
+        : stoppedRow
+          ? { retireAt: null, stopped: true }
+          : datePart(null);
+      entries.push({ vendor: "kimi", id, ...date });
     }
   }
   return { entries: dedupe(entries), markerFound: true };
