@@ -3,7 +3,11 @@ import { describe, expect, it } from "vitest";
 import anthropicMd from "../__fixtures__/deprecations/anthropic.md.txt?raw";
 import deepseekHtml from "../__fixtures__/deprecations/deepseek.html.txt?raw";
 import googleModelsMd from "../__fixtures__/deprecations/google-models.md.txt?raw";
+// 2026-11-10 取得。aistudio.google.com に移り、表が Markdoc の {% table %} になった版（4 つの表の抜粋）
+import googleModels202611Md from "../__fixtures__/deprecations/google-models-2026-11.excerpt.md.txt?raw";
 import kimiMd from "../__fixtures__/deprecations/kimi.md.txt?raw";
+// 2026-11-10 取得。停止日の告知文が消え、表に「Deprecated」とだけ書かれた版
+import kimi202611Md from "../__fixtures__/deprecations/kimi-2026-11.md.txt?raw";
 import openaiMd from "../__fixtures__/deprecations/openai.md.txt?raw";
 import xaiGuide from "../__fixtures__/deprecations/xai-llms-full.excerpt.txt?raw";
 import xiaomiHtml from "../__fixtures__/deprecations/xiaomi.html.txt?raw";
@@ -160,6 +164,56 @@ describe("parseGoogleModels", () => {
   });
 });
 
+describe("parseGoogleModels（2026-11 の Markdoc の表）", () => {
+  const r = parseGoogleModels(googleModels202611Md);
+  const ids = r.entries.map((e) => e.id).sort();
+
+  it("{% table %} の Endpoint 列を読み、(Shut down) の行だけを停止済みとする", () => {
+    expect(r.markerFound).toBe(true);
+    // 現行の gemini-3.8-flash / gemini-3.1-flash-lite / gemini-omni-1.2-flash は含まない
+    expect(ids).toEqual([
+      "gemini-2.0-flash",
+      "gemini-2.0-flash-lite",
+      "gemini-2.5-computer-use-preview-10-2025",
+      "gemini-3-pro-preview",
+      "gemini-3.1-flash-lite-preview",
+      "gemini-robotics-er-1.6-preview",
+      "imagen-4.0-generate",
+    ]);
+    expect(r.entries.every((e) => e.stopped && e.retireAt === null)).toBe(true);
+  });
+
+  it("次の行に折り返した (Shut down) と、2 行にわたる Endpoint を読む", () => {
+    const md = [
+      '{% table variant="model" %}',
+      "  * Model",
+      "  * Endpoint",
+      "",
+      "  ---",
+      "",
+      "  * [Old Model](/docs/models/old)",
+      "    (Shut down)",
+      "  * `old-a`   ",
+      "    `old-b`",
+      "",
+      "  ---",
+      "",
+      "  * [New Model](/docs/models/new)",
+      "  * `new-a`",
+      "{% /table %}",
+    ].join("\n");
+    expect(parseGoogleModels(md).entries.map((e) => e.id)).toEqual([
+      "old-a",
+      "old-b",
+    ]);
+  });
+
+  it("Endpoint 列の無い {% table %} だけなら markerFound=false", () => {
+    const md = "{% table %}\n  * Model\n  * Description\n{% /table %}\n";
+    expect(parseGoogleModels(md).markerFound).toBe(false);
+  });
+});
+
 describe("xAI", () => {
   it("llms.txt から移行ガイドの .md URL を拾う", () => {
     const txt = [
@@ -204,6 +258,42 @@ describe("parseKimi", () => {
 
   it("見出しが無ければ markerFound=false", () => {
     expect(parseKimi("# Model List\n").markerFound).toBe(false);
+  });
+});
+
+describe("parseKimi（2026-11: 告知文が消え、表の Deprecated だけになった版）", () => {
+  const r = parseKimi(kimi202611Md);
+  const byIdEntry = Object.fromEntries(r.entries.map((e) => [e.id, e]));
+
+  it("Deprecated とだけ書かれた行を停止済みとする", () => {
+    expect(r.markerFound).toBe(true);
+    expect(r.entries).toHaveLength(15);
+    for (const id of [
+      "kimi-k2.5",
+      "moonshot-v1-8k",
+      "moonshot-v1-128k-vision-preview",
+      "kimi-k2-thinking",
+      "kimi-latest",
+      "kimi-thinking-preview",
+    ]) {
+      expect(byIdEntry[id]).toEqual({
+        vendor: "kimi",
+        id,
+        retireAt: null,
+        stopped: true,
+      });
+    }
+  });
+
+  it("廃止予定（Deprecation expected ...）の行と現行モデルは含まない", () => {
+    for (const id of [
+      "kimi-k2.7-code",
+      "kimi-k2.7-code-highspeed",
+      "kimi-k2.6",
+      "kimi-k3.1-pro",
+      "kimi-k3",
+    ])
+      expect(byIdEntry[id]).toBeUndefined();
   });
 });
 
@@ -321,7 +411,7 @@ describe("読めない日付（unreadable）", () => {
     ]);
   });
 
-  it("Kimi: 告知文の日付が読めない行・告知文が無い Deprecated 行は unreadable", () => {
+  it("Kimi: 告知文の日付が読めない行と、Deprecated に日付らしい文が付いた行は unreadable", () => {
     const r = parseKimi(
       [
         "## Deprecated Models",
@@ -330,13 +420,17 @@ describe("読めない日付（unreadable）", () => {
         "| --- | --- |",
         "| `kimi-a` | Deprecated |",
         "| `kimi-b` | Deprecated |",
+        "| `kimi-c` | Deprecated on 2026/12/01 |",
         "",
       ].join("\n"),
     );
-    expect(kinds(r.entries)).toEqual({
-      "kimi-a": "unreadable",
-      "kimi-b": "unreadable",
-    });
+    // 告知文の日付があればそちらを優先する（kimi-a は読めないので unreadable のまま）。
+    // 告知文が無く「Deprecated」とだけある行は停止済み
+    expect(r.entries).toEqual([
+      { vendor: "kimi", id: "kimi-a", retireAt: null, nullKind: "unreadable" },
+      { vendor: "kimi", id: "kimi-b", retireAt: null, stopped: true },
+      { vendor: "kimi", id: "kimi-c", retireAt: null, nullKind: "unreadable" },
+    ]);
   });
 
   it("xAI: Retirement 見出しの日付が読めなければ unreadable で残す", () => {
@@ -378,8 +472,10 @@ describe("読めない日付（unreadable）", () => {
       ...parseMarkdownTables(openaiMd, "openai").entries,
       ...parseMarkdownTables(anthropicMd, "anthropic").entries,
       ...parseGoogleModels(googleModelsMd).entries,
+      ...parseGoogleModels(googleModels202611Md).entries,
       ...parseXaiGuide(xaiGuide).entries,
       ...parseKimi(kimiMd).entries,
+      ...parseKimi(kimi202611Md).entries,
       ...parseXiaomi(xiaomiHtml).entries,
       ...parseXiaomi(xiaomi202610Html).entries,
       ...parseDeepseek(deepseekHtml).entries,

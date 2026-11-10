@@ -2,7 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import anthropicMd from "./__fixtures__/deprecations/anthropic.md.txt?raw";
 import deepseekHtml from "./__fixtures__/deprecations/deepseek.html.txt?raw";
 import googleMd from "./__fixtures__/deprecations/google-models.md.txt?raw";
+import google202611Md from "./__fixtures__/deprecations/google-models-2026-11.excerpt.md.txt?raw";
 import kimiMd from "./__fixtures__/deprecations/kimi.md.txt?raw";
+import kimi202611Md from "./__fixtures__/deprecations/kimi-2026-11.md.txt?raw";
 import openaiMd from "./__fixtures__/deprecations/openai.md.txt?raw";
 import xaiGuide from "./__fixtures__/deprecations/xai-llms-full.excerpt.txt?raw";
 import xiaomiHtml from "./__fixtures__/deprecations/xiaomi.html.txt?raw";
@@ -49,6 +51,20 @@ describe("collectDeprecations", () => {
       "xai",
       "xiaomi",
     ]);
+  });
+
+  it("Google の Markdoc の表・Kimi の日付なしの Deprecated の版でも警告なし", () => {
+    const pages = allOk().map((p) =>
+      p.vendor === "google"
+        ? page("google", google202611Md)
+        : p.vendor === "kimi"
+          ? page("kimi", kimi202611Md)
+          : p,
+    );
+    const r = collectDeprecations(pages);
+    expect(r.deprecationWarnings).toEqual([]);
+    expect(r.deprecations.filter((e) => e.vendor === "google")).toHaveLength(7);
+    expect(r.deprecations.filter((e) => e.vendor === "kimi")).toHaveLength(15);
   });
 
   it("HTTP エラーの社はエントリを使わず警告する（他社は使う）", () => {
