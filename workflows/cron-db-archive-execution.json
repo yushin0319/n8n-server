@@ -122,8 +122,7 @@
               "limitPagesFetched": false
             }
           }
-        },
-        "onError": "stopAndFail"
+        }
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -264,8 +263,7 @@
               "limitPagesFetched": false
             }
           }
-        },
-        "onError": "stopAndFail"
+        }
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -400,8 +398,7 @@
         "url": "=https://hc-ping.com/{{ $env.HC_PING_KEY }}/db-archive-execution",
         "options": {
           "timeout": 5000
-        },
-        "onError": "continueRegularOutput"
+        }
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -411,6 +408,7 @@
       ],
       "name": "PingHealthchecks",
       "id": "hc-ping-db-archive-execution",
+      "onError": "continueRegularOutput",
       "retryOnFail": true,
       "maxTries": 2,
       "waitBetweenTries": 3000

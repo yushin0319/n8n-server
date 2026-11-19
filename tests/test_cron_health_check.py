@@ -59,7 +59,7 @@ def test_check_targets_reads_url_from_build_targets(wf, check_targets_node):
 
 def test_check_targets_keeps_failed_items_in_order(check_targets_node):
     # 失敗した item を出力 0 に同じ順で残す（FormatDiscord が順番で確認先と突き合わせる）
-    assert check_targets_node["parameters"].get("onError") == "continueRegularOutput"
+    assert check_targets_node.get("onError") == "continueRegularOutput"
 
 
 def test_all_ok_skips_notification(wf):

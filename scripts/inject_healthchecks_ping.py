@@ -9,8 +9,8 @@
 - URL: https://hc-ping.com/{{ $env.HC_PING_KEY }}/{slug}
   slug = WF 名から "cron/" を除去したもの (cron/system-heartbeat → system-heartbeat)
 - WebhookTest (test mode 起動) 経由の path には ping を入れない (Schedule 起点と分離されているため)
-- onError=continueRegularOutput で ping 失敗時もメインフロー継続
-- 既に PingHealthchecks ノードがある WF はスキップ (冪等)
+- onError=continueRegularOutput (ノード本体) で ping 失敗時もメインフロー継続
+- 既に PingHealthchecks ノードがある WF は、設定が同じなら何もしない (冪等)
 
 CLI:
     python scripts/inject_healthchecks_ping.py            # 実行
@@ -28,6 +28,8 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 WF_DIR = REPO_ROOT / "workflows"
 SCHED_TYPE = "n8n-nodes-base.scheduleTrigger"
 PING_NODE_NAME = "PingHealthchecks"
+# 既存の PingHealthchecks を更新するときにそろえるキー
+MANAGED_KEYS = ("parameters", "onError", "retryOnFail", "maxTries", "waitBetweenTries")
 
 
 def build_ping_node(slug: str, sched_position: list[int], node_id: str) -> dict:
@@ -39,13 +41,13 @@ def build_ping_node(slug: str, sched_position: list[int], node_id: str) -> dict:
             "options": {
                 "timeout": 5000,
             },
-            "onError": "continueRegularOutput",
         },
         "type": "n8n-nodes-base.httpRequest",
         "typeVersion": 4.2,
         "position": [sched_position[0] + 200, sched_position[1]],
         "name": PING_NODE_NAME,
         "id": node_id,
+        "onError": "continueRegularOutput",
         "retryOnFail": True,
         "maxTries": 2,
         "waitBetweenTries": 3000,
@@ -73,12 +75,13 @@ def process_workflow(wf_path: Path, dry_run: bool) -> str:
 
     existing_ping = next((n for n in nodes if n.get("name") == PING_NODE_NAME), None)
     if existing_ping is not None:
-        # 既存 PingHealthchecks があれば parameters / id を上書き（接続はそのまま）
-        if existing_ping.get("parameters") == new_ping_node["parameters"]:
+        # 既存 PingHealthchecks があれば設定を上書き（接続はそのまま）
+        if all(existing_ping.get(k) == new_ping_node[k] for k in MANAGED_KEYS):
             return "noop:up-to-date"
         if dry_run:
             return f"update:{slug}"
-        existing_ping["parameters"] = new_ping_node["parameters"]
+        for k in MANAGED_KEYS:
+            existing_ping[k] = new_ping_node[k]
         with wf_path.open("w", encoding="utf-8") as fp:
             json.dump(d, fp, indent=2, ensure_ascii=False)
             fp.write("\n")

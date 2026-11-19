@@ -73,8 +73,7 @@
         "options": {
           "timeout": 30000,
           "allowUnauthorizedCerts": false
-        },
-        "onError": "continueRegularOutput"
+        }
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -84,6 +83,7 @@
       ],
       "name": "CheckTargets",
       "id": "hc-0002-4000-8000-000000000002",
+      "onError": "continueRegularOutput",
       "retryOnFail": true,
       "maxTries": 3,
       "waitBetweenTries": 5000
@@ -226,8 +226,7 @@
         "url": "=https://hc-ping.com/{{ $env.HC_PING_KEY }}/health-check",
         "options": {
           "timeout": 5000
-        },
-        "onError": "continueRegularOutput"
+        }
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -237,6 +236,7 @@
       ],
       "name": "PingHealthchecks",
       "id": "hc-ping-health-check",
+      "onError": "continueRegularOutput",
       "retryOnFail": true,
       "maxTries": 2,
       "waitBetweenTries": 3000

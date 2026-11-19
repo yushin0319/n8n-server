@@ -355,8 +355,7 @@
         "url": "=https://hc-ping.com/{{ $env.HC_PING_KEY }}/recurring-tasks",
         "options": {
           "timeout": 5000
-        },
-        "onError": "continueRegularOutput"
+        }
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -366,6 +365,7 @@
       ],
       "name": "PingHealthchecks",
       "id": "hc-ping-recurring-tasks",
+      "onError": "continueRegularOutput",
       "retryOnFail": true,
       "maxTries": 2,
       "waitBetweenTries": 3000

@@ -75,8 +75,7 @@
         },
         "options": {
           "timeout": 30000
-        },
-        "onError": "stopAndFail"
+        }
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -104,8 +103,7 @@
         "genericAuthType": "httpHeaderAuth",
         "options": {
           "timeout": 30000
-        },
-        "onError": "stopAndFail"
+        }
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -192,8 +190,7 @@
         "jsonBody": "={{ JSON.stringify($json) }}",
         "options": {
           "timeout": 30000
-        },
-        "onError": "stopAndFail"
+        }
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -241,8 +238,7 @@
         "url": "=https://hc-ping.com/{{ $env.HC_PING_KEY }}/system-metrics-summary",
         "options": {
           "timeout": 5000
-        },
-        "onError": "continueRegularOutput"
+        }
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -252,6 +248,7 @@
       ],
       "name": "PingHealthchecks",
       "id": "hc-ping-system-metrics-summary",
+      "onError": "continueRegularOutput",
       "retryOnFail": true,
       "maxTries": 2,
       "waitBetweenTries": 3000

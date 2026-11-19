@@ -37,8 +37,7 @@
         },
         "options": {
           "timeout": 30000
-        },
-        "onError": "stopAndFail"
+        }
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -79,8 +78,7 @@
         },
         "options": {
           "timeout": 30000
-        },
-        "onError": "stopAndFail"
+        }
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
