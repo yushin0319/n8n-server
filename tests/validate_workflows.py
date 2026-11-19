@@ -12,6 +12,7 @@
 9. 接続グラフに含まれない孤立ノード (不要ノード残存)
 10. WF名がカテゴリ/ケバブケース命名規則に違反 (整理)
 11. 応答ノードまでの途中の一覧取得に alwaysOutputData が無い (0 件で中身の空の応答になる)
+12. onError / retryOnFail 等が parameters の中、onError が n8n に無い値 (どちらも効かない)
 """
 
 import glob
@@ -52,6 +53,20 @@ TRIGGER_TYPES = {
 
 # errorWorkflow チェック除外（Error Handler 自身は errorWorkflow を持てない）
 ERROR_HANDLER_TRIGGER = "n8n-nodes-base.errorTrigger"
+
+# ノード本体の onError に書ける値 (n8n の On Error 設定)
+VALID_ON_ERROR = {"stopWorkflow", "continueRegularOutput", "continueErrorOutput"}
+
+# n8n がノード本体からしか読まない設定 (parameters の中に書くと効かない)
+NODE_LEVEL_SETTINGS = {
+    "onError",
+    "retryOnFail",
+    "maxTries",
+    "waitBetweenTries",
+    "alwaysOutputData",
+    "executeOnce",
+    "continueOnFail",
+}
 
 # WF名の命名規則: カテゴリ/ケバブケース
 VALID_CATEGORIES = {"api", "cron", "trigger", "system"}
@@ -290,6 +305,28 @@ def check_error_output_connected(wf, errors):
             )
 
 
+def check_onerror_placement(wf, errors):
+    """ノード設定 (onError / retryOnFail 等) がノード本体に、onError が n8n の値で書かれているか.
+
+    n8n はこれらをノード本体からしか読まない。parameters の中に書くと効かず、
+    onError なら失敗すると既定どおり WF ごと止まる。
+    """
+    for node in wf.get("nodes", []):
+        name = node.get("name", "???")
+        misplaced = sorted(NODE_LEVEL_SETTINGS & node.get("parameters", {}).keys())
+        if misplaced:
+            errors.append(
+                f"[{name}] {', '.join(misplaced)} が parameters の中にあります"
+                " (n8n はノード本体しか読まない)"
+            )
+        on_error = node.get("onError")
+        if on_error is not None and on_error not in VALID_ON_ERROR:
+            errors.append(
+                f'[{name}] onError "{on_error}" は n8n に無い値です。'
+                f" {' / '.join(sorted(VALID_ON_ERROR))} のどれかにしてください。"
+            )
+
+
 def check_naming_convention(wf, errors):
     """WF名がカテゴリ/ケバブケース命名規則に従っているか."""
     name = wf.get("name", "")
@@ -333,6 +370,7 @@ def validate_workflow(path):
     check_empty_catch(wf, errors)
     check_unicode_escapes(wf, errors)
     check_error_output_connected(wf, errors)
+    check_onerror_placement(wf, errors)
     check_isolated_nodes(wf, errors)
     check_naming_convention(wf, errors)
     return errors

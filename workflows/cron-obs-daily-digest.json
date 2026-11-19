@@ -190,8 +190,7 @@
         "jsonBody": "={{ $json.discordBody }}",
         "options": {
           "timeout": 10000
-        },
-        "onError": "stopAndFail"
+        }
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -239,8 +238,7 @@
         "url": "=https://hc-ping.com/{{ $env.HC_PING_KEY }}/obs-daily-digest",
         "options": {
           "timeout": 5000
-        },
-        "onError": "continueRegularOutput"
+        }
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -250,6 +248,7 @@
       ],
       "name": "PingHealthchecks",
       "id": "hc-ping-obs-daily-digest",
+      "onError": "continueRegularOutput",
       "retryOnFail": true,
       "maxTries": 2,
       "waitBetweenTries": 3000
