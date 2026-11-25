@@ -5,7 +5,8 @@
  * - ベンダー公式の一覧に載り、停止日を過ぎたモデルだけを除外する。推測では除外しない
  * - 一覧が取れない・読めない社は、その社の除外を 0 件として扱う（fail-open）
  * - 日付を読めないエントリは除外しない
- * - 「最短でこの日以降に停止」（Google の Shutdown date、"at earliest"、"Not sooner than"）では除外しない。
+ * - 「最短でこの日以降に停止」（Google の Shutdown date、"at earliest"、"Not sooner than"、
+ *   日付の後ろの "Earliest estimate"）では除外しない。
  *   Google は models ページで "(Shut down)" と表示されたモデルだけを停止済みとする
  * - Kimi は停止日の告知文が無い行のうち、表に「Deprecated」とだけあるものを停止済みとする（2026-11-10 決定）。
  *   提供を終える予定の行は "Deprecation expected ..." と書き分けられている
@@ -150,6 +151,14 @@ function parseMonthDayYear(
 
 const EARLIEST_PREFIX =
   /^\s*\**\s*(?:at earliest|not sooner than|earliest)\s*:?\s*/i;
+// 日付の後ろに付く形（OpenAI の "**Jun 13, 2024** Earliest estimate"）
+const EARLIEST_SUFFIX = /\s*earliest estimate\s*$/i;
+
+/** 「最短でこの日以降」の注記を外した日付部分。注記が無ければ undefined */
+function withoutEarliest(text: string): string | undefined {
+  const rest = text.replace(EARLIEST_PREFIX, "").replace(EARLIEST_SUFFIX, "");
+  return rest !== text ? rest : undefined;
+}
 
 /**
  * 日付セルが読めないときの理由。「最短でこの日以降」の注記なら earliest、
@@ -159,7 +168,7 @@ const EARLIEST_PREFIX =
  */
 export function nullKindOf(text: string): NullKind {
   const hasDigit = /\d/.test(text);
-  if (EARLIEST_PREFIX.test(text))
+  if (withoutEarliest(text) !== undefined)
     return parseEarliest(text) || !hasDigit ? "earliest" : "unreadable";
   return hasDigit ? "unreadable" : "tbd";
 }
@@ -178,10 +187,13 @@ function datePart(retireAt: string | null, raw?: string): DatePart {
   };
 }
 
-/** 「at earliest 2024-06-13」「Not sooner than September 1, 2027」の日付。読めなければ undefined */
+/**
+ * 「at earliest 2024-06-13」「Not sooner than September 1, 2027」「**Jun 13, 2024** Earliest estimate」の日付。
+ * 読めなければ undefined
+ */
 export function parseEarliest(text: string): string | undefined {
-  if (!EARLIEST_PREFIX.test(text)) return undefined;
-  return parseMonthDate(text.replace(EARLIEST_PREFIX, "")) ?? undefined;
+  const date = withoutEarliest(text);
+  return date === undefined ? undefined : (parseMonthDate(date) ?? undefined);
 }
 
 /** 時差付きの現地時刻 → UTC ISO（offsetHours は UTC からの差。北京 +8） */

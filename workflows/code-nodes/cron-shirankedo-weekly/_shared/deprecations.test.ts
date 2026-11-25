@@ -9,6 +9,8 @@ import kimiMd from "../__fixtures__/deprecations/kimi.md.txt?raw";
 // 2026-11-10 取得。停止日の告知文が消え、表に「Deprecated」とだけ書かれた版
 import kimi202611Md from "../__fixtures__/deprecations/kimi-2026-11.md.txt?raw";
 import openaiMd from "../__fixtures__/deprecations/openai.md.txt?raw";
+// 2026-11 の OpenAI: gpt-4-0314 の古い行が "**Jun 13, 2024** Earliest estimate"（注記が後ろ）になった版の抜粋
+import openai202611Md from "../__fixtures__/deprecations/openai-2026-11.excerpt.md.txt?raw";
 import xaiGuide from "../__fixtures__/deprecations/xai-llms-full.excerpt.txt?raw";
 import xiaomiHtml from "../__fixtures__/deprecations/xiaomi.html.txt?raw";
 // 2026-10-12 取得。日付が "(UTC+8)" 付きの書式に変わった版（表の部分だけの抜粋）
@@ -365,8 +367,11 @@ describe("nullKindOf（読めない日付の理由）", () => {
   it.each([
     ["at earliest 2024-06-13", "earliest"],
     ["Not sooner than September 1, 2027", "earliest"],
+    // 2026-11 の OpenAI: 注記が日付の後ろに付く形
+    ["**Jun 13, 2024** Earliest estimate", "earliest"],
     // 「最短」の注記でも日付が読めなければ unreadable（最短日を守れないので除外もしない）
     ["at earliest 2026/10/21", "unreadable"],
+    ["Q4 2026 Earliest estimate", "unreadable"],
     ["To be announced", "tbd"],
     ["TBD", "tbd"],
     ["No shutdown date announced", "tbd"],
@@ -625,6 +630,39 @@ describe("dedupe（同じ ID が複数の表にある場合）", () => {
     expect(
       byId(parseMarkdownTables(openaiMd, "openai").entries)["gpt-4-0314"],
     ).toBe("2026-03-27T12:00:00.000Z");
+  });
+
+  it("確定した停止日は、日付の後ろに付く 'Earliest estimate' の注記より優先する", () => {
+    const r = parseMarkdownTables(
+      md([
+        "| **Jun 13, 2024** Earliest estimate | `m1` |",
+        "| **Mar 26, 2026** | `m1` |",
+      ]),
+      "openai",
+    );
+    expect(byId(r.entries)).toEqual({ m1: "2026-03-27T12:00:00.000Z" });
+  });
+
+  it("後ろに付く 'Earliest estimate' だけなら除外しない（日付は earliestAt に残す）", () => {
+    const r = parseMarkdownTables(
+      md(["| **Jun 13, 2024** Earliest estimate | `m1` |"]),
+      "openai",
+    );
+    expect(r.entries).toEqual([
+      {
+        vendor: "openai",
+        id: "m1",
+        retireAt: null,
+        nullKind: "earliest",
+        earliestAt: "2024-06-14T12:00:00.000Z",
+      },
+    ]);
+  });
+
+  it("2026-11 の OpenAI の抜粋でも gpt-4-0314 は確定停止日になり、読めない行は残らない", () => {
+    const { entries } = parseMarkdownTables(openai202611Md, "openai");
+    expect(byId(entries)["gpt-4-0314"]).toBe("2026-03-27T12:00:00.000Z");
+    expect(entries.filter((e) => e.nullKind === "unreadable")).toEqual([]);
   });
 });
 
