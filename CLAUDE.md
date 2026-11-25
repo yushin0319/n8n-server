@@ -26,11 +26,13 @@ Oracle Cloud 上の n8n ワークフロー管理リポジトリ。全ワーク�
 ## コマンド
 
 ```bash
-# Code Node ユニットテスト（vitest）
-npm test
+# Code Node ユニットテスト（vitest。CI と同じ）
+# npm test / npx vitest は VS Code から開いたシェルで全件失敗する（作業フォルダが c:\ で始まり、
+# vitest 本体が小文字のドライブ名のパスで読まれて二重に読み込まれる）。`bun test` は Bun 内蔵ランナーなので使わない
+bun run test
 
 # TypeScript 型チェック
-npm run typecheck
+bun run typecheck
 
 # WF 静的解析（孤立ノード検出等）
 python tests/validate_workflows.py
